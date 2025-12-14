@@ -14,6 +14,12 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// Register auth routes
 	s.authHandler.RegisterRoutes(r)
 
+	// Register CRM routes
+	s.contactHandler.RegisterRoutes(r)
+
+	// Register Products routes
+	s.productHandler.RegisterRoutes(r)
+
 	r.HandlerFunc(http.MethodGet, "/", s.HelloWorldHandler)
 
 	r.HandlerFunc(http.MethodGet, "/health", s.healthHandler)
