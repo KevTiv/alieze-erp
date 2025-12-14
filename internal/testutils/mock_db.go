@@ -1,51 +1,23 @@
 package testutils
 
 import (
-	"context"
 	"database/sql"
-	"log"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-// SetupMockDB creates a mock database connection for testing
-type MockDB struct {
-	DB   *sql.DB
-	Mock sqlmock.Sqlmock
+func SetupTestDB(t *testing.T) *sql.DB {
+	t.Helper()
+
+	// For now, return nil as we need to set up a proper test database
+	// In a real implementation, this would connect to a test database
+	return nil
 }
 
-func SetupMockDB(t *testing.T) *MockDB {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("Failed to create mock database: %v", err)
-	}
+func TeardownTestDB(t *testing.T, db *sql.DB) {
+	t.Helper()
 
-	// No need to register pgx driver for sqlmock with pgx/v5
-	// sqlmock works directly with database/sql interface
-
-	return &MockDB{
-		DB:   db,
-		Mock: mock,
-	}
-}
-
-func (m *MockDB) Close() {
-	if err := m.DB.Close(); err != nil {
-		log.Printf("Failed to close mock database: %v", err)
-	}
-}
-
-// TestContext provides a context for testing
-type TestContext struct {
-	Context context.Context
-	Cancel  func()
-}
-
-func NewTestContext() TestContext {
-	ctx, cancel := context.WithCancel(context.Background())
-	return TestContext{
-		Context: ctx,
-		Cancel:  cancel,
-	}
+	// For now, do nothing as we don't have a real database connection
+	// In a real implementation, this would close the connection and clean up
 }

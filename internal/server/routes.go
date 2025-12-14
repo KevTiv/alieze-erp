@@ -11,14 +11,20 @@ import (
 func (s *Server) RegisterRoutes() http.Handler {
 	r := httprouter.New()
 
-	// Wrap all routes with CORS middleware
-	corsWrapper := s.corsMiddleware(r)
+	// Register auth routes
+	s.authHandler.RegisterRoutes(r)
 
 	r.HandlerFunc(http.MethodGet, "/", s.HelloWorldHandler)
 
 	r.HandlerFunc(http.MethodGet, "/health", s.healthHandler)
 
-	return corsWrapper
+	// Wrap all routes with CORS middleware
+	corsWrapper := s.corsMiddleware(r)
+
+	// Wrap with auth middleware (after CORS)
+	authWrapper := s.authMiddleware.Middleware(corsWrapper)
+
+	return authWrapper
 }
 
 // CORS middleware

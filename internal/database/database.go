@@ -29,6 +29,9 @@ type Service interface {
 	// RunMigrations runs database migrations from the migrations directory.
 	// It returns an error if migrations fail to run.
 	RunMigrations() error
+
+	// GetDB returns the underlying database connection
+	GetDB() *sql.DB
 }
 
 type service struct {
@@ -115,6 +118,11 @@ func (s *service) Health() map[string]string {
 	}
 
 	return stats
+}
+
+// GetDB returns the underlying database connection
+func (s *service) GetDB() *sql.DB {
+	return s.db
 }
 
 // Close closes the database connection.
