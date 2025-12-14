@@ -5,8 +5,8 @@ all: build test
 
 build:
 	@echo "Building..."
-	
-	
+
+
 	@go build -o main cmd/api/main.go
 
 # Run the application
@@ -34,12 +34,39 @@ docker-down:
 
 # Test the application
 test:
-	@echo "Testing..."
-	@go test ./... -v
+	@echo "Running all tests..."
+	@go test ./... -v -count=1
+
+# Run tests with race detector
+test-race:
+	@echo "Running tests with race detector..."
+	@go test ./... -race -v -count=1
+
+# Run tests with coverage
+coverage:
+	@echo "Running tests with coverage..."
+	@go test ./... -coverprofile=coverage.out -v -count=1
+	@go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+
+# Run specific module tests
+# Example: make test-module MODULE=internal/database
+test-module:
+	@echo "Running tests for module: $(MODULE)"
+	@go test ./$(MODULE) -v -count=1
+
 # Integrations Tests for the application
 itest:
 	@echo "Running integration tests..."
-	@go test ./internal/database -v
+	@go test ./internal/database -v -count=1
+
+# Run database-specific tests with Docker
+db-test:
+	@echo "Running database tests with Docker PostgreSQL..."
+	@docker-compose up -d psql_bp
+	@sleep 5
+	@go test ./internal/database -v -count=1
+	@docker-compose down
 
 # Clean the binary
 clean:
@@ -63,4 +90,4 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test clean watch docker-run docker-down itest
+.PHONY: all build run test test-race coverage test-module clean watch docker-run docker-down itest db-test
