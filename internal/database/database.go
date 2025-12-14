@@ -9,6 +9,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -22,6 +25,10 @@ type Service interface {
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
 	Close() error
+
+	// RunMigrations runs database migrations from the migrations directory.
+	// It returns an error if migrations fail to run.
+	RunMigrations() error
 }
 
 type service struct {
@@ -52,6 +59,11 @@ func New() Service {
 		db: db,
 	}
 	return dbInstance
+}
+
+// ResetInstance resets the singleton instance for testing purposes
+func ResetInstance() {
+	dbInstance = nil
 }
 
 // Health checks the health of the database connection by pinging the database.
@@ -112,4 +124,67 @@ func (s *service) Health() map[string]string {
 func (s *service) Close() error {
 	log.Printf("Disconnected from database: %s", database)
 	return s.db.Close()
+}
+
+// RunMigrations runs database migrations using the golang-migrate library.
+// It uses the migrate library to handle migration versioning and execution.
+// Returns an error if migrations fail to run.
+func (s *service) RunMigrations() error {
+	// Get the absolute path to the migrations directory
+	migrationsDir := "/Users/kevintivert/codebox/alieze-erp/internal/migrations"
+
+	if migrationsDir == "" {
+		migrationsDir = "file://migrations"
+	}
+
+	// Create migration driver
+	driver, err := postgres.WithInstance(s.db, &postgres.Config{})
+	if err != nil {
+		return fmt.Errorf("failed to create migrate driver: %w", err)
+	}
+
+	// Create migrator
+	m, err := migrate.NewWithDatabaseInstance(
+		migrationsDir, // e.g. "file://migrations" or "s3://bucket/prefix"
+		"postgres",
+		driver,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create migrate instance: %w", err)
+	}
+
+	// Query current state
+	version, dirty, err := m.Version()
+	if err != nil {
+		// migrate.ErrNilVersion indicates no migrations have been applied yet.
+		if err == migrate.ErrNilVersion {
+			log.Println("Migration state: no version applied (database at baseline).")
+		} else {
+			return fmt.Errorf("failed to get migration version: %w", err)
+		}
+	}
+
+	// Report status
+	log.Printf("Migration version: %d", version)
+	if dirty {
+		log.Println("State: DIRTY (last migration partially applied or failed).")
+		log.Println("Recommended: fix by re-running the failed migration, or force version after manual correction:")
+		log.Printf("  migrate -path %s -database \"postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=%s\" force %d",
+			migrationsDir, username, password, host, port, database, schema, version)
+	} else {
+		log.Println("State: CLEAN")
+	}
+
+	// Run migrations
+	log.Println("Running migrations...")
+	if err := m.Up(); err != nil {
+		if err == migrate.ErrNoChange {
+			log.Println("No migrations to apply")
+			return nil
+		}
+		return fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	log.Println("All migrations completed successfully")
+	return nil
 }

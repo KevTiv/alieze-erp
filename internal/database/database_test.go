@@ -67,6 +67,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestNew(t *testing.T) {
+	defer ResetInstance()
 	srv := New()
 	if srv == nil {
 		t.Fatal("New() returned nil")
@@ -74,6 +75,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestHealth(t *testing.T) {
+	defer ResetInstance()
 	srv := New()
 
 	stats := srv.Health()
@@ -92,6 +94,7 @@ func TestHealth(t *testing.T) {
 }
 
 func TestClose(t *testing.T) {
+	defer ResetInstance()
 	srv := New()
 
 	if srv.Close() != nil {
