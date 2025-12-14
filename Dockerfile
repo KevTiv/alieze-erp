@@ -16,7 +16,7 @@ EXPOSE ${PORT}
 CMD ["./main"]
 
 
-FROM node:20 AS frontend_builder
+FROM node:24 AS frontend_builder
 WORKDIR /frontend
 
 COPY frontend/package*.json ./

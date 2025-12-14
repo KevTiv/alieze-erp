@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -24,6 +25,12 @@ func NewServer() *http.Server {
 		port: port,
 
 		db: database.New(),
+	}
+
+	// Run database migrations
+	if err := NewServer.db.RunMigrations(); err != nil {
+		log.Printf("Failed to run database migrations: %v", err)
+		// Continue with server startup even if migrations fail
 	}
 
 	// Declare Server config
