@@ -36,6 +36,7 @@ The project includes a database schema files covering:
 ## Architecture Diagram
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#fff', 'edgeLabelBackground':'#fff' }, 'flowchart': {'curve': 'basis', 'defaultRenderer': 'dagre'}}, 'width': '800', 'height': '600'}%%
 graph TD
     %% Core System
     organizations[organizations] -->|has many| organization_users[organization_users]
