@@ -35,6 +35,15 @@ func NewEngine(enforcer interface{}) *Engine {
 	}
 }
 
+// NewEngineWithCasbin creates a new policy engine with Casbin enforcer
+func NewEngineWithCasbin(casbinEnforcer *CasbinEnforcer) *Engine {
+	return &Engine{
+		enforcer:   casbinEnforcer,
+		validators: make(map[string]func(ctx context.Context, subject, object, action string) bool),
+		config:     nil,
+	}
+}
+
 // LoadConfigFromFile loads policy configuration from a YAML file
 func (e *Engine) LoadConfigFromFile(filePath string) error {
 	e.mu.Lock()
@@ -81,6 +90,11 @@ func (e *Engine) CheckPermission(ctx context.Context, subject, object, action st
 	defer e.mu.RUnlock()
 
 	// Check with Casbin enforcer first
+	if enforcer, ok := e.enforcer.(*CasbinEnforcer); ok {
+		return enforcer.CheckPermission(ctx, subject, object, action)
+	}
+
+	// Try generic enforcer interface
 	if enforcer, ok := e.enforcer.(interface {
 		CheckPermission(ctx context.Context, subject, object, action string) (bool, error)
 	}); ok {
@@ -103,6 +117,30 @@ func (e *Engine) CheckPermission(ctx context.Context, subject, object, action st
 	}
 
 	return false, fmt.Errorf("no policy validator found for action: %s", action)
+}
+
+// AddPolicy adds a policy rule to the enforcer
+func (e *Engine) AddPolicy(subject, object, action string) error {
+	if enforcer, ok := e.enforcer.(*CasbinEnforcer); ok {
+		return enforcer.AddPolicy(subject, object, action)
+	}
+	return fmt.Errorf("enforcer does not support adding policies")
+}
+
+// AddRoleForUser adds a role for a user
+func (e *Engine) AddRoleForUser(user, role string) error {
+	if enforcer, ok := e.enforcer.(*CasbinEnforcer); ok {
+		return enforcer.AddGroupingPolicy(user, role)
+	}
+	return fmt.Errorf("enforcer does not support role assignment")
+}
+
+// GetRolesForUser gets all roles for a user
+func (e *Engine) GetRolesForUser(user string) ([]string, error) {
+	if enforcer, ok := e.enforcer.(*CasbinEnforcer); ok {
+		return enforcer.GetRolesForUser(user)
+	}
+	return nil, fmt.Errorf("enforcer does not support role retrieval")
 }
 
 // RegisterValidator adds a custom permission validator

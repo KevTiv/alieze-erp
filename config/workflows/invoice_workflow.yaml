@@ -1,0 +1,109 @@
+# Invoice Workflow State Machine Configuration
+# Based on looplab/fsm patterns
+
+workflow_id: accounting.invoice
+description: "Invoice lifecycle state machine"
+model: accounting.invoice
+initial: draft
+
+# All possible states for an invoice
+states:
+  - draft
+  - open
+  - paid
+  - cancelled
+
+# State transitions (events)
+transitions:
+  - name: confirm
+    description: "Confirm a draft invoice"
+    from: draft
+    to: open
+    permission: "invoices:confirm"
+    validators:
+      - invoice_has_lines
+      - invoice_has_partner
+      - invoice_totals_calculated
+    callbacks:
+      before:
+        - validate_invoice_complete
+        - check_partner_credit_limit
+      after:
+        - send_invoice_email
+        - create_accounting_entries
+        - publish_invoice_confirmed_event
+
+  - name: register_payment
+    description: "Register a payment on an open invoice"
+    from: open
+    to: paid
+    permission: "invoices:pay"
+    validators:
+      - payment_amount_valid
+      - invoice_not_overpaid
+    callbacks:
+      before:
+        - validate_payment_amount
+      after:
+        - update_invoice_residual
+        - publish_invoice_paid_event
+        - notify_sales_team
+
+  - name: cancel
+    description: "Cancel a draft or open invoice"
+    from:
+      - draft
+      - open
+    to: cancelled
+    permission: "invoices:delete"
+    validators:
+      - invoice_not_paid
+    callbacks:
+      before:
+        - check_no_payments
+      after:
+        - reverse_accounting_entries
+        - publish_invoice_cancelled_event
+
+  - name: reset_to_draft
+    description: "Reset a cancelled invoice to draft"
+    from: cancelled
+    to: draft
+    permission: "invoices:create"
+    callbacks:
+      after:
+        - clear_accounting_entries
+
+# Validators (these should be implemented in Go code)
+validators:
+  invoice_has_lines:
+    description: "Ensure invoice has at least one line"
+
+  invoice_has_partner:
+    description: "Ensure invoice has a partner assigned"
+
+  invoice_totals_calculated:
+    description: "Ensure invoice totals are calculated"
+
+  payment_amount_valid:
+    description: "Ensure payment amount is positive"
+
+  invoice_not_overpaid:
+    description: "Ensure payment doesn't exceed residual amount"
+
+  invoice_not_paid:
+    description: "Ensure invoice is not already paid"
+
+# State-specific permissions
+state_permissions:
+  draft:
+    - invoices:read
+    - invoices:update
+    - invoices:delete
+  open:
+    - invoices:read
+    - invoices:pay
+  paid:
+    - invoices:read
+  cancelled:
+    - invoices:read

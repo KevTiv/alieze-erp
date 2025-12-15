@@ -1,0 +1,136 @@
+# Sales Order Workflow State Machine Configuration
+# Based on looplab/fsm patterns
+
+workflow_id: sales.order
+description: "Sales order lifecycle state machine"
+model: sales.order
+initial: draft
+
+# All possible states for a sales order
+states:
+  - draft
+  - quotation
+  - confirmed
+  - done
+  - cancelled
+
+# State transitions (events)
+transitions:
+  - name: send_quotation
+    description: "Send order as quotation to customer"
+    from: draft
+    to: quotation
+    permission: "orders:update"
+    validators:
+      - order_has_lines
+      - order_has_customer
+    callbacks:
+      before:
+        - validate_order_complete
+        - calculate_order_totals
+      after:
+        - send_quotation_email
+        - set_quotation_expiry_date
+        - publish_quotation_sent_event
+
+  - name: confirm
+    description: "Confirm a sales order"
+    from:
+      - draft
+      - quotation
+    to: confirmed
+    permission: "orders:confirm"
+    validators:
+      - order_has_lines
+      - order_has_customer
+      - order_has_pricelist
+    callbacks:
+      before:
+        - validate_order_complete
+        - check_product_availability
+        - check_customer_credit_limit
+      after:
+        - reserve_inventory
+        - set_confirmation_date
+        - publish_order_confirmed_event
+        - trigger_invoice_creation
+
+  - name: complete
+    description: "Mark order as done (delivered)"
+    from: confirmed
+    to: done
+    permission: "orders:complete"
+    validators:
+      - all_lines_delivered
+      - all_invoices_generated
+    callbacks:
+      before:
+        - validate_delivery_complete
+      after:
+        - publish_order_completed_event
+        - update_customer_stats
+
+  - name: cancel
+    description: "Cancel a sales order"
+    from:
+      - draft
+      - quotation
+      - confirmed
+    to: cancelled
+    permission: "orders:delete"
+    validators:
+      - order_not_invoiced
+    callbacks:
+      before:
+        - check_no_invoices
+      after:
+        - release_inventory_reservation
+        - publish_order_cancelled_event
+        - notify_customer
+
+  - name: reset_to_draft
+    description: "Reset cancelled order to draft"
+    from: cancelled
+    to: draft
+    permission: "orders:create"
+    callbacks:
+      after:
+        - clear_confirmation_date
+
+# Validators (these should be implemented in Go code)
+validators:
+  order_has_lines:
+    description: "Ensure order has at least one line"
+
+  order_has_customer:
+    description: "Ensure order has a customer assigned"
+
+  order_has_pricelist:
+    description: "Ensure order has a pricelist"
+
+  all_lines_delivered:
+    description: "Ensure all order lines are delivered"
+
+  all_invoices_generated:
+    description: "Ensure all invoices are generated"
+
+  order_not_invoiced:
+    description: "Ensure order has no invoices"
+
+# State-specific permissions
+state_permissions:
+  draft:
+    - orders:read
+    - orders:update
+    - orders:delete
+  quotation:
+    - orders:read
+    - orders:update
+    - orders:confirm
+  confirmed:
+    - orders:read
+    - orders:complete
+  done:
+    - orders:read
+  cancelled:
+    - orders:read

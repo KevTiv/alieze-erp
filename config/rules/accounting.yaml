@@ -1,0 +1,140 @@
+# Accounting Module Validation Rules
+# This file defines validation rules for accounting entities
+
+modules:
+  accounting:
+    # Invoice validation rules
+    validation:
+      invoice_create:
+        description: "Validation rules for creating an invoice"
+        rules:
+          - name: "require_partner"
+            validator: "require_uuid"
+            field: "partner_id"
+            message: "Partner is required for invoice"
+
+          - name: "require_company"
+            validator: "require_uuid"
+            field: "company_id"
+            message: "Company is required for invoice"
+
+          - name: "require_currency"
+            validator: "require_uuid"
+            field: "currency_id"
+            message: "Currency is required for invoice"
+
+          - name: "require_journal"
+            validator: "require_uuid"
+            field: "journal_id"
+            message: "Journal is required for invoice"
+
+          - name: "require_type"
+            validator: "require_string"
+            field: "type"
+            message: "Invoice type is required"
+
+          - name: "validate_type"
+            validator: "in_list"
+            field: "type"
+            params:
+              values: ["out_invoice", "in_invoice", "out_refund", "in_refund"]
+            message: "Invalid invoice type"
+
+          - name: "require_lines"
+            validator: "min_array_length"
+            field: "lines"
+            params:
+              min: 1
+            message: "Invoice must have at least one line"
+
+      invoice_line_validate:
+        description: "Validation rules for invoice lines"
+        rules:
+          - name: "require_account"
+            validator: "require_uuid"
+            field: "account_id"
+            message: "Account is required for invoice line"
+
+          - name: "validate_quantity"
+            validator: "min_value"
+            field: "quantity"
+            params:
+              min: 0.01
+            message: "Quantity must be positive"
+
+          - name: "validate_unit_price"
+            validator: "min_value"
+            field: "unit_price"
+            params:
+              min: 0
+            message: "Unit price cannot be negative"
+
+          - name: "validate_discount"
+            validator: "in_range"
+            field: "discount"
+            required: false
+            params:
+              min: 0
+              max: 100
+            message: "Discount must be between 0 and 100"
+
+      payment_create:
+        description: "Validation rules for creating a payment"
+        rules:
+          - name: "require_invoice"
+            validator: "require_uuid"
+            field: "invoice_id"
+            message: "Invoice is required for payment"
+
+          - name: "require_amount"
+            validator: "min_value"
+            field: "amount"
+            params:
+              min: 0.01
+            message: "Payment amount must be positive"
+
+          - name: "require_partner"
+            validator: "require_uuid"
+            field: "partner_id"
+            message: "Partner is required for payment"
+
+    # State machine definitions
+    state_machine:
+      invoice_status:
+        initial: "draft"
+        states:
+          - "draft"
+          - "open"
+          - "paid"
+          - "cancelled"
+        transitions:
+          - name: "confirm"
+            from: "draft"
+            to: "open"
+            validator: "invoice_confirmable"
+            permission: "invoices:confirm"
+
+          - name: "pay"
+            from: "open"
+            to: "paid"
+            validator: "invoice_payable"
+            permission: "invoices:pay"
+
+          - name: "cancel"
+            from: ["draft", "open"]
+            to: "cancelled"
+            permission: "invoices:delete"
+
+    # Business calculations
+    calculations:
+      line_subtotal:
+        description: "Calculate invoice line subtotal"
+        formula: "quantity * unit_price * (1 - discount / 100)"
+
+      line_total:
+        description: "Calculate invoice line total with tax"
+        formula: "line_subtotal + line_tax"
+
+      invoice_total:
+        description: "Calculate invoice total"
+        formula: "sum(lines.line_total)"

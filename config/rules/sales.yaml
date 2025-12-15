@@ -1,0 +1,131 @@
+# Sales Module Validation Rules
+# This file defines validation rules for sales entities
+
+modules:
+  sales:
+    # Sales Order validation rules
+    validation:
+      order_create:
+        description: "Validation rules for creating a sales order"
+        rules:
+          - name: "require_customer"
+            validator: "require_uuid"
+            field: "customer_id"
+            message: "Customer is required for sales order"
+
+          - name: "require_company"
+            validator: "require_uuid"
+            field: "company_id"
+            message: "Company is required for sales order"
+
+          - name: "require_pricelist"
+            validator: "require_uuid"
+            field: "pricelist_id"
+            message: "Pricelist is required for sales order"
+
+          - name: "require_currency"
+            validator: "require_uuid"
+            field: "currency_id"
+            message: "Currency is required for sales order"
+
+          - name: "require_lines"
+            validator: "min_array_length"
+            field: "lines"
+            params:
+              min: 1
+            message: "Sales order must have at least one line"
+
+      order_line_validate:
+        description: "Validation rules for sales order lines"
+        rules:
+          - name: "require_product"
+            validator: "require_uuid"
+            field: "product_id"
+            message: "Product is required for order line"
+
+          - name: "require_uom"
+            validator: "require_uuid"
+            field: "uom_id"
+            message: "Unit of measure is required for order line"
+
+          - name: "validate_quantity"
+            validator: "min_value"
+            field: "quantity"
+            params:
+              min: 0.01
+            message: "Quantity must be positive"
+
+          - name: "validate_unit_price"
+            validator: "min_value"
+            field: "unit_price"
+            params:
+              min: 0
+            message: "Unit price cannot be negative"
+
+          - name: "validate_discount"
+            validator: "in_range"
+            field: "discount"
+            required: false
+            params:
+              min: 0
+              max: 100
+            message: "Discount must be between 0 and 100"
+
+      pricelist_create:
+        description: "Validation rules for creating a pricelist"
+        rules:
+          - name: "require_name"
+            validator: "require_string"
+            field: "name"
+            message: "Pricelist name is required"
+
+          - name: "require_currency"
+            validator: "require_uuid"
+            field: "currency_id"
+            message: "Currency is required for pricelist"
+
+    # State machine definitions
+    state_machine:
+      order_status:
+        initial: "draft"
+        states:
+          - "draft"
+          - "quotation"
+          - "confirmed"
+          - "done"
+          - "cancelled"
+        transitions:
+          - name: "send_quotation"
+            from: "draft"
+            to: "quotation"
+            permission: "orders:update"
+
+          - name: "confirm"
+            from: ["draft", "quotation"]
+            to: "confirmed"
+            validator: "order_confirmable"
+            permission: "orders:confirm"
+
+          - name: "complete"
+            from: "confirmed"
+            to: "done"
+            permission: "orders:complete"
+
+          - name: "cancel"
+            from: ["draft", "quotation", "confirmed"]
+            to: "cancelled"
+            permission: "orders:delete"
+
+    # Business calculations
+    calculations:
+      line_subtotal:
+        description: "Calculate order line subtotal"
+        formula: "quantity * unit_price * (1 - discount / 100)"
+
+      line_total:
+        description: "Calculate order line total with tax"
+        formula: "line_subtotal + line_tax"
+
+      order_total:
+        description: "Calculate order total"
+        formula: "sum(lines.line_total)"

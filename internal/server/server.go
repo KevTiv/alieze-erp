@@ -56,12 +56,24 @@ func NewServer() *http.Server {
 		// Continue without rules - they're optional for now
 	}
 
-	// Initialize policy engine (Casbin)
-	policyEngine := policy.NewEngine(nil) // Will initialize Casbin later
-	if err := policyEngine.LoadConfigFromFile("config/policy/rules.yaml"); err != nil {
-		logger.Error("Failed to load policy rules", "error", err)
-		// Continue without policy rules - they're optional for now
+	// Initialize policy engine with Casbin
+	// Build connection string from environment variables
+	dbHost := os.Getenv("BLUEPRINT_DB_HOST")
+	dbPort := os.Getenv("BLUEPRINT_DB_PORT")
+	dbUser := os.Getenv("BLUEPRINT_DB_USERNAME")
+	dbPass := os.Getenv("BLUEPRINT_DB_PASSWORD")
+	dbName := os.Getenv("BLUEPRINT_DB_DATABASE")
+
+	connString := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+		dbUser, dbPass, dbHost, dbPort, dbName)
+
+	casbinEnforcer, err := policy.NewCasbinEnforcer(connString, "")
+	if err != nil {
+		logger.Warn("Failed to initialize Casbin enforcer, using mock mode", "error", err)
+		casbinEnforcer, _ = policy.NewCasbinEnforcer("", "") // Fallback to mock mode
 	}
+	policyEngine := policy.NewEngineWithCasbin(casbinEnforcer)
+	logger.Info("Policy engine initialized")
 
 	// Initialize state machine factory
 	stateMachineFactory := workflow.NewStateMachineFactory()
