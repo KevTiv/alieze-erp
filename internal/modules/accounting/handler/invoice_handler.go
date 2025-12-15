@@ -51,6 +51,7 @@ func (h *InvoiceHandler) CreateInvoice(w http.ResponseWriter, r *http.Request, _
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(createdInvoice)
 }
 
@@ -72,6 +73,7 @@ func (h *InvoiceHandler) GetInvoice(w http.ResponseWriter, r *http.Request, ps h
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(invoice)
 }
 
@@ -132,6 +134,7 @@ func (h *InvoiceHandler) ListInvoices(w http.ResponseWriter, r *http.Request, _ 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(invoices)
 }
 
@@ -156,6 +159,7 @@ func (h *InvoiceHandler) UpdateInvoice(w http.ResponseWriter, r *http.Request, p
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(updatedInvoice)
 }
 
@@ -188,6 +192,7 @@ func (h *InvoiceHandler) ConfirmInvoice(w http.ResponseWriter, r *http.Request, 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(confirmedInvoice)
 }
 
@@ -205,6 +210,7 @@ func (h *InvoiceHandler) CancelInvoice(w http.ResponseWriter, r *http.Request, p
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(cancelledInvoice)
 }
 
@@ -228,6 +234,7 @@ func (h *InvoiceHandler) RecordPayment(w http.ResponseWriter, r *http.Request, p
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(updatedInvoice)
 }
 
@@ -245,6 +252,7 @@ func (h *InvoiceHandler) GetInvoicesByPartner(w http.ResponseWriter, r *http.Req
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(invoices)
 }
 
@@ -258,6 +266,7 @@ func (h *InvoiceHandler) GetInvoicesByStatus(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(invoices)
 }
 
@@ -271,5 +280,6 @@ func (h *InvoiceHandler) GetInvoicesByType(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(invoices)
 }

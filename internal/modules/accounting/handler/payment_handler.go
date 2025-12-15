@@ -46,6 +46,7 @@ func (h *PaymentHandler) CreatePayment(w http.ResponseWriter, r *http.Request, _
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(createdPayment)
 }
 
@@ -67,6 +68,7 @@ func (h *PaymentHandler) GetPayment(w http.ResponseWriter, r *http.Request, ps h
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(payment)
 }
 
@@ -105,6 +107,7 @@ func (h *PaymentHandler) ListPayments(w http.ResponseWriter, r *http.Request, _ 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(payments)
 }
 
@@ -129,6 +132,7 @@ func (h *PaymentHandler) UpdatePayment(w http.ResponseWriter, r *http.Request, p
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(updatedPayment)
 }
 
@@ -161,6 +165,7 @@ func (h *PaymentHandler) GetPaymentsByInvoice(w http.ResponseWriter, r *http.Req
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(payments)
 }
 
@@ -178,5 +183,6 @@ func (h *PaymentHandler) GetPaymentsByPartner(w http.ResponseWriter, r *http.Req
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(payments)
 }

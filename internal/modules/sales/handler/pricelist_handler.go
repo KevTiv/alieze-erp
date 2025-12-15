@@ -45,6 +45,7 @@ func (h *PricelistHandler) CreatePricelist(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(createdPricelist)
 }
 
@@ -66,6 +67,7 @@ func (h *PricelistHandler) GetPricelist(w http.ResponseWriter, r *http.Request, 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(pricelist)
 }
 
@@ -80,6 +82,7 @@ func (h *PricelistHandler) ListPricelists(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(pricelists)
 }
 
@@ -97,6 +100,7 @@ func (h *PricelistHandler) ListPricelistsByCompany(w http.ResponseWriter, r *htt
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(pricelists)
 }
 
@@ -114,6 +118,7 @@ func (h *PricelistHandler) ListActivePricelistsByCompany(w http.ResponseWriter, 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(pricelists)
 }
 
@@ -138,6 +143,7 @@ func (h *PricelistHandler) UpdatePricelist(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(updatedPricelist)
 }
 

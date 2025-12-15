@@ -49,6 +49,7 @@ func (h *SalesOrderHandler) CreateSalesOrder(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(createdOrder)
 }
 
@@ -70,6 +71,7 @@ func (h *SalesOrderHandler) GetSalesOrder(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(order)
 }
 
@@ -124,6 +126,7 @@ func (h *SalesOrderHandler) ListSalesOrders(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(orders)
 }
 
@@ -148,6 +151,7 @@ func (h *SalesOrderHandler) UpdateSalesOrder(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(updatedOrder)
 }
 
@@ -180,6 +184,7 @@ func (h *SalesOrderHandler) ConfirmSalesOrder(w http.ResponseWriter, r *http.Req
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(confirmedOrder)
 }
 
@@ -197,6 +202,7 @@ func (h *SalesOrderHandler) CancelSalesOrder(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(cancelledOrder)
 }
 
@@ -214,6 +220,7 @@ func (h *SalesOrderHandler) GetSalesOrdersByCustomer(w http.ResponseWriter, r *h
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(orders)
 }
 
@@ -227,5 +234,6 @@ func (h *SalesOrderHandler) GetSalesOrdersByStatus(w http.ResponseWriter, r *htt
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(orders)
 }

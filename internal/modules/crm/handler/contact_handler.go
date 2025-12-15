@@ -46,6 +46,7 @@ func (h *ContactHandler) CreateContact(w http.ResponseWriter, r *http.Request, _
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(createdContact)
 }
 
@@ -67,6 +68,7 @@ func (h *ContactHandler) GetContact(w http.ResponseWriter, r *http.Request, ps h
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(contact)
 }
 
@@ -140,6 +142,7 @@ func (h *ContactHandler) ListContacts(w http.ResponseWriter, r *http.Request, _ 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(contacts)
 }
 
@@ -164,6 +167,7 @@ func (h *ContactHandler) UpdateContact(w http.ResponseWriter, r *http.Request, p
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(updatedContact)
 }
 
@@ -200,6 +204,7 @@ func (h *ContactHandler) GetContactsByCustomer(w http.ResponseWriter, r *http.Re
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(contacts)
 }
 
@@ -221,5 +226,6 @@ func (h *ContactHandler) GetContactsByVendor(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(contacts)
 }

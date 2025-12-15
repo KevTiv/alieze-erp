@@ -47,6 +47,7 @@ func (h *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request, _
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(createdProduct)
 }
 
@@ -68,6 +69,7 @@ func (h *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request, ps h
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(product)
 }
 
@@ -146,6 +148,7 @@ func (h *ProductHandler) ListProducts(w http.ResponseWriter, r *http.Request, _ 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(products)
 }
 
@@ -170,6 +173,7 @@ func (h *ProductHandler) UpdateProduct(w http.ResponseWriter, r *http.Request, p
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(updatedProduct)
 }
 
@@ -206,6 +210,7 @@ func (h *ProductHandler) GetProductsByCategory(w http.ResponseWriter, r *http.Re
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(products)
 }
 
@@ -223,6 +228,7 @@ func (h *ProductHandler) GetProductsByType(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(products)
 }
 
@@ -245,5 +251,6 @@ func (h *ProductHandler) GetProductsByActiveStatus(w http.ResponseWriter, r *htt
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(products)
 }
