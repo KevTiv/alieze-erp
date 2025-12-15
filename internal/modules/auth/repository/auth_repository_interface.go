@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"alieze-erp/internal/modules/auth/domain"
+	"alieze-erp/internal/modules/auth/types"
 
 	"github.com/google/uuid"
 )

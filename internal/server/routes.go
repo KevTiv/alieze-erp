@@ -11,14 +11,8 @@ import (
 func (s *Server) RegisterRoutes() http.Handler {
 	r := httprouter.New()
 
-	// Register auth routes
-	s.authHandler.RegisterRoutes(r)
-
-	// Register CRM routes
-	s.contactHandler.RegisterRoutes(r)
-
-	// Register Products routes
-	s.productHandler.RegisterRoutes(r)
+	// Register all module routes using registry
+	s.registry.RegisterAllRoutes(r)
 
 	r.HandlerFunc(http.MethodGet, "/", s.HelloWorldHandler)
 
@@ -28,7 +22,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	corsWrapper := s.corsMiddleware(r)
 
 	// Wrap with auth middleware (after CORS)
-	authWrapper := s.authMiddleware.Middleware(corsWrapper)
+	authWrapper := s.authModule.GetMiddleware().Middleware(corsWrapper)
 
 	return authWrapper
 }

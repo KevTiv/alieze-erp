@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"alieze-erp/internal/modules/crm/domain"
+	"alieze-erp/internal/modules/crm/types"
 	"alieze-erp/internal/modules/crm/service"
 
 	"github.com/google/uuid"

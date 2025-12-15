@@ -7,7 +7,7 @@ import (
 	"log"
 	"strings"
 
-	"alieze-erp/internal/modules/crm/domain"
+	"alieze-erp/internal/modules/crm/types"
 	"alieze-erp/internal/modules/crm/repository"
 
 	"github.com/google/uuid"
@@ -24,6 +24,8 @@ type AuthService interface {
 type ContactService struct {
 	repo        repository.ContactRepo
 	authService AuthService
+	ruleEngine  interface{} // Will be used for rule-based validation
+	eventBus    interface{} // Event bus for publishing domain events
 	logger      *log.Logger
 }
 
@@ -35,10 +37,43 @@ func NewContactService(repo repository.ContactRepo, authService AuthService) *Co
 	}
 }
 
+// NewContactServiceWithRules creates a contact service with rule engine support
+func NewContactServiceWithRules(repo repository.ContactRepo, authService AuthService, ruleEngine interface{}) *ContactService {
+	service := NewContactService(repo, authService)
+	service.ruleEngine = ruleEngine
+	return service
+}
+
+// NewContactServiceWithDependencies creates a contact service with all dependencies
+func NewContactServiceWithDependencies(repo repository.ContactRepo, authService AuthService, ruleEngine interface{}, eventBus interface{}) *ContactService {
+	service := NewContactService(repo, authService)
+	service.ruleEngine = ruleEngine
+	service.eventBus = eventBus
+	return service
+}
+
 func (s *ContactService) CreateContact(ctx context.Context, contact domain.Contact) (*domain.Contact, error) {
-	// Validate required fields
-	if contact.Name == "" {
-		return nil, errors.New("contact name is required")
+	// Use rule engine for validation if available
+	if s.ruleEngine != nil {
+		if ruleEngine, ok := s.ruleEngine.(interface{
+			Validate(ctx context.Context, ruleName string, entity interface{}) error
+		}); ok {
+			if err := ruleEngine.Validate(ctx, "contact_create", contact); err != nil {
+				return nil, fmt.Errorf("validation failed: %w", err)
+			}
+		}
+	} else {
+		// Fallback to hardcoded validation
+		if contact.Name == "" {
+			return nil, errors.New("contact name is required")
+		}
+
+		// Validate email format if provided
+		if contact.Email != nil && *contact.Email != "" {
+			if !isValidEmail(*contact.Email) {
+				return nil, errors.New("invalid email format")
+			}
+		}
 	}
 
 	// Set organization from context
@@ -47,13 +82,6 @@ func (s *ContactService) CreateContact(ctx context.Context, contact domain.Conta
 		return nil, fmt.Errorf("failed to get organization: %w", err)
 	}
 	contact.OrganizationID = orgID
-
-	// Validate email format if provided
-	if contact.Email != nil && *contact.Email != "" {
-		if !isValidEmail(*contact.Email) {
-			return nil, errors.New("invalid email format")
-		}
-	}
 
 	// Check permissions
 	if err := s.authService.CheckPermission(ctx, "contacts:create"); err != nil {
@@ -67,6 +95,9 @@ func (s *ContactService) CreateContact(ctx context.Context, contact domain.Conta
 	}
 
 	s.logger.Printf("Created contact %s for organization %s", created.ID, created.OrganizationID)
+
+	// Publish contact.created event
+	s.publishEvent(ctx, "contact.created", created)
 
 	return created, nil
 }
@@ -177,6 +208,9 @@ func (s *ContactService) UpdateContact(ctx context.Context, contact domain.Conta
 
 	s.logger.Printf("Updated contact %s for organization %s", updated.ID, updated.OrganizationID)
 
+	// Publish contact.updated event
+	s.publishEvent(ctx, "contact.updated", updated)
+
 	return updated, nil
 }
 
@@ -213,6 +247,12 @@ func (s *ContactService) DeleteContact(ctx context.Context, id uuid.UUID) error 
 
 	s.logger.Printf("Deleted contact %s for organization %s", id, orgID)
 
+	// Publish contact.deleted event
+	s.publishEvent(ctx, "contact.deleted", map[string]interface{}{
+		"id":              id,
+		"organization_id": orgID,
+	})
+
 	return nil
 }
 
@@ -220,4 +260,17 @@ func (s *ContactService) DeleteContact(ctx context.Context, id uuid.UUID) error 
 func isValidEmail(email string) bool {
 	// Simple email validation
 	return len(email) >= 5 && strings.Contains(email, "@") && strings.Contains(email, ".")
+}
+
+// publishEvent publishes an event to the event bus if available
+func (s *ContactService) publishEvent(ctx context.Context, eventType string, payload interface{}) {
+	if s.eventBus != nil {
+		if bus, ok := s.eventBus.(interface {
+			Publish(ctx context.Context, eventType string, payload interface{}) error
+		}); ok {
+			if err := bus.Publish(ctx, eventType, payload); err != nil {
+				s.logger.Printf("Failed to publish event %s: %v", eventType, err)
+			}
+		}
+	}
 }

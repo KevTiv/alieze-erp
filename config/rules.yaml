@@ -1,0 +1,71 @@
+# Example rules configuration for Alieze ERP
+modules:
+  accounting:
+    validation:
+      invoice_create:
+        - name: require_customer
+          validator: require_uuid
+          field: customer_id
+          params: {}
+        - name: require_amount
+          validator: in_range
+          field: amount
+          params: {min: 0.01}
+        - name: valid_currency
+          validator: require_string
+          field: currency
+          params: {}
+    state_machine:
+      invoice_status:
+        initial: draft
+        states: [draft, open, paid, cancelled]
+        transitions:
+          - name: confirm
+            from: [draft]
+            to: open
+            validator: invoice_confirmable
+            permission: invoices:confirm
+          - name: pay
+            from: [open]
+            to: paid
+            validator: invoice_payable
+            permission: invoices:pay
+          - name: cancel
+            from: [draft, open]
+            to: cancelled
+            permission: invoices:cancel
+    calculations:
+      invoice_total:
+        formula: "amount + tax_amount"
+  crm:
+    validation:
+      contact_create:
+        - name: require_name
+          validator: require_string
+          field: name
+          params: {}
+        - name: valid_email
+          validator: email_format
+          field: email
+          params: {}
+    state_machine:
+      lead_status:
+        initial: new
+        states: [new, qualified, proposition, won, lost]
+        transitions:
+          - name: qualify
+            from: [new]
+            to: qualified
+            permission: leads:qualify
+          - name: propose
+            from: [qualified]
+            to: proposition
+            permission: leads:propose
+          - name: win
+            from: [proposition]
+            to: won
+            permission: leads:win
+          - name: lose
+            from: [new, qualified, proposition]
+            to: lost
+            permission: leads:lose

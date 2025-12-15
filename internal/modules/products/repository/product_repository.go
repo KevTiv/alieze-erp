@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"alieze-erp/internal/modules/products/domain"
+	"alieze-erp/internal/modules/products/types"
 
 	"github.com/google/uuid"
 )

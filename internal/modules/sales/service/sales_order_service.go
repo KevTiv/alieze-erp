@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"alieze-erp/internal/modules/sales/domain"
+	"alieze-erp/internal/modules/sales/types"
 	"alieze-erp/internal/modules/sales/repository"
 
 	"github.com/google/uuid"
@@ -14,6 +14,7 @@ import (
 type SalesOrderService struct {
 	repo          repository.SalesOrderRepository
 	pricelistRepo repository.PricelistRepository
+	eventBus      interface{} // Event bus for publishing domain events
 }
 
 func NewSalesOrderService(repo repository.SalesOrderRepository, pricelistRepo repository.PricelistRepository) *SalesOrderService {
@@ -21,6 +22,13 @@ func NewSalesOrderService(repo repository.SalesOrderRepository, pricelistRepo re
 		repo:          repo,
 		pricelistRepo: pricelistRepo,
 	}
+}
+
+// NewSalesOrderServiceWithEventBus creates a sales order service with event bus support
+func NewSalesOrderServiceWithEventBus(repo repository.SalesOrderRepository, pricelistRepo repository.PricelistRepository, eventBus interface{}) *SalesOrderService {
+	service := NewSalesOrderService(repo, pricelistRepo)
+	service.eventBus = eventBus
+	return service
 }
 
 func (s *SalesOrderService) CreateSalesOrder(ctx context.Context, order domain.SalesOrder) (*domain.SalesOrder, error) {
@@ -50,6 +58,9 @@ func (s *SalesOrderService) CreateSalesOrder(ctx context.Context, order domain.S
 	if err != nil {
 		return nil, fmt.Errorf("failed to create sales order: %w", err)
 	}
+
+	// Publish order.created event
+	s.publishEvent(ctx, "order.created", createdOrder)
 
 	return createdOrder, nil
 }
@@ -92,6 +103,9 @@ func (s *SalesOrderService) UpdateSalesOrder(ctx context.Context, order domain.S
 		return nil, fmt.Errorf("failed to update sales order: %w", err)
 	}
 
+	// Publish order.updated event
+	s.publishEvent(ctx, "order.updated", updatedOrder)
+
 	return updatedOrder, nil
 }
 
@@ -115,6 +129,12 @@ func (s *SalesOrderService) DeleteSalesOrder(ctx context.Context, id uuid.UUID) 
 	if err != nil {
 		return fmt.Errorf("failed to delete sales order: %w", err)
 	}
+
+	// Publish order.deleted event
+	s.publishEvent(ctx, "order.deleted", map[string]interface{}{
+		"id":              id,
+		"organization_id": order.OrganizationID,
+	})
 
 	return nil
 }
@@ -148,6 +168,9 @@ func (s *SalesOrderService) ConfirmSalesOrder(ctx context.Context, id uuid.UUID)
 		return nil, fmt.Errorf("failed to update sales order: %w", err)
 	}
 
+	// Publish order.confirmed event
+	s.publishEvent(ctx, "order.confirmed", updatedOrder)
+
 	return updatedOrder, nil
 }
 
@@ -173,6 +196,9 @@ func (s *SalesOrderService) CancelSalesOrder(ctx context.Context, id uuid.UUID) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to update sales order: %w", err)
 	}
+
+	// Publish order.cancelled event
+	s.publishEvent(ctx, "order.cancelled", updatedOrder)
 
 	return updatedOrder, nil
 }
@@ -273,4 +299,18 @@ func (s *SalesOrderService) calculateOrderAmounts(order *domain.SalesOrder) erro
 	order.AmountTotal = amountTotal
 
 	return nil
+}
+
+// publishEvent publishes an event to the event bus if available
+func (s *SalesOrderService) publishEvent(ctx context.Context, eventType string, payload interface{}) {
+	if s.eventBus != nil {
+		if bus, ok := s.eventBus.(interface {
+			Publish(ctx context.Context, eventType string, payload interface{}) error
+		}); ok {
+			if err := bus.Publish(ctx, eventType, payload); err != nil {
+				// Log error but don't fail the operation
+				fmt.Printf("Failed to publish event %s: %v\n", eventType, err)
+			}
+		}
+	}
 }

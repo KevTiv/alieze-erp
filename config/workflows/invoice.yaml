@@ -1,0 +1,81 @@
+# Invoice Workflow State Machine Configuration
+workflow_id: accounting.invoice
+model: accounting.invoice
+initial: draft
+
+states:
+  - draft
+  - open
+  - paid
+  - cancelled
+
+transitions:
+  - name: confirm
+    from: [draft]
+    to: open
+    validator: invoice_confirmable
+    permission: invoices:confirm
+
+  - name: pay
+    from: [open]
+    to: paid
+    validator: invoice_payable
+    permission: invoices:pay
+
+  - name: cancel
+    from: [draft, open]
+    to: cancelled
+    permission: invoices:cancel
+
+  - name: reset_to_draft
+    from: [open]
+    to: draft
+    permission: invoices:edit
+
+# State-specific validation rules
+state_validation:
+  draft:
+    - name: allow_editing
+      validator: invoice_editable
+      message: "Draft invoices can be edited"
+
+  open:
+    - name: prevent_editing
+      validator: invoice_not_editable
+      message: "Open invoices cannot be edited"
+
+  paid:
+    - name: prevent_editing
+      validator: invoice_not_editable
+      message: "Paid invoices cannot be edited"
+
+  cancelled:
+    - name: prevent_editing
+      validator: invoice_not_editable
+      message: "Cancelled invoices cannot be edited"
+
+# Custom validators for state transitions
+custom_validators:
+  invoice_confirmable:
+    conditions:
+      - field: lines
+        validator: min_array_length
+        params: { min: 1 }
+        message: "Invoice must have at least one line"
+      - field: customer_id
+        validator: require_uuid
+        message: "Customer is required"
+      - field: amount
+        validator: in_range
+        params: { min: 0.01 }
+        message: "Invoice amount must be positive"
+
+  invoice_payable:
+    conditions:
+      - field: amount
+        validator: in_range
+        params: { min: 0.01 }
+        message: "Invoice amount must be positive"
+      - field: payment_terms
+        validator: require_string
+        message: "Payment terms are required"

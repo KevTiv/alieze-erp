@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"time"
 
-	"alieze-erp/internal/modules/accounting/domain"
+	"alieze-erp/internal/modules/accounting/types"
 	"alieze-erp/internal/modules/accounting/repository"
 
 	"github.com/google/uuid"
 )
 
 type InvoiceService struct {
-	repo        repository.InvoiceRepository
-	paymentRepo repository.PaymentRepository
+	repo         repository.InvoiceRepository
+	paymentRepo  repository.PaymentRepository
+	stateMachine interface{} // State machine for invoice workflow
+	eventBus     interface{} // Event bus for publishing domain events
 }
 
 func NewInvoiceService(repo repository.InvoiceRepository, paymentRepo repository.PaymentRepository) *InvoiceService {
@@ -21,6 +23,21 @@ func NewInvoiceService(repo repository.InvoiceRepository, paymentRepo repository
 		repo:        repo,
 		paymentRepo: paymentRepo,
 	}
+}
+
+// NewInvoiceServiceWithStateMachine creates an invoice service with state machine support
+func NewInvoiceServiceWithStateMachine(repo repository.InvoiceRepository, paymentRepo repository.PaymentRepository, stateMachine interface{}) *InvoiceService {
+	service := NewInvoiceService(repo, paymentRepo)
+	service.stateMachine = stateMachine
+	return service
+}
+
+// NewInvoiceServiceWithDependencies creates an invoice service with all dependencies
+func NewInvoiceServiceWithDependencies(repo repository.InvoiceRepository, paymentRepo repository.PaymentRepository, stateMachine interface{}, eventBus interface{}) *InvoiceService {
+	service := NewInvoiceService(repo, paymentRepo)
+	service.stateMachine = stateMachine
+	service.eventBus = eventBus
+	return service
 }
 
 func (s *InvoiceService) CreateInvoice(ctx context.Context, invoice domain.Invoice) (*domain.Invoice, error) {
@@ -56,6 +73,9 @@ func (s *InvoiceService) CreateInvoice(ctx context.Context, invoice domain.Invoi
 	if err != nil {
 		return nil, fmt.Errorf("failed to create invoice: %w", err)
 	}
+
+	// Publish invoice.created event
+	s.publishEvent(ctx, "invoice.created", createdInvoice)
 
 	return createdInvoice, nil
 }
@@ -98,6 +118,9 @@ func (s *InvoiceService) UpdateInvoice(ctx context.Context, invoice domain.Invoi
 		return nil, fmt.Errorf("failed to update invoice: %w", err)
 	}
 
+	// Publish invoice.updated event
+	s.publishEvent(ctx, "invoice.updated", updatedInvoice)
+
 	return updatedInvoice, nil
 }
 
@@ -122,6 +145,12 @@ func (s *InvoiceService) DeleteInvoice(ctx context.Context, id uuid.UUID) error 
 		return fmt.Errorf("failed to delete invoice: %w", err)
 	}
 
+	// Publish invoice.deleted event
+	s.publishEvent(ctx, "invoice.deleted", map[string]interface{}{
+		"id":              id,
+		"organization_id": invoice.OrganizationID,
+	})
+
 	return nil
 }
 
@@ -134,23 +163,50 @@ func (s *InvoiceService) ConfirmInvoice(ctx context.Context, id uuid.UUID) (*dom
 		return nil, fmt.Errorf("invoice not found")
 	}
 
-	// Validate invoice for confirmation
-	if invoice.Status != domain.InvoiceStatusDraft {
-		return nil, fmt.Errorf("only draft invoices can be confirmed")
-	}
+	// Use state machine for validation and transition if available
+	if s.stateMachine != nil {
+		if sm, ok := s.stateMachine.(interface{
+			Transition(ctx context.Context, transitionName string, entity interface{}) error
+		}); ok {
+			if err := sm.Transition(ctx, "confirm", invoice); err != nil {
+				return nil, fmt.Errorf("failed to confirm invoice: %w", err)
+			}
+			// State machine has updated the status
+		} else {
+			// Fallback to hardcoded validation
+			if invoice.Status != domain.InvoiceStatusDraft {
+				return nil, fmt.Errorf("only draft invoices can be confirmed")
+			}
 
-	if len(invoice.Lines) == 0 {
-		return nil, fmt.Errorf("invoice must have at least one line to be confirmed")
-	}
+			if len(invoice.Lines) == 0 {
+				return nil, fmt.Errorf("invoice must have at least one line to be confirmed")
+			}
 
-	// Update status to open
-	invoice.Status = domain.InvoiceStatusOpen
+			// Update status to open
+			invoice.Status = domain.InvoiceStatusOpen
+		}
+	} else {
+		// Fallback to hardcoded validation
+		if invoice.Status != domain.InvoiceStatusDraft {
+			return nil, fmt.Errorf("only draft invoices can be confirmed")
+		}
+
+		if len(invoice.Lines) == 0 {
+			return nil, fmt.Errorf("invoice must have at least one line to be confirmed")
+		}
+
+		// Update status to open
+		invoice.Status = domain.InvoiceStatusOpen
+	}
 	invoice.UpdatedAt = time.Now()
 
 	updatedInvoice, err := s.repo.Update(ctx, *invoice)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update invoice: %w", err)
 	}
+
+	// Publish invoice.confirmed event
+	s.publishEvent(ctx, "invoice.confirmed", updatedInvoice)
 
 	return updatedInvoice, nil
 }
@@ -177,6 +233,9 @@ func (s *InvoiceService) CancelInvoice(ctx context.Context, id uuid.UUID) (*doma
 	if err != nil {
 		return nil, fmt.Errorf("failed to update invoice: %w", err)
 	}
+
+	// Publish invoice.cancelled event
+	s.publishEvent(ctx, "invoice.cancelled", updatedInvoice)
 
 	return updatedInvoice, nil
 }
@@ -237,6 +296,18 @@ func (s *InvoiceService) RecordPayment(ctx context.Context, invoiceID uuid.UUID,
 	updatedInvoice, err := s.repo.Update(ctx, *invoice)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update invoice: %w", err)
+	}
+
+	// Publish payment.received event
+	s.publishEvent(ctx, "payment.received", map[string]interface{}{
+		"invoice_id": invoiceID,
+		"payment":    payment,
+		"invoice":    updatedInvoice,
+	})
+
+	// If invoice is now paid, publish invoice.paid event
+	if updatedInvoice.Status == domain.InvoiceStatusPaid {
+		s.publishEvent(ctx, "invoice.paid", updatedInvoice)
 	}
 
 	return updatedInvoice, nil
@@ -348,4 +419,18 @@ func (s *InvoiceService) calculateInvoiceAmounts(invoice *domain.Invoice) error 
 	invoice.AmountTotal = amountTotal
 
 	return nil
+}
+
+// publishEvent publishes an event to the event bus if available
+func (s *InvoiceService) publishEvent(ctx context.Context, eventType string, payload interface{}) {
+	if s.eventBus != nil {
+		if bus, ok := s.eventBus.(interface {
+			Publish(ctx context.Context, eventType string, payload interface{}) error
+		}); ok {
+			if err := bus.Publish(ctx, eventType, payload); err != nil {
+				// Log error but don't fail the operation
+				fmt.Printf("Failed to publish event %s: %v\n", eventType, err)
+			}
+		}
+	}
 }

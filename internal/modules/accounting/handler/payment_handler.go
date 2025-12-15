@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"alieze-erp/internal/modules/accounting/domain"
+	"alieze-erp/internal/modules/accounting/types"
 	"alieze-erp/internal/modules/accounting/repository"
 	"alieze-erp/internal/modules/accounting/service"
 

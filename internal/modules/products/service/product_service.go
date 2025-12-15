@@ -7,7 +7,7 @@ import (
 	"log"
 	"strings"
 
-	"alieze-erp/internal/modules/products/domain"
+	"alieze-erp/internal/modules/products/types"
 	"alieze-erp/internal/modules/products/repository"
 
 	"github.com/google/uuid"

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"alieze-erp/internal/modules/auth/domain"
+	"alieze-erp/internal/modules/auth/types"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"

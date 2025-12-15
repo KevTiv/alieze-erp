@@ -1,0 +1,47 @@
+# CRM Module Rules Configuration
+modules:
+  crm:
+    validation:
+      contact_create:
+        rules:
+          - name: require_name
+            validator: require_string
+            field: name
+            params: {}
+          - name: valid_email
+            validator: email_format
+            field: email
+            params: {}
+
+      contact_update:
+        rules:
+          - name: require_id
+            validator: require_uuid
+            field: id
+            params: {}
+          - name: require_name
+            validator: require_string
+            field: name
+            params: {}
+          - name: valid_email
+            validator: email_format
+            field: email
+            params: {}
+
+    state_machine:
+      contact_status:
+        initial: active
+        states: [active, inactive, archived]
+        transitions:
+          - name: deactivate
+            from: [active]
+            to: inactive
+            permission: contacts:deactivate
+          - name: activate
+            from: [inactive]
+            to: active
+            permission: contacts:activate
+          - name: archive
+            from: [active, inactive]
+            to: archived
+            permission: contacts:archive

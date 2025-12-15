@@ -1,7 +1,9 @@
 package server
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -10,77 +12,113 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 
 	"alieze-erp/internal/database"
-	authhandler "alieze-erp/internal/modules/auth/handler"
-	authmiddleware "alieze-erp/internal/modules/auth/middleware"
-	authrepository "alieze-erp/internal/modules/auth/repository"
-	authservice "alieze-erp/internal/modules/auth/service"
-	crmhandler "alieze-erp/internal/modules/crm/handler"
-	crmrepository "alieze-erp/internal/modules/crm/repository"
-	crmservice "alieze-erp/internal/modules/crm/service"
-	productshandler "alieze-erp/internal/modules/products/handler"
-	productsrepository "alieze-erp/internal/modules/products/repository"
-	productsservice "alieze-erp/internal/modules/products/service"
+	authmodule "alieze-erp/internal/modules/auth"
+	crmmodule "alieze-erp/internal/modules/crm"
+	accountingmodule "alieze-erp/internal/modules/accounting"
+	productsmodule "alieze-erp/internal/modules/products"
+	salesmodule "alieze-erp/internal/modules/sales"
+	"alieze-erp/pkg/events"
+	"alieze-erp/pkg/policy"
+	"alieze-erp/pkg/registry"
+	"alieze-erp/pkg/rules"
+	"alieze-erp/pkg/workflow"
 )
 
 type Server struct {
-	port int
+	port              int
 
-	db             database.Service
-	authHandler    *authhandler.AuthHandler
-	authMiddleware *authmiddleware.AuthMiddleware
-	contactHandler *crmhandler.ContactHandler
-	productHandler *productshandler.ProductHandler
+	db               database.Service
+	authModule       *authmodule.AuthModule
+	registry         *registry.Registry
+	eventBus         *events.Bus
+	ruleEngine       *rules.RuleEngine
+	policyEngine     *policy.Engine
+	stateMachineFactory *workflow.StateMachineFactory
+	logger           *slog.Logger
 }
 
 func NewServer() *http.Server {
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
 
+	// Initialize logger
+	logger := slog.Default()
+
 	// Initialize database
 	dbService := database.New()
 
-	// Run database migrations (disabled for now to avoid database connection issues)
-	// if err := dbService.RunMigrations(); err != nil {
-	// 	log.Printf("Failed to run database migrations: %v", err)
-	// }
+	// Initialize core infrastructure
+	eventBus := events.NewBus(false) // Use synchronous event processing for now
 
-	// Initialize auth repository
-	authRepo := authrepository.NewAuthRepository(dbService.GetDB())
+	// Initialize rule engine and load configurations
+	ruleEngine := rules.NewRuleEngine(nil)
+	if err := ruleEngine.LoadConfigFromFile("config/rules/crm.yaml"); err != nil {
+		logger.Error("Failed to load CRM rules", "error", err)
+		// Continue without rules - they're optional for now
+	}
 
-	// Initialize auth service
-	authService := authservice.NewAuthService(authRepo)
+	// Initialize policy engine (Casbin)
+	policyEngine := policy.NewEngine(nil) // Will initialize Casbin later
+	if err := policyEngine.LoadConfigFromFile("config/policy/rules.yaml"); err != nil {
+		logger.Error("Failed to load policy rules", "error", err)
+		// Continue without policy rules - they're optional for now
+	}
 
-	// Initialize auth handler
-	authHandler := authhandler.NewAuthHandler(authService)
+	// Initialize state machine factory
+	stateMachineFactory := workflow.NewStateMachineFactory()
+	if err := stateMachineFactory.LoadFromDirectory("config/workflows"); err != nil {
+		logger.Error("Failed to load workflow configurations", "error", err)
+		// Continue without workflows - they're optional for now
+	}
 
-	// Initialize auth middleware
-	authMiddleware := authmiddleware.NewAuthMiddleware()
+	// Create registry with dependencies
+	repoRegistry := registry.NewRegistry(registry.Dependencies{
+		DB:               dbService.GetDB(),
+		EventBus:         eventBus,
+		RuleEngine:       ruleEngine,
+		PolicyEngine:     policyEngine,
+		StateMachineFactory: stateMachineFactory,
+		Logger:           logger,
+	})
 
-	// Initialize CRM repositories
-	contactRepo := crmrepository.NewContactRepository(dbService.GetDB())
+	// Register all modules
+	repoRegistry.Register(authmodule.NewAuthModule())
+	repoRegistry.Register(crmmodule.NewCRMModule())
+	repoRegistry.Register(accountingmodule.NewAccountingModule())
+	repoRegistry.Register(productsmodule.NewProductsModule())
+	repoRegistry.Register(salesmodule.NewSalesModule())
 
-	// Initialize CRM services
-	simpleAuthService := NewSimpleAuthServiceAdapter(authService)
-	contactService := crmservice.NewContactService(contactRepo, simpleAuthService)
+	// Initialize all modules
+	if err := repoRegistry.InitAll(context.Background()); err != nil {
+		logger.Error("Failed to initialize modules", "error", err)
+		os.Exit(1)
+	}
 
-	// Initialize CRM handlers
-	contactHandler := crmhandler.NewContactHandler(contactService)
+	// Register event handlers for all modules
+	repoRegistry.RegisterAllEventHandlers(eventBus)
+	logger.Info("Event handlers registered for all modules")
 
-	// Initialize Products repository
-	productRepo := productsrepository.NewProductRepository(dbService.GetDB())
-
-	// Initialize Products service
-	productService := productsservice.NewProductService(productRepo, simpleAuthService)
-
-	// Initialize Products handler
-	productHandler := productshandler.NewProductHandler(productService)
+	// Get auth module for middleware
+	authModule, ok := repoRegistry.GetModule("auth")
+	if !ok {
+		logger.Error("Auth module not found")
+		os.Exit(1)
+	}
+	authMod, ok := authModule.(*authmodule.AuthModule)
+	if !ok {
+		logger.Error("Failed to cast auth module")
+		os.Exit(1)
+	}
 
 	NewServer := &Server{
-		port:           port,
-		db:             dbService,
-		authHandler:    authHandler,
-		authMiddleware: authMiddleware,
-		contactHandler: contactHandler,
-		productHandler: productHandler,
+		port:              port,
+		db:                dbService,
+		authModule:        authMod,
+		registry:          repoRegistry,
+		eventBus:          eventBus,
+		ruleEngine:        ruleEngine,
+		policyEngine:      policyEngine,
+		stateMachineFactory: stateMachineFactory,
+		logger:            logger,
 	}
 
 	// Declare Server config

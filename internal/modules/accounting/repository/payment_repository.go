@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"alieze-erp/internal/modules/accounting/domain"
+	"alieze-erp/internal/modules/accounting/types"
 
 	"github.com/google/uuid"
 )

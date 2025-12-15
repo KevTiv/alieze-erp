@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"alieze-erp/internal/modules/auth/domain"
+	"alieze-erp/internal/modules/auth/types"
 	"alieze-erp/internal/modules/auth/service"
 
 	"github.com/google/uuid"

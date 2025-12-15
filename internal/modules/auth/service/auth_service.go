@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"alieze-erp/internal/modules/auth/domain"
+	"alieze-erp/internal/modules/auth/types"
 	"alieze-erp/internal/modules/auth/repository"
 	"alieze-erp/internal/modules/auth/utils"
 

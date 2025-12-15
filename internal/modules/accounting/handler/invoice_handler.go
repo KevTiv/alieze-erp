@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"alieze-erp/internal/modules/accounting/domain"
+	"alieze-erp/internal/modules/accounting/types"
 	"alieze-erp/internal/modules/accounting/repository"
 	"alieze-erp/internal/modules/accounting/service"
 

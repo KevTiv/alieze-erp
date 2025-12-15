@@ -1,0 +1,64 @@
+# Policy Rules Configuration
+# This defines what permissions are required for various actions
+
+permissions:
+  # CRM Module Permissions
+  contacts:
+    create: "contacts:create"
+    read: "contacts:read"
+    update: "contacts:update"
+    delete: "contacts:delete"
+    deactivate: "contacts:deactivate"
+    activate: "contacts:activate"
+    archive: "contacts:archive"
+
+  # Accounting Module Permissions
+  invoices:
+    create: "invoices:create"
+    read: "invoices:read"
+    update: "invoices:update"
+    delete: "invoices:delete"
+    confirm: "invoices:confirm"
+    pay: "invoices:pay"
+    cancel: "invoices:cancel"
+
+  # Products Module Permissions
+  products:
+    create: "products:create"
+    read: "products:read"
+    update: "products:update"
+    delete: "products:delete"
+
+  # Sales Module Permissions
+  orders:
+    create: "orders:create"
+    read: "orders:read"
+    update: "orders:update"
+    delete: "orders:delete"
+    confirm: "orders:confirm"
+    cancel: "orders:cancel"
+
+# Role-based access control
+roles:
+  admin:
+    permissions: ["*:*"] # All permissions
+
+  manager:
+    permissions:
+      [
+        "contacts:*",
+        "products:*",
+        "orders:*",
+        "invoices:read",
+        "invoices:create",
+      ]
+
+  sales:
+    permissions: ["contacts:*", "products:read", "orders:*"]
+
+  accountant:
+    permissions: ["invoices:*", "contacts:read"]
+
+  user:
+    permissions:
+      ["contacts:read", "products:read", "orders:read", "invoices:read"]
