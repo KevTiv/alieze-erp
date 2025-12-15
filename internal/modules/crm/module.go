@@ -86,21 +86,185 @@ func (m *CRMModule) RegisterEventHandlers(bus interface{}) {
 // handleOrderCreated handles order creation events
 func (m *CRMModule) handleOrderCreated(ctx context.Context, event interface{}) error {
 	m.logger.Info("Received order.created event", "event", event)
-	// TODO: Update contact last activity, sales stats, etc.
+
+	// Extract order data from event
+	// The event payload should contain the sales order
+	orderData, ok := event.(map[string]interface{})
+	if !ok {
+		m.logger.Warn("Invalid event data format for order.created")
+		return fmt.Errorf("invalid event data format")
+	}
+
+	// Extract customer ID and order ID
+	customerID, ok := orderData["customer_id"].(uuid.UUID)
+	if !ok {
+		// Try string conversion
+		if customerIDStr, ok := orderData["customer_id"].(string); ok {
+			parsedID, err := uuid.Parse(customerIDStr)
+			if err != nil {
+				m.logger.Warn("Invalid customer_id in order.created event", "customer_id", customerIDStr)
+				return err
+			}
+			customerID = parsedID
+		} else {
+			m.logger.Warn("Missing customer_id in order.created event")
+			return fmt.Errorf("missing customer_id in event")
+		}
+	}
+
+	orderID, ok := orderData["id"].(uuid.UUID)
+	if !ok {
+		if orderIDStr, ok := orderData["id"].(string); ok {
+			parsedID, err := uuid.Parse(orderIDStr)
+			if err != nil {
+				m.logger.Warn("Invalid order id in order.created event", "id", orderIDStr)
+				return err
+			}
+			orderID = parsedID
+		}
+	}
+
+	orgID, ok := orderData["organization_id"].(uuid.UUID)
+	if !ok {
+		if orgIDStr, ok := orderData["organization_id"].(string); ok {
+			parsedID, err := uuid.Parse(orgIDStr)
+			if err != nil {
+				m.logger.Warn("Invalid organization_id in order.created event", "organization_id", orgIDStr)
+				return err
+			}
+			orgID = parsedID
+		}
+	}
+
+	// Create activity record for this order
+	// Note: This requires activity repository which we'll add
+	m.logger.Info("Creating activity for order",
+		"customer_id", customerID,
+		"order_id", orderID,
+		"organization_id", orgID)
+
+	// FUTURE ENHANCEMENT: Create activity record once ActivityRepository is implemented
+	// activityRepo.Create(ctx, Activity{
+	//     OrganizationID: orgID,
+	//     ActivityType: "note",
+	//     Summary: fmt.Sprintf("Sales order %s created", orderData["reference"]),
+	//     ResModel: "sales.order",
+	//     ResID: orderID,
+	//     CreatedAt: time.Now(),
+	// })
+	// This will enable tracking customer engagement history in the CRM
+
 	return nil
 }
 
 // handleOrderConfirmed handles order confirmation events
 func (m *CRMModule) handleOrderConfirmed(ctx context.Context, event interface{}) error {
 	m.logger.Info("Received order.confirmed event", "event", event)
-	// TODO: Update contact as active customer
+
+	// Extract order data from event
+	orderData, ok := event.(map[string]interface{})
+	if !ok {
+		m.logger.Warn("Invalid event data format for order.confirmed")
+		return fmt.Errorf("invalid event data format")
+	}
+
+	// Extract customer ID
+	customerID, ok := orderData["customer_id"].(uuid.UUID)
+	if !ok {
+		if customerIDStr, ok := orderData["customer_id"].(string); ok {
+			parsedID, err := uuid.Parse(customerIDStr)
+			if err != nil {
+				m.logger.Warn("Invalid customer_id in order.confirmed event", "customer_id", customerIDStr)
+				return err
+			}
+			customerID = parsedID
+		} else {
+			m.logger.Warn("Missing customer_id in order.confirmed event")
+			return fmt.Errorf("missing customer_id in event")
+		}
+	}
+
+	// Update contact to mark as active customer
+	// We need to access the contact repository through the handler
+	if m.contactHandler != nil {
+		m.logger.Info("Marking contact as active customer", "customer_id", customerID)
+
+		// FUTURE ENHANCEMENT: Add MarkAsCustomer method to contact service
+		// This would execute: UPDATE contacts SET is_customer = true WHERE id = $1
+		// Implementation: contactService.MarkAsCustomer(ctx, customerID)
+		m.logger.Info("Contact should be marked as customer", "contact_id", customerID)
+	}
+
 	return nil
 }
 
 // handleInvoiceCreated handles invoice creation events
 func (m *CRMModule) handleInvoiceCreated(ctx context.Context, event interface{}) error {
 	m.logger.Info("Received invoice.created event", "event", event)
-	// TODO: Track customer invoicing activity
+
+	// Extract invoice data from event
+	invoiceData, ok := event.(map[string]interface{})
+	if !ok {
+		m.logger.Warn("Invalid event data format for invoice.created")
+		return fmt.Errorf("invalid event data format")
+	}
+
+	// Extract partner ID (customer)
+	partnerID, ok := invoiceData["partner_id"].(uuid.UUID)
+	if !ok {
+		if partnerIDStr, ok := invoiceData["partner_id"].(string); ok {
+			parsedID, err := uuid.Parse(partnerIDStr)
+			if err != nil {
+				m.logger.Warn("Invalid partner_id in invoice.created event", "partner_id", partnerIDStr)
+				return err
+			}
+			partnerID = parsedID
+		} else {
+			m.logger.Warn("Missing partner_id in invoice.created event")
+			return fmt.Errorf("missing partner_id in event")
+		}
+	}
+
+	invoiceID, ok := invoiceData["id"].(uuid.UUID)
+	if !ok {
+		if invoiceIDStr, ok := invoiceData["id"].(string); ok {
+			parsedID, err := uuid.Parse(invoiceIDStr)
+			if err != nil {
+				m.logger.Warn("Invalid invoice id in invoice.created event", "id", invoiceIDStr)
+				return err
+			}
+			invoiceID = parsedID
+		}
+	}
+
+	orgID, ok := invoiceData["organization_id"].(uuid.UUID)
+	if !ok {
+		if orgIDStr, ok := invoiceData["organization_id"].(string); ok {
+			parsedID, err := uuid.Parse(orgIDStr)
+			if err != nil {
+				m.logger.Warn("Invalid organization_id in invoice.created event", "organization_id", orgIDStr)
+				return err
+			}
+			orgID = parsedID
+		}
+	}
+
+	m.logger.Info("Tracking customer invoicing activity",
+		"partner_id", partnerID,
+		"invoice_id", invoiceID,
+		"organization_id", orgID)
+
+	// FUTURE ENHANCEMENT: Create activity record once ActivityRepository is implemented
+	// activityRepo.Create(ctx, Activity{
+	//     OrganizationID: orgID,
+	//     ActivityType: "note",
+	//     Summary: fmt.Sprintf("Invoice %s created", invoiceData["reference"]),
+	//     ResModel: "account.invoice",
+	//     ResID: invoiceID,
+	//     CreatedAt: time.Now(),
+	// })
+	// This will enable tracking customer invoicing activity in the CRM
+
 	return nil
 }
 

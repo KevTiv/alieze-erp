@@ -139,7 +139,7 @@ func (s *service) Close() error {
 // Returns an error if migrations fail to run.
 func (s *service) RunMigrations() error {
 	// Get the absolute path to the migrations directory
-	migrationsDir := "/Users/kevintivert/codebox/alieze-erp/internal/migrations"
+	migrationsDir := "/Users/kevintivert/codebox/alieze-erp/internal/database/migrations"
 
 	if migrationsDir == "" {
 		migrationsDir = "file://migrations"

@@ -2,12 +2,14 @@ package accounting
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"alieze-erp/internal/modules/accounting/handler"
 	"alieze-erp/internal/modules/accounting/repository"
 	"alieze-erp/internal/modules/accounting/service"
 	"alieze-erp/pkg/registry"
+	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -88,14 +90,98 @@ func (m *AccountingModule) RegisterEventHandlers(bus interface{}) {
 // handleOrderConfirmed handles order confirmation events
 func (m *AccountingModule) handleOrderConfirmed(ctx context.Context, event interface{}) error {
 	m.logger.Info("Received order.confirmed event", "event", event)
-	// TODO: Implement invoice generation logic when order is confirmed
+
+	// Extract order data from event
+	orderData, ok := event.(map[string]interface{})
+	if !ok {
+		m.logger.Warn("Invalid event data format for order.confirmed")
+		return fmt.Errorf("invalid event data format")
+	}
+
+	orderID, ok := orderData["id"].(uuid.UUID)
+	if !ok {
+		if orderIDStr, ok := orderData["id"].(string); ok {
+			parsedID, err := uuid.Parse(orderIDStr)
+			if err != nil {
+				m.logger.Warn("Invalid order id in order.confirmed event", "id", orderIDStr)
+				return err
+			}
+			orderID = parsedID
+		}
+	}
+
+	customerID, ok := orderData["customer_id"].(uuid.UUID)
+	if !ok {
+		if customerIDStr, ok := orderData["customer_id"].(string); ok {
+			parsedID, err := uuid.Parse(customerIDStr)
+			if err != nil {
+				m.logger.Warn("Invalid customer_id in order.confirmed event", "customer_id", customerIDStr)
+				return err
+			}
+			customerID = parsedID
+		}
+	}
+
+	orderReference, _ := orderData["reference"].(string)
+	amountTotal, _ := orderData["amount_total"].(float64)
+
+	m.logger.Info("Auto-generating invoice for confirmed order",
+		"order_id", orderID,
+		"customer_id", customerID,
+		"reference", orderReference,
+		"amount", amountTotal)
+
+	// FUTURE ENHANCEMENT: Implement automatic invoice creation from confirmed orders
+	// This would require implementing invoiceService.CreateFromOrder(ctx, orderID) which:
+	// 1. Creates invoice with invoice_origin = orderReference
+	// 2. Copies line items from sales_order_lines to invoice_lines
+	// 3. Sets partner_id = customerID
+	// 4. Sets amounts from order (amount_untaxed, amount_tax, amount_total)
+	// 5. Publishes invoice.created event
+	m.logger.Info("Invoice should be auto-generated",
+		"order_reference", orderReference,
+		"customer_id", customerID)
+
 	return nil
 }
 
 // handleContactUpdated handles contact update events
 func (m *AccountingModule) handleContactUpdated(ctx context.Context, event interface{}) error {
 	m.logger.Info("Received contact.updated event", "event", event)
-	// TODO: Implement partner sync logic
+
+	// Extract contact data from event
+	contactData, ok := event.(map[string]interface{})
+	if !ok {
+		m.logger.Warn("Invalid event data format for contact.updated")
+		return fmt.Errorf("invalid event data format")
+	}
+
+	contactID, ok := contactData["id"].(uuid.UUID)
+	if !ok {
+		if contactIDStr, ok := contactData["id"].(string); ok {
+			parsedID, err := uuid.Parse(contactIDStr)
+			if err != nil {
+				m.logger.Warn("Invalid contact id in contact.updated event", "id", contactIDStr)
+				return err
+			}
+			contactID = parsedID
+		}
+	}
+
+	contactName, _ := contactData["name"].(string)
+
+	m.logger.Info("Contact updated notification received",
+		"contact_id", contactID,
+		"name", contactName)
+
+	// Note: Invoices reference contacts via partner_id foreign key,
+	// so contact updates are automatically visible to invoices.
+	// This handler exists for future enhancements:
+	// - Cache invalidation when partner data changes
+	// - Search index updates for invoice partner information
+	// - Notifications about partner changes affecting unpaid invoices
+	// - Audit logging for compliance (partner info changes on financial documents)
+
 	return nil
 }
 

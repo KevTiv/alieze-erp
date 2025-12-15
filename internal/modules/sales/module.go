@@ -2,12 +2,14 @@ package sales
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"alieze-erp/internal/modules/sales/handler"
 	"alieze-erp/internal/modules/sales/repository"
 	"alieze-erp/internal/modules/sales/service"
 	"alieze-erp/pkg/registry"
+	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -88,21 +90,125 @@ func (m *SalesModule) RegisterEventHandlers(bus interface{}) {
 // handleContactCreated handles contact creation events
 func (m *SalesModule) handleContactCreated(ctx context.Context, event interface{}) error {
 	m.logger.Info("Received contact.created event", "event", event)
-	// TODO: Implement customer sync logic
+
+	// Extract contact data from event
+	contactData, ok := event.(map[string]interface{})
+	if !ok {
+		m.logger.Warn("Invalid event data format for contact.created")
+		return fmt.Errorf("invalid event data format")
+	}
+
+	contactID, ok := contactData["id"].(uuid.UUID)
+	if !ok {
+		if contactIDStr, ok := contactData["id"].(string); ok {
+			parsedID, err := uuid.Parse(contactIDStr)
+			if err != nil {
+				m.logger.Warn("Invalid contact id in contact.created event", "id", contactIDStr)
+				return err
+			}
+			contactID = parsedID
+		}
+	}
+
+	contactName, _ := contactData["name"].(string)
+	isCustomer, _ := contactData["is_customer"].(bool)
+
+	m.logger.Info("Contact created notification received",
+		"contact_id", contactID,
+		"name", contactName,
+		"is_customer", isCustomer)
+
+	// Note: Sales orders reference contacts via customer_id foreign key,
+	// so contact data is automatically accessible without sync.
+	// This handler exists for future enhancements:
+	// - Cache invalidation (Redis/in-memory caches)
+	// - Search index updates (Elasticsearch)
+	// - Notification triggers (alert sales team of new customers)
+	// - Audit logging (track which contacts affect which orders)
+
 	return nil
 }
 
 // handleContactUpdated handles contact update events
 func (m *SalesModule) handleContactUpdated(ctx context.Context, event interface{}) error {
 	m.logger.Info("Received contact.updated event", "event", event)
-	// TODO: Implement customer update sync logic
+
+	// Extract contact data from event
+	contactData, ok := event.(map[string]interface{})
+	if !ok {
+		m.logger.Warn("Invalid event data format for contact.updated")
+		return fmt.Errorf("invalid event data format")
+	}
+
+	contactID, ok := contactData["id"].(uuid.UUID)
+	if !ok {
+		if contactIDStr, ok := contactData["id"].(string); ok {
+			parsedID, err := uuid.Parse(contactIDStr)
+			if err != nil {
+				m.logger.Warn("Invalid contact id in contact.updated event", "id", contactIDStr)
+				return err
+			}
+			contactID = parsedID
+		}
+	}
+
+	contactName, _ := contactData["name"].(string)
+
+	m.logger.Info("Contact updated notification received",
+		"contact_id", contactID,
+		"name", contactName)
+
+	// Note: Sales orders reference contacts via customer_id foreign key,
+	// so contact updates are automatically visible to sales orders.
+	// This handler exists for future enhancements:
+	// - Cache invalidation when customer data changes
+	// - Search index updates
+	// - Notifications to sales reps about customer info changes
+	// - Triggering re-validation of orders if critical customer data changes
+
 	return nil
 }
 
 // handleInvoicePaid handles invoice paid events
 func (m *SalesModule) handleInvoicePaid(ctx context.Context, event interface{}) error {
 	m.logger.Info("Received invoice.paid event", "event", event)
-	// TODO: Mark related orders as fully invoiced/paid
+
+	// Extract invoice data from event
+	invoiceData, ok := event.(map[string]interface{})
+	if !ok {
+		m.logger.Warn("Invalid event data format for invoice.paid")
+		return fmt.Errorf("invalid event data format")
+	}
+
+	invoiceID, ok := invoiceData["id"].(uuid.UUID)
+	if !ok {
+		if invoiceIDStr, ok := invoiceData["id"].(string); ok {
+			parsedID, err := uuid.Parse(invoiceIDStr)
+			if err != nil {
+				m.logger.Warn("Invalid invoice id in invoice.paid event", "id", invoiceIDStr)
+				return err
+			}
+			invoiceID = parsedID
+		}
+	}
+
+	// Check if invoice has an origin (sales order reference)
+	invoiceOrigin, _ := invoiceData["invoice_origin"].(string)
+
+	m.logger.Info("Processing paid invoice",
+		"invoice_id", invoiceID,
+		"invoice_origin", invoiceOrigin)
+
+	// FUTURE ENHANCEMENT: Update related sales order payment status
+	// This would require:
+	// 1. Parse invoice_origin to extract order reference
+	// 2. Find the sales order by reference
+	// 3. Update the order's payment status or invoice_status field
+	// Implementation: salesOrderService.UpdateInvoiceStatus(ctx, orderReference, "invoiced")
+	if invoiceOrigin != "" {
+		m.logger.Info("Invoice paid for order", "order_reference", invoiceOrigin)
+	}
+
 	return nil
 }
 
