@@ -15,6 +15,7 @@ import (
 	authmodule "alieze-erp/internal/modules/auth"
 	crmmodule "alieze-erp/internal/modules/crm"
 	accountingmodule "alieze-erp/internal/modules/accounting"
+	inventorymodule "alieze-erp/internal/modules/inventory"
 	productsmodule "alieze-erp/internal/modules/products"
 	salesmodule "alieze-erp/internal/modules/sales"
 	"alieze-erp/pkg/events"
@@ -95,6 +96,7 @@ func NewServer() *http.Server {
 	// Register all modules
 	repoRegistry.Register(authmodule.NewAuthModule())
 	repoRegistry.Register(crmmodule.NewCRMModule())
+	repoRegistry.Register(inventorymodule.NewInventoryModule())
 	repoRegistry.Register(accountingmodule.NewAccountingModule())
 	repoRegistry.Register(productsmodule.NewProductsModule())
 	repoRegistry.Register(salesmodule.NewSalesModule())

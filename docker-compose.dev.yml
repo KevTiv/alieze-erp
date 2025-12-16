@@ -1,0 +1,116 @@
+version: "3.8"
+
+services:
+  # Development PostgreSQL Database
+  dev-db:
+    image: postgres:15-alpine
+    container_name: alieze-erp-dev-db
+    environment:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: alieze_erp_dev
+    ports:
+      - "5433:5432" # Use different port to avoid conflict with production
+    volumes:
+      - dev-db-data:/var/lib/postgresql/data
+      - ./docker-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devuser -d alieze_erp_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dev-network
+
+  # Development API Server
+  dev-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: alieze-erp-dev-api
+    environment:
+      BLUEPRINT_DB_HOST: dev-db
+      BLUEPRINT_DB_PORT: 5432
+      BLUEPRINT_DB_USERNAME: devuser
+      BLUEPRINT_DB_PASSWORD: devpassword
+      BLUEPRINT_DB_DATABASE: alieze_erp_dev
+      PORT: 8080
+      ENVIRONMENT: development
+    ports:
+      - "8080:8080"
+    depends_on:
+      dev-db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/frontend/node_modules
+    command: sh -c "sleep 5 && go run cmd/api/main.go"
+    networks:
+      - dev-network
+
+  # Development Frontend
+  dev-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: alieze-erp-dev-frontend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080
+      NODE_ENV: development
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
+    networks:
+      - dev-network
+
+  # Database Migration Tool
+  dev-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: alieze-erp-dev-migrate
+    environment:
+      BLUEPRINT_DB_HOST: dev-db
+      BLUEPRINT_DB_PORT: 5432
+      BLUEPRINT_DB_USERNAME: devuser
+      BLUEPRINT_DB_PASSWORD: devpassword
+      BLUEPRINT_DB_DATABASE: alieze_erp_dev
+    depends_on:
+      dev-db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: sh -c "sleep 10 && go run internal/database/migrate.go"
+    networks:
+      - dev-network
+
+  # Test Data Generator
+  dev-test-data:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: alieze-erp-dev-test-data
+    environment:
+      BLUEPRINT_DB_HOST: dev-db
+      BLUEPRINT_DB_PORT: 5432
+      BLUEPRINT_DB_USERNAME: devuser
+      BLUEPRINT_DB_PASSWORD: devpassword
+      BLUEPRINT_DB_DATABASE: alieze_erp_dev
+    depends_on:
+      dev-migrate:
+        condition: service_completed_successfully
+    volumes:
+      - .:/app
+    command: sh -c "sleep 15 && go run tools/testdata/generator.go"
+    networks:
+      - dev-network
+
+volumes:
+  dev-db-data:
+
+networks:
+  dev-network:
+    driver: bridge

@@ -3,7 +3,7 @@ package testutils
 import (
 	"context"
 
-	"alieze-erp/internal/modules/crm/domain"
+	"alieze-erp/internal/modules/crm/types"
 
 	"github.com/google/uuid"
 )

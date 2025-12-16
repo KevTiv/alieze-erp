@@ -1,0 +1,52 @@
+# Development Dockerfile for Alieze ERP
+# Uses multi-stage build for development efficiency
+
+FROM golang:1.21-alpine AS builder
+
+# Install dependencies
+RUN apk add --no-cache git ca-certificates bash postgresql-client
+
+# Set working directory
+WORKDIR /app
+
+# Copy go mod files
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -o /alieze-erp cmd/api/main.go
+
+# Final stage
+FROM alpine:latest
+
+# Install runtime dependencies
+RUN apk add --no-cache ca-certificates bash postgresql-client
+
+# Copy built binary
+COPY --from=builder /alieze-erp /alieze-erp
+
+# Copy source code for development (hot reload)
+COPY . /app
+
+# Set working directory
+WORKDIR /app
+
+# Expose port
+EXPOSE 8080
+
+# Environment variables
+ENV BLUEPRINT_DB_HOST=localhost \
+    BLUEPRINT_DB_PORT=5432 \
+    BLUEPRINT_DB_USERNAME=devuser \
+    BLUEPRINT_DB_PASSWORD=devpassword \
+    BLUEPRINT_DB_DATABASE=alieze_erp_dev \
+    PORT=8080 \
+    ENVIRONMENT=development
+
+# Command (will be overridden by docker-compose)
+CMD ["/alieze-erp"]
