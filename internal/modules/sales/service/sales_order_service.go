@@ -7,6 +7,7 @@ import (
 
 	"alieze-erp/internal/modules/sales/types"
 	"alieze-erp/internal/modules/sales/repository"
+	"alieze-erp/pkg/tax"
 
 	"github.com/google/uuid"
 )
@@ -15,18 +16,20 @@ type SalesOrderService struct {
 	repo          repository.SalesOrderRepository
 	pricelistRepo repository.PricelistRepository
 	eventBus      interface{} // Event bus for publishing domain events
+	taxCalc       *tax.Calculator
 }
 
-func NewSalesOrderService(repo repository.SalesOrderRepository, pricelistRepo repository.PricelistRepository) *SalesOrderService {
+func NewSalesOrderService(repo repository.SalesOrderRepository, pricelistRepo repository.PricelistRepository, taxCalc *tax.Calculator) *SalesOrderService {
 	return &SalesOrderService{
 		repo:          repo,
 		pricelistRepo: pricelistRepo,
+		taxCalc:       taxCalc,
 	}
 }
 
 // NewSalesOrderServiceWithEventBus creates a sales order service with event bus support
-func NewSalesOrderServiceWithEventBus(repo repository.SalesOrderRepository, pricelistRepo repository.PricelistRepository, eventBus interface{}) *SalesOrderService {
-	service := NewSalesOrderService(repo, pricelistRepo)
+func NewSalesOrderServiceWithEventBus(repo repository.SalesOrderRepository, pricelistRepo repository.PricelistRepository, taxCalc *tax.Calculator, eventBus interface{}) *SalesOrderService {
+	service := NewSalesOrderService(repo, pricelistRepo, taxCalc)
 	service.eventBus = eventBus
 	return service
 }
@@ -49,7 +52,7 @@ func (s *SalesOrderService) CreateSalesOrder(ctx context.Context, order domain.S
 	}
 
 	// Calculate amounts
-	if err := s.calculateOrderAmounts(&order); err != nil {
+	if err := s.calculateOrderAmounts(ctx, &order); err != nil {
 		return nil, fmt.Errorf("failed to calculate order amounts: %w", err)
 	}
 
@@ -93,7 +96,7 @@ func (s *SalesOrderService) UpdateSalesOrder(ctx context.Context, order domain.S
 	}
 
 	// Calculate amounts
-	if err := s.calculateOrderAmounts(&order); err != nil {
+	if err := s.calculateOrderAmounts(ctx, &order); err != nil {
 		return nil, fmt.Errorf("failed to calculate order amounts: %w", err)
 	}
 
@@ -265,7 +268,7 @@ func (s *SalesOrderService) validateSalesOrder(order domain.SalesOrder) error {
 	return nil
 }
 
-func (s *SalesOrderService) calculateOrderAmounts(order *domain.SalesOrder) error {
+func (s *SalesOrderService) calculateOrderAmounts(ctx context.Context, order *domain.SalesOrder) error {
 	var amountUntaxed, amountTax, amountTotal float64
 
 	for i, line := range order.Lines {
@@ -275,11 +278,17 @@ func (s *SalesOrderService) calculateOrderAmounts(order *domain.SalesOrder) erro
 			line.PriceSubtotal = line.PriceSubtotal * (1 - line.Discount/100)
 		}
 
-		// Calculate line tax (simplified - in real implementation, this would use tax rates)
+		// Calculate line tax using tax calculator
 		line.PriceTax = 0
-		if line.TaxID != nil {
-			// TODO: Implement proper tax calculation based on tax rates
-			// For now, we'll assume 0 tax for simplicity
+		if line.TaxID != nil && s.taxCalc != nil {
+			taxAmount, err := s.taxCalc.CalculateLineTax(ctx, *line.TaxID, line.PriceSubtotal)
+			if err != nil {
+				// Log error but don't fail the calculation
+				fmt.Printf("Failed to calculate tax for line: %v\n", err)
+				line.PriceTax = 0
+			} else {
+				line.PriceTax = taxAmount
+			}
 		}
 
 		// Calculate line total

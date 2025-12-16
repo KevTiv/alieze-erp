@@ -9,6 +9,7 @@ import (
 	"alieze-erp/internal/modules/sales/repository"
 	"alieze-erp/internal/modules/sales/service"
 	"alieze-erp/pkg/registry"
+	"alieze-erp/pkg/tax"
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 )
@@ -40,8 +41,11 @@ func (m *SalesModule) Init(ctx context.Context, deps registry.Dependencies) erro
 	salesOrderRepo := repository.NewSalesOrderRepository(deps.DB)
 	pricelistRepo := repository.NewPricelistRepository(deps.DB)
 
+	// Create tax calculator
+	taxCalc := tax.NewCalculator(deps.DB)
+
 	// Create services with event bus support
-	salesOrderService := service.NewSalesOrderServiceWithEventBus(salesOrderRepo, pricelistRepo, deps.EventBus)
+	salesOrderService := service.NewSalesOrderServiceWithEventBus(salesOrderRepo, pricelistRepo, taxCalc, deps.EventBus)
 	pricelistService := service.NewPricelistService(pricelistRepo)
 
 	// Create handlers

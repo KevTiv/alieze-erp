@@ -7,6 +7,7 @@ import (
 
 	"alieze-erp/internal/modules/accounting/types"
 	"alieze-erp/internal/modules/accounting/repository"
+	"alieze-erp/pkg/tax"
 
 	"github.com/google/uuid"
 )
@@ -16,25 +17,27 @@ type InvoiceService struct {
 	paymentRepo  repository.PaymentRepository
 	stateMachine interface{} // State machine for invoice workflow
 	eventBus     interface{} // Event bus for publishing domain events
+	taxCalc      *tax.Calculator
 }
 
-func NewInvoiceService(repo repository.InvoiceRepository, paymentRepo repository.PaymentRepository) *InvoiceService {
+func NewInvoiceService(repo repository.InvoiceRepository, paymentRepo repository.PaymentRepository, taxCalc *tax.Calculator) *InvoiceService {
 	return &InvoiceService{
 		repo:        repo,
 		paymentRepo: paymentRepo,
+		taxCalc:     taxCalc,
 	}
 }
 
 // NewInvoiceServiceWithStateMachine creates an invoice service with state machine support
-func NewInvoiceServiceWithStateMachine(repo repository.InvoiceRepository, paymentRepo repository.PaymentRepository, stateMachine interface{}) *InvoiceService {
-	service := NewInvoiceService(repo, paymentRepo)
+func NewInvoiceServiceWithStateMachine(repo repository.InvoiceRepository, paymentRepo repository.PaymentRepository, taxCalc *tax.Calculator, stateMachine interface{}) *InvoiceService {
+	service := NewInvoiceService(repo, paymentRepo, taxCalc)
 	service.stateMachine = stateMachine
 	return service
 }
 
 // NewInvoiceServiceWithDependencies creates an invoice service with all dependencies
-func NewInvoiceServiceWithDependencies(repo repository.InvoiceRepository, paymentRepo repository.PaymentRepository, stateMachine interface{}, eventBus interface{}) *InvoiceService {
-	service := NewInvoiceService(repo, paymentRepo)
+func NewInvoiceServiceWithDependencies(repo repository.InvoiceRepository, paymentRepo repository.PaymentRepository, taxCalc *tax.Calculator, stateMachine interface{}, eventBus interface{}) *InvoiceService {
+	service := NewInvoiceService(repo, paymentRepo, taxCalc)
 	service.stateMachine = stateMachine
 	service.eventBus = eventBus
 	return service
@@ -61,7 +64,7 @@ func (s *InvoiceService) CreateInvoice(ctx context.Context, invoice domain.Invoi
 	}
 
 	// Calculate amounts
-	if err := s.calculateInvoiceAmounts(&invoice); err != nil {
+	if err := s.calculateInvoiceAmounts(ctx, &invoice); err != nil {
 		return nil, fmt.Errorf("failed to calculate invoice amounts: %w", err)
 	}
 
@@ -108,7 +111,7 @@ func (s *InvoiceService) UpdateInvoice(ctx context.Context, invoice domain.Invoi
 	}
 
 	// Calculate amounts
-	if err := s.calculateInvoiceAmounts(&invoice); err != nil {
+	if err := s.calculateInvoiceAmounts(ctx, &invoice); err != nil {
 		return nil, fmt.Errorf("failed to calculate invoice amounts: %w", err)
 	}
 
@@ -385,7 +388,7 @@ func (s *InvoiceService) validateInvoice(invoice domain.Invoice) error {
 	return nil
 }
 
-func (s *InvoiceService) calculateInvoiceAmounts(invoice *domain.Invoice) error {
+func (s *InvoiceService) calculateInvoiceAmounts(ctx context.Context, invoice *domain.Invoice) error {
 	var amountUntaxed, amountTax, amountTotal float64
 
 	for i, line := range invoice.Lines {
@@ -395,11 +398,17 @@ func (s *InvoiceService) calculateInvoiceAmounts(invoice *domain.Invoice) error 
 			line.PriceSubtotal = line.PriceSubtotal * (1 - line.Discount/100)
 		}
 
-		// Calculate line tax (simplified - in real implementation, this would use tax rates)
+		// Calculate line tax using tax calculator
 		line.PriceTax = 0
-		if line.TaxID != nil {
-			// TODO: Implement proper tax calculation based on tax rates
-			// For now, we'll assume 0 tax for simplicity
+		if line.TaxID != nil && s.taxCalc != nil {
+			taxAmount, err := s.taxCalc.CalculateLineTax(ctx, *line.TaxID, line.PriceSubtotal)
+			if err != nil {
+				// Log error but don't fail the calculation
+				fmt.Printf("Failed to calculate tax for line: %v\n", err)
+				line.PriceTax = 0
+			} else {
+				line.PriceTax = taxAmount
+			}
 		}
 
 		// Calculate line total

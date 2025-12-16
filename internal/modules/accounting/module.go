@@ -9,6 +9,7 @@ import (
 	"alieze-erp/internal/modules/accounting/repository"
 	"alieze-erp/internal/modules/accounting/service"
 	"alieze-erp/pkg/registry"
+	"alieze-erp/pkg/tax"
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 )
@@ -17,6 +18,10 @@ import (
 type AccountingModule struct {
 	invoiceHandler *handler.InvoiceHandler
 	paymentHandler *handler.PaymentHandler
+	accountHandler *handler.AccountHandler
+	journalHandler *handler.JournalHandler
+	taxHandler     *handler.TaxHandler
+	balanceHandler *handler.BalanceHandler
 	logger         *slog.Logger
 }
 
@@ -39,15 +44,28 @@ func (m *AccountingModule) Init(ctx context.Context, deps registry.Dependencies)
 	// Create repositories
 	invoiceRepo := repository.NewInvoiceRepository(deps.DB)
 	paymentRepo := repository.NewPaymentRepository(deps.DB)
+	accountRepo := repository.NewAccountRepository(deps.DB)
+	journalRepo := repository.NewJournalRepository(deps.DB)
+	taxRepo := repository.NewTaxRepository(deps.DB)
+
+	// Create tax calculator
+	taxCalc := tax.NewCalculator(deps.DB)
 
 	// Create services with state machine and event bus support
 	invoiceStateMachine, _ := m.getStateMachine(deps, "accounting.invoice")
-	invoiceService := service.NewInvoiceServiceWithDependencies(invoiceRepo, paymentRepo, invoiceStateMachine, deps.EventBus)
+	invoiceService := service.NewInvoiceServiceWithDependencies(invoiceRepo, paymentRepo, taxCalc, invoiceStateMachine, deps.EventBus)
 	paymentService := service.NewPaymentService(paymentRepo)
+	accountService := service.NewAccountService(accountRepo)
+	journalService := service.NewJournalService(journalRepo)
+	taxService := service.NewTaxService(taxRepo)
 
 	// Create handlers
 	m.invoiceHandler = handler.NewInvoiceHandler(invoiceService)
 	m.paymentHandler = handler.NewPaymentHandler(paymentService)
+	m.accountHandler = handler.NewAccountHandler(accountService)
+	m.journalHandler = handler.NewJournalHandler(journalService)
+	m.taxHandler = handler.NewTaxHandler(taxService)
+	m.balanceHandler = handler.NewBalanceHandler()
 
 	m.logger.Info("Accounting module initialized successfully")
 	return nil
@@ -62,6 +80,18 @@ func (m *AccountingModule) RegisterRoutes(router interface{}) {
 			}
 			if m.paymentHandler != nil {
 				m.paymentHandler.RegisterRoutes(r)
+			}
+			if m.accountHandler != nil {
+				m.accountHandler.RegisterRoutes(r)
+			}
+			if m.journalHandler != nil {
+				m.journalHandler.RegisterRoutes(r)
+			}
+			if m.taxHandler != nil {
+				m.taxHandler.RegisterRoutes(r)
+			}
+			if m.balanceHandler != nil {
+				m.balanceHandler.RegisterRoutes(r)
 			}
 		}
 	}

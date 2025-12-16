@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"alieze-erp/internal/modules/crm/handler"
 	"alieze-erp/internal/modules/crm/repository"
@@ -287,38 +288,73 @@ func NewPolicyAuthServiceAdapter(policyEngine interface{}) *PolicyAuthServiceAda
 }
 
 func (a *PolicyAuthServiceAdapter) GetOrganizationID(ctx context.Context) (uuid.UUID, error) {
-	// TODO: Implement organization ID retrieval from context
-	// For now, return a default organization ID
-	return uuid.Must(uuid.Parse("00000000-0000-0000-0000-000000000001")), nil
+	// Extract organization ID from context (set by auth middleware)
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		a.logger.Error("Organization ID not found in context")
+		return uuid.Nil, fmt.Errorf("organization ID not found in context")
+	}
+	return orgID, nil
 }
 
 func (a *PolicyAuthServiceAdapter) GetUserID(ctx context.Context) (uuid.UUID, error) {
-	// TODO: Implement user ID retrieval from context
-	// For now, return a default user ID
-	return uuid.Must(uuid.Parse("00000000-0000-0000-0000-000000000001")), nil
+	// Extract user ID from context (set by auth middleware)
+	userID, ok := ctx.Value("userID").(uuid.UUID)
+	if !ok {
+		a.logger.Error("User ID not found in context")
+		return uuid.Nil, fmt.Errorf("user ID not found in context")
+	}
+	return userID, nil
 }
 
 func (a *PolicyAuthServiceAdapter) CheckPermission(ctx context.Context, permission string) error {
-	// Use the new policy engine
+	// Get role from context (set by auth middleware)
+	role, ok := ctx.Value("role").(string)
+	if !ok {
+		a.logger.Error("Role not found in context")
+		return fmt.Errorf("role not found in context")
+	}
+
+	// Use the policy engine for RBAC check
 	if a.policyEngine != nil {
 		if engine, ok := a.policyEngine.(interface{
 			CheckPermission(ctx context.Context, subject, object, action string) (bool, error)
 		}); ok {
-			// Parse permission in format "resource:action"
-			// For now, we'll use a simple approach
-			allowed, err := engine.CheckPermission(ctx, "user", "contacts", permission)
+			// Parse permission in format "action" (e.g., "contacts:create" or just "create")
+			// Extract resource and action
+			resource := "contacts"
+			action := permission
+
+			// If permission contains ':', split it
+			if strings.Contains(permission, ":") {
+				parts := strings.SplitN(permission, ":", 2)
+				resource = parts[0]
+				action = parts[1]
+			}
+
+			// Check permission using role:roleName format for Casbin
+			subject := fmt.Sprintf("role:%s", role)
+			allowed, err := engine.CheckPermission(ctx, subject, resource, action)
 			if err != nil {
-				a.logger.Error("Permission check failed", "permission", permission, "error", err)
+				a.logger.Error("Permission check failed",
+					"role", role,
+					"resource", resource,
+					"action", action,
+					"error", err)
 				return fmt.Errorf("permission check failed: %w", err)
 			}
 			if !allowed {
-				return fmt.Errorf("permission denied: %s", permission)
+				a.logger.Warn("Permission denied",
+					"role", role,
+					"resource", resource,
+					"action", action)
+				return fmt.Errorf("permission denied: user with role '%s' cannot '%s' on '%s'", role, action, resource)
 			}
 			return nil
 		}
 	}
 
-	// Fallback: allow all permissions for now
-	a.logger.Warn("No policy engine available, allowing all permissions")
-	return nil
+	// No policy engine available - this should not happen in production
+	a.logger.Error("No policy engine available - denying all permissions")
+	return fmt.Errorf("policy engine not configured")
 }
