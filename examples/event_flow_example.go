@@ -1,3 +1,6 @@
+//go:build event_flow_example
+// +build event_flow_example
+
 package main
 
 import (

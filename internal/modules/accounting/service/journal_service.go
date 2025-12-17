@@ -20,7 +20,7 @@ func NewJournalService(repo repository.JournalRepository) *JournalService {
 	}
 }
 
-func (s *JournalService) CreateJournal(ctx context.Context, journal domain.Journal) (*domain.Journal, error) {
+func (s *JournalService) CreateJournal(ctx context.Context, journal types.Journal) (*types.Journal, error) {
 	// Validate the journal
 	if err := s.validateJournal(journal); err != nil {
 		return nil, fmt.Errorf("invalid journal: %w", err)
@@ -44,7 +44,7 @@ func (s *JournalService) CreateJournal(ctx context.Context, journal domain.Journ
 	return createdJournal, nil
 }
 
-func (s *JournalService) GetJournal(ctx context.Context, id uuid.UUID) (*domain.Journal, error) {
+func (s *JournalService) GetJournal(ctx context.Context, id uuid.UUID) (*types.Journal, error) {
 	journal, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get journal: %w", err)
@@ -56,7 +56,7 @@ func (s *JournalService) GetJournal(ctx context.Context, id uuid.UUID) (*domain.
 	return journal, nil
 }
 
-func (s *JournalService) ListJournals(ctx context.Context, filters repository.JournalFilter) ([]domain.Journal, error) {
+func (s *JournalService) ListJournals(ctx context.Context, filters repository.JournalFilter) ([]types.Journal, error) {
 	journals, err := s.repo.FindAll(ctx, filters)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list journals: %w", err)
@@ -65,7 +65,7 @@ func (s *JournalService) ListJournals(ctx context.Context, filters repository.Jo
 	return journals, nil
 }
 
-func (s *JournalService) UpdateJournal(ctx context.Context, journal domain.Journal) (*domain.Journal, error) {
+func (s *JournalService) UpdateJournal(ctx context.Context, journal types.Journal) (*types.Journal, error) {
 	// Validate the journal
 	if err := s.validateJournal(journal); err != nil {
 		return nil, fmt.Errorf("invalid journal: %w", err)
@@ -119,7 +119,7 @@ func (s *JournalService) DeleteJournal(ctx context.Context, id uuid.UUID) error 
 	return nil
 }
 
-func (s *JournalService) GetJournalsByType(ctx context.Context, organizationID uuid.UUID, journalType string) ([]domain.Journal, error) {
+func (s *JournalService) GetJournalsByType(ctx context.Context, organizationID uuid.UUID, journalType string) ([]types.Journal, error) {
 	journals, err := s.repo.FindByType(ctx, organizationID, journalType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get journals by type: %w", err)
@@ -128,7 +128,7 @@ func (s *JournalService) GetJournalsByType(ctx context.Context, organizationID u
 	return journals, nil
 }
 
-func (s *JournalService) validateJournal(journal domain.Journal) error {
+func (s *JournalService) validateJournal(journal types.Journal) error {
 	if journal.OrganizationID == uuid.Nil {
 		return fmt.Errorf("organization ID is required")
 	}

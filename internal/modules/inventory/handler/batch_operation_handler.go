@@ -103,7 +103,7 @@ func (h *BatchOperationHandler) authMiddleware(next http.Handler) http.Handler {
 // CRUD Endpoints
 
 func (h *BatchOperationHandler) CreateBatchOperation(w http.ResponseWriter, r *http.Request) {
-	var operation domain.BatchOperation
+	var operation types.BatchOperation
 	if err := json.NewDecoder(r.Body).Decode(&operation); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
 		return
@@ -175,7 +175,7 @@ func (h *BatchOperationHandler) UpdateBatchOperation(w http.ResponseWriter, r *h
 		return
 	}
 
-	var operation domain.BatchOperation
+	var operation types.BatchOperation
 	if err := json.NewDecoder(r.Body).Decode(&operation); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
 		return
@@ -219,7 +219,7 @@ func (h *BatchOperationHandler) CreateBatchOperationItem(w http.ResponseWriter, 
 		return
 	}
 
-	var item domain.BatchOperationItem
+	var item types.BatchOperationItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
 		return
@@ -285,7 +285,7 @@ func (h *BatchOperationHandler) UpdateBatchOperationItem(w http.ResponseWriter, 
 		return
 	}
 
-	var item domain.BatchOperationItem
+	var item types.BatchOperationItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
 		return
@@ -329,7 +329,7 @@ func (h *BatchOperationHandler) CreateStockAdjustmentBatch(w http.ResponseWriter
 		Reference   string                          `json:"reference"`
 		Description string                          `json:"description"`
 		CompanyID   *uuid.UUID                      `json:"company_id,omitempty"`
-		Items       []domain.BatchOperationItem     `json:"items"`
+		Items       []types.BatchOperationItem     `json:"items"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -371,7 +371,7 @@ func (h *BatchOperationHandler) CreateStockTransferBatch(w http.ResponseWriter, 
 		CompanyID        *uuid.UUID                      `json:"company_id,omitempty"`
 		SourceLocationID uuid.UUID                      `json:"source_location_id"`
 		DestLocationID   uuid.UUID                      `json:"dest_location_id"`
-		Items            []domain.BatchOperationItem     `json:"items"`
+		Items            []types.BatchOperationItem     `json:"items"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -414,7 +414,7 @@ func (h *BatchOperationHandler) CreateStockCountBatch(w http.ResponseWriter, r *
 		Description string                          `json:"description"`
 		CompanyID   *uuid.UUID                      `json:"company_id,omitempty"`
 		LocationID  uuid.UUID                      `json:"location_id"`
-		Items       []domain.BatchOperationItem     `json:"items"`
+		Items       []types.BatchOperationItem     `json:"items"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -456,7 +456,7 @@ func (h *BatchOperationHandler) CreatePriceUpdateBatch(w http.ResponseWriter, r 
 		Description string                          `json:"description"`
 		CompanyID  *uuid.UUID                      `json:"company_id,omitempty"`
 		CurrencyID uuid.UUID                      `json:"currency_id"`
-		Items      []domain.BatchOperationItem     `json:"items"`
+		Items      []types.BatchOperationItem     `json:"items"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -498,7 +498,7 @@ func (h *BatchOperationHandler) CreateLocationUpdateBatch(w http.ResponseWriter,
 		Description   string                          `json:"description"`
 		CompanyID     *uuid.UUID                      `json:"company_id,omitempty"`
 		NewLocationID uuid.UUID                      `json:"new_location_id"`
-		Items         []domain.BatchOperationItem     `json:"items"`
+		Items         []types.BatchOperationItem     `json:"items"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -540,7 +540,7 @@ func (h *BatchOperationHandler) CreateStatusUpdateBatch(w http.ResponseWriter, r
 		Description string                          `json:"description"`
 		CompanyID  *uuid.UUID                      `json:"company_id,omitempty"`
 		NewStatus  string                          `json:"new_status"`
-		Items      []domain.BatchOperationItem     `json:"items"`
+		Items      []types.BatchOperationItem     `json:"items"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -624,7 +624,7 @@ func (h *BatchOperationHandler) GetBatchOperationStatistics(w http.ResponseWrite
 	operationTypeStr := r.URL.Query().Get("operation_type")
 
 	var fromTime, toTime *time.Time
-	var operationType *domain.BatchOperationType
+	var operationType *types.BatchOperationType
 
 	if fromTimeStr != "" {
 		parsedTime, err := time.Parse(time.RFC3339, fromTimeStr)
@@ -645,7 +645,7 @@ func (h *BatchOperationHandler) GetBatchOperationStatistics(w http.ResponseWrite
 	}
 
 	if operationTypeStr != "" {
-		opType := domain.BatchOperationType(operationTypeStr)
+		opType := types.BatchOperationType(operationTypeStr)
 		operationType = &opType
 	}
 
@@ -678,7 +678,7 @@ func (h *BatchOperationHandler) ListBatchOperationsByStatus(w http.ResponseWrite
 func (h *BatchOperationHandler) ListBatchOperationsByType(w http.ResponseWriter, r *http.Request) {
 	orgID := r.Context().Value("organization_id").(uuid.UUID)
 	operationTypeStr := chi.URLParam(r, "type")
-	operationType := domain.BatchOperationType(operationTypeStr)
+	operationType := types.BatchOperationType(operationTypeStr)
 
 	operations, err := h.service.ListBatchOperationsByType(r.Context(), orgID, operationType)
 	if err != nil {

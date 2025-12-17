@@ -31,13 +31,13 @@ func TestSalesOrderRepository_Create(t *testing.T) {
 	productID := uuid.New()
 	uomID := uuid.New()
 
-	order := domain.SalesOrder{
+	order := types.SalesOrder{
 		ID:             uuid.New(),
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		CustomerID:     customerID,
 		Reference:      "TEST-001",
-		Status:         domain.SalesOrderStatusDraft,
+		Status:         types.SalesOrderStatusDraft,
 		OrderDate:      time.Now(),
 		PricelistID:    pricelistID,
 		CurrencyID:     currencyID,
@@ -49,7 +49,7 @@ func TestSalesOrderRepository_Create(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		CreatedBy:      uuid.New(),
 		UpdatedBy:      uuid.New(),
-		Lines: []domain.SalesOrderLine{
+		Lines: []types.SalesOrderLine{
 			{
 				ID:            uuid.New(),
 				ProductID:     productID,
@@ -98,13 +98,13 @@ func TestSalesOrderRepository_FindByID(t *testing.T) {
 	productID := uuid.New()
 	uomID := uuid.New()
 
-	order := domain.SalesOrder{
+	order := types.SalesOrder{
 		ID:             uuid.New(),
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		CustomerID:     customerID,
 		Reference:      "TEST-002",
-		Status:         domain.SalesOrderStatusDraft,
+		Status:         types.SalesOrderStatusDraft,
 		OrderDate:      time.Now(),
 		PricelistID:    pricelistID,
 		CurrencyID:     currencyID,
@@ -116,7 +116,7 @@ func TestSalesOrderRepository_FindByID(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		CreatedBy:      uuid.New(),
 		UpdatedBy:      uuid.New(),
-		Lines: []domain.SalesOrderLine{
+		Lines: []types.SalesOrderLine{
 			{
 				ID:            uuid.New(),
 				ProductID:     productID,
@@ -171,13 +171,13 @@ func TestSalesOrderRepository_FindAll(t *testing.T) {
 
 	// Create multiple orders
 	for i := 0; i < 3; i++ {
-		order := domain.SalesOrder{
+		order := types.SalesOrder{
 			ID:             uuid.New(),
 			OrganizationID: orgID,
 			CompanyID:      companyID,
 			CustomerID:     customerID,
 			Reference:      fmt.Sprintf("TEST-%03d", i),
-			Status:         domain.SalesOrderStatusDraft,
+			Status:         types.SalesOrderStatusDraft,
 			OrderDate:      time.Now(),
 			PricelistID:    pricelistID,
 			CurrencyID:     currencyID,
@@ -189,7 +189,7 @@ func TestSalesOrderRepository_FindAll(t *testing.T) {
 			UpdatedAt:      time.Now(),
 			CreatedBy:      uuid.New(),
 			UpdatedBy:      uuid.New(),
-			Lines: []domain.SalesOrderLine{
+			Lines: []types.SalesOrderLine{
 				{
 					ID:            uuid.New(),
 					ProductID:     productID,
@@ -246,13 +246,13 @@ func TestSalesOrderRepository_Update(t *testing.T) {
 	productID := uuid.New()
 	uomID := uuid.New()
 
-	order := domain.SalesOrder{
+	order := types.SalesOrder{
 		ID:             uuid.New(),
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		CustomerID:     customerID,
 		Reference:      "TEST-003",
-		Status:         domain.SalesOrderStatusDraft,
+		Status:         types.SalesOrderStatusDraft,
 		OrderDate:      time.Now(),
 		PricelistID:    pricelistID,
 		CurrencyID:     currencyID,
@@ -264,7 +264,7 @@ func TestSalesOrderRepository_Update(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		CreatedBy:      uuid.New(),
 		UpdatedBy:      uuid.New(),
-		Lines: []domain.SalesOrderLine{
+		Lines: []types.SalesOrderLine{
 			{
 				ID:            uuid.New(),
 				ProductID:     productID,
@@ -290,7 +290,7 @@ func TestSalesOrderRepository_Update(t *testing.T) {
 
 	// Modify the order
 	createdOrder.Reference = "UPDATED-003"
-	createdOrder.Status = domain.SalesOrderStatusConfirmed
+	createdOrder.Status = types.SalesOrderStatusConfirmed
 	createdOrder.Note = "Updated test order"
 	createdOrder.UpdatedAt = time.Now()
 
@@ -301,7 +301,7 @@ func TestSalesOrderRepository_Update(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, updatedOrder)
 	assert.Equal(t, "UPDATED-003", updatedOrder.Reference)
-	assert.Equal(t, domain.SalesOrderStatusConfirmed, updatedOrder.Status)
+	assert.Equal(t, types.SalesOrderStatusConfirmed, updatedOrder.Status)
 	assert.Equal(t, "Updated test order", updatedOrder.Note)
 	assert.Len(t, updatedOrder.Lines, 1)
 }
@@ -322,13 +322,13 @@ func TestSalesOrderRepository_Delete(t *testing.T) {
 	productID := uuid.New()
 	uomID := uuid.New()
 
-	order := domain.SalesOrder{
+	order := types.SalesOrder{
 		ID:             uuid.New(),
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		CustomerID:     customerID,
 		Reference:      "TEST-004",
-		Status:         domain.SalesOrderStatusDraft,
+		Status:         types.SalesOrderStatusDraft,
 		OrderDate:      time.Now(),
 		PricelistID:    pricelistID,
 		CurrencyID:     currencyID,
@@ -340,7 +340,7 @@ func TestSalesOrderRepository_Delete(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		CreatedBy:      uuid.New(),
 		UpdatedBy:      uuid.New(),
-		Lines: []domain.SalesOrderLine{
+		Lines: []types.SalesOrderLine{
 			{
 				ID:            uuid.New(),
 				ProductID:     productID,
@@ -395,13 +395,13 @@ func TestSalesOrderRepository_FindByCustomerID(t *testing.T) {
 
 	// Create orders for customer 1
 	for i := 0; i < 2; i++ {
-		order := domain.SalesOrder{
+		order := types.SalesOrder{
 			ID:             uuid.New(),
 			OrganizationID: orgID,
 			CompanyID:      companyID,
 			CustomerID:     customerID1,
 			Reference:      fmt.Sprintf("CUST1-%03d", i),
-			Status:         domain.SalesOrderStatusDraft,
+			Status:         types.SalesOrderStatusDraft,
 			OrderDate:      time.Now(),
 			PricelistID:    pricelistID,
 			CurrencyID:     currencyID,
@@ -413,7 +413,7 @@ func TestSalesOrderRepository_FindByCustomerID(t *testing.T) {
 			UpdatedAt:      time.Now(),
 			CreatedBy:      uuid.New(),
 			UpdatedBy:      uuid.New(),
-			Lines: []domain.SalesOrderLine{
+			Lines: []types.SalesOrderLine{
 				{
 					ID:            uuid.New(),
 					ProductID:     productID,
@@ -437,13 +437,13 @@ func TestSalesOrderRepository_FindByCustomerID(t *testing.T) {
 	}
 
 	// Create order for customer 2
-	order := domain.SalesOrder{
+	order := types.SalesOrder{
 		ID:             uuid.New(),
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		CustomerID:     customerID2,
 		Reference:      "CUST2-001",
-		Status:         domain.SalesOrderStatusDraft,
+		Status:         types.SalesOrderStatusDraft,
 		OrderDate:      time.Now(),
 		PricelistID:    pricelistID,
 		CurrencyID:     currencyID,
@@ -455,7 +455,7 @@ func TestSalesOrderRepository_FindByCustomerID(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		CreatedBy:      uuid.New(),
 		UpdatedBy:      uuid.New(),
-		Lines: []domain.SalesOrderLine{
+		Lines: []types.SalesOrderLine{
 			{
 				ID:            uuid.New(),
 				ProductID:     productID,
@@ -509,13 +509,13 @@ func TestSalesOrderRepository_FindByStatus(t *testing.T) {
 
 	// Create draft orders
 	for i := 0; i < 2; i++ {
-		order := domain.SalesOrder{
+		order := types.SalesOrder{
 			ID:             uuid.New(),
 			OrganizationID: orgID,
 			CompanyID:      companyID,
 			CustomerID:     customerID,
 			Reference:      fmt.Sprintf("DRAFT-%03d", i),
-			Status:         domain.SalesOrderStatusDraft,
+			Status:         types.SalesOrderStatusDraft,
 			OrderDate:      time.Now(),
 			PricelistID:    pricelistID,
 			CurrencyID:     currencyID,
@@ -527,7 +527,7 @@ func TestSalesOrderRepository_FindByStatus(t *testing.T) {
 			UpdatedAt:      time.Now(),
 			CreatedBy:      uuid.New(),
 			UpdatedBy:      uuid.New(),
-			Lines: []domain.SalesOrderLine{
+			Lines: []types.SalesOrderLine{
 				{
 					ID:            uuid.New(),
 					ProductID:     productID,
@@ -551,13 +551,13 @@ func TestSalesOrderRepository_FindByStatus(t *testing.T) {
 	}
 
 	// Create confirmed order
-	order := domain.SalesOrder{
+	order := types.SalesOrder{
 		ID:             uuid.New(),
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		CustomerID:     customerID,
 		Reference:      "CONF-001",
-		Status:         domain.SalesOrderStatusConfirmed,
+		Status:         types.SalesOrderStatusConfirmed,
 		OrderDate:      time.Now(),
 		PricelistID:    pricelistID,
 		CurrencyID:     currencyID,
@@ -569,7 +569,7 @@ func TestSalesOrderRepository_FindByStatus(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		CreatedBy:      uuid.New(),
 		UpdatedBy:      uuid.New(),
-		Lines: []domain.SalesOrderLine{
+		Lines: []types.SalesOrderLine{
 			{
 				ID:            uuid.New(),
 				ProductID:     productID,
@@ -592,13 +592,13 @@ func TestSalesOrderRepository_FindByStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// Execute
-	orders, err := repo.FindByStatus(context.Background(), domain.SalesOrderStatusDraft)
+	orders, err := repo.FindByStatus(context.Background(), types.SalesOrderStatusDraft)
 
 	// Assert
 	require.NoError(t, err)
 	assert.Len(t, orders, 2)
 	for _, order := range orders {
-		assert.Equal(t, domain.SalesOrderStatusDraft, order.Status)
+		assert.Equal(t, types.SalesOrderStatusDraft, order.Status)
 		assert.Equal(t, orgID, order.OrganizationID)
 		assert.Equal(t, companyID, order.CompanyID)
 		assert.Len(t, order.Lines, 1)

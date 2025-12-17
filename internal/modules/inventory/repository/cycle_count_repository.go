@@ -12,33 +12,33 @@ import (
 // CycleCountRepository interface for cycle counting operations
 type CycleCountRepository interface {
 	// Cycle count plan operations
-	CreateCycleCountPlan(ctx context.Context, request domain.CreateCycleCountPlanRequest) (*domain.CycleCountPlan, error)
-	GetCycleCountPlan(ctx context.Context, orgID uuid.UUID, planID uuid.UUID) (*domain.CycleCountPlan, error)
-	ListCycleCountPlans(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]domain.CycleCountPlan, error)
+	CreateCycleCountPlan(ctx context.Context, request types.CreateCycleCountPlanRequest) (*types.CycleCountPlan, error)
+	GetCycleCountPlan(ctx context.Context, orgID uuid.UUID, planID uuid.UUID) (*types.CycleCountPlan, error)
+	ListCycleCountPlans(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]types.CycleCountPlan, error)
 	UpdateCycleCountPlanStatus(ctx context.Context, orgID uuid.UUID, planID uuid.UUID, status string) (bool, error)
 
 	// Cycle count session operations
-	CreateCycleCountSession(ctx context.Context, request domain.CreateCycleCountSessionRequest) (*domain.CycleCountSession, error)
-	GetCycleCountSession(ctx context.Context, orgID uuid.UUID, sessionID uuid.UUID) (*domain.CycleCountSession, error)
-	ListCycleCountSessions(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]domain.CycleCountSession, error)
+	CreateCycleCountSession(ctx context.Context, request types.CreateCycleCountSessionRequest) (*types.CycleCountSession, error)
+	GetCycleCountSession(ctx context.Context, orgID uuid.UUID, sessionID uuid.UUID) (*types.CycleCountSession, error)
+	ListCycleCountSessions(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]types.CycleCountSession, error)
 	CompleteCycleCountSession(ctx context.Context, orgID uuid.UUID, sessionID uuid.UUID) (bool, error)
 
 	// Cycle count line operations
-	AddCycleCountLine(ctx context.Context, request domain.AddCycleCountLineRequest) (*domain.CycleCountLine, error)
-	GetCycleCountLine(ctx context.Context, orgID uuid.UUID, lineID uuid.UUID) (*domain.CycleCountLine, error)
-	ListCycleCountLines(ctx context.Context, orgID uuid.UUID, sessionID uuid.UUID) ([]domain.CycleCountLine, error)
-	VerifyCycleCountLine(ctx context.Context, request domain.VerifyCycleCountLineRequest) (bool, error)
+	AddCycleCountLine(ctx context.Context, request types.AddCycleCountLineRequest) (*types.CycleCountLine, error)
+	GetCycleCountLine(ctx context.Context, orgID uuid.UUID, lineID uuid.UUID) (*types.CycleCountLine, error)
+	ListCycleCountLines(ctx context.Context, orgID uuid.UUID, sessionID uuid.UUID) ([]types.CycleCountLine, error)
+	VerifyCycleCountLine(ctx context.Context, request types.VerifyCycleCountLineRequest) (bool, error)
 
 	// Cycle count adjustment operations
-	CreateAdjustmentFromVariance(ctx context.Context, request domain.CreateAdjustmentRequest) (*domain.CycleCountAdjustment, error)
-	GetCycleCountAdjustment(ctx context.Context, orgID uuid.UUID, adjustmentID uuid.UUID) (*domain.CycleCountAdjustment, error)
-	ListCycleCountAdjustments(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]domain.CycleCountAdjustment, error)
-	ApproveCycleCountAdjustment(ctx context.Context, request domain.ApproveAdjustmentRequest) (bool, error)
+	CreateAdjustmentFromVariance(ctx context.Context, request types.CreateAdjustmentRequest) (*types.CycleCountAdjustment, error)
+	GetCycleCountAdjustment(ctx context.Context, orgID uuid.UUID, adjustmentID uuid.UUID) (*types.CycleCountAdjustment, error)
+	ListCycleCountAdjustments(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]types.CycleCountAdjustment, error)
+	ApproveCycleCountAdjustment(ctx context.Context, request types.ApproveAdjustmentRequest) (bool, error)
 
 	// Cycle count accuracy operations
-	GetCycleCountAccuracyMetrics(ctx context.Context, request domain.GetAccuracyMetricsRequest) (*domain.CycleCountMetrics, error)
-	GetProductsNeedingCycleCount(ctx context.Context, request domain.GetProductsNeedingCountRequest) ([]domain.ProductNeedingCycleCount, error)
-	GetCycleCountAccuracyHistory(ctx context.Context, orgID uuid.UUID, productID *uuid.UUID, limit, offset int) ([]domain.CycleCountAccuracy, error)
+	GetCycleCountAccuracyMetrics(ctx context.Context, request types.GetAccuracyMetricsRequest) (*types.CycleCountMetrics, error)
+	GetProductsNeedingCycleCount(ctx context.Context, request types.GetProductsNeedingCountRequest) ([]types.ProductNeedingCycleCount, error)
+	GetCycleCountAccuracyHistory(ctx context.Context, orgID uuid.UUID, productID *uuid.UUID, limit, offset int) ([]types.CycleCountAccuracy, error)
 }
 
 type cycleCountRepository struct {
@@ -50,7 +50,7 @@ func NewCycleCountRepository(db *sql.DB) CycleCountRepository {
 }
 
 // CreateCycleCountPlan creates a new cycle count plan
-func (r *cycleCountRepository) CreateCycleCountPlan(ctx context.Context, request domain.CreateCycleCountPlanRequest) (*domain.CycleCountPlan, error) {
+func (r *cycleCountRepository) CreateCycleCountPlan(ctx context.Context, request types.CreateCycleCountPlanRequest) (*types.CycleCountPlan, error) {
 	query := `
 		INSERT INTO inventory_cycle_count_plans (
 			id, organization_id, name, description, frequency, abc_class,
@@ -64,7 +64,7 @@ func (r *cycleCountRepository) CreateCycleCountPlan(ctx context.Context, request
 			created_at, updated_at, deleted_at, metadata
 	`
 
-	var plan domain.CycleCountPlan
+	var plan types.CycleCountPlan
 	err := r.db.QueryRowContext(ctx, query,
 		request.OrganizationID, request.Name, request.Description, request.Frequency,
 		request.ABCClass, request.StartDate, request.EndDate, "draft", request.Priority,
@@ -84,7 +84,7 @@ func (r *cycleCountRepository) CreateCycleCountPlan(ctx context.Context, request
 }
 
 // GetCycleCountPlan retrieves a cycle count plan
-func (r *cycleCountRepository) GetCycleCountPlan(ctx context.Context, orgID uuid.UUID, planID uuid.UUID) (*domain.CycleCountPlan, error) {
+func (r *cycleCountRepository) GetCycleCountPlan(ctx context.Context, orgID uuid.UUID, planID uuid.UUID) (*types.CycleCountPlan, error) {
 	query := `
 		SELECT
 			id, organization_id, name, description, frequency, abc_class,
@@ -94,7 +94,7 @@ func (r *cycleCountRepository) GetCycleCountPlan(ctx context.Context, orgID uuid
 		WHERE organization_id = $1 AND id = $2
 	`
 
-	var plan domain.CycleCountPlan
+	var plan types.CycleCountPlan
 	err := r.db.QueryRowContext(ctx, query, orgID, planID).Scan(
 		&plan.ID, &plan.OrganizationID, &plan.Name, &plan.Description, &plan.Frequency,
 		&plan.ABCClass, &plan.StartDate, &plan.EndDate, &plan.Status, &plan.Priority,
@@ -113,7 +113,7 @@ func (r *cycleCountRepository) GetCycleCountPlan(ctx context.Context, orgID uuid
 }
 
 // ListCycleCountPlans retrieves cycle count plans for an organization
-func (r *cycleCountRepository) ListCycleCountPlans(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]domain.CycleCountPlan, error) {
+func (r *cycleCountRepository) ListCycleCountPlans(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]types.CycleCountPlan, error) {
 	query := `
 		SELECT
 			id, organization_id, name, description, frequency, abc_class,
@@ -140,9 +140,9 @@ func (r *cycleCountRepository) ListCycleCountPlans(ctx context.Context, orgID uu
 	}
 	defer rows.Close()
 
-	var plans []domain.CycleCountPlan
+	var plans []types.CycleCountPlan
 	for rows.Next() {
-		var plan domain.CycleCountPlan
+		var plan types.CycleCountPlan
 		err := rows.Scan(
 			&plan.ID, &plan.OrganizationID, &plan.Name, &plan.Description, &plan.Frequency,
 			&plan.ABCClass, &plan.StartDate, &plan.EndDate, &plan.Status, &plan.Priority,
@@ -176,7 +176,7 @@ func (r *cycleCountRepository) UpdateCycleCountPlanStatus(ctx context.Context, o
 }
 
 // CreateCycleCountSession creates a new cycle count session
-func (r *cycleCountRepository) CreateCycleCountSession(ctx context.Context, request domain.CreateCycleCountSessionRequest) (*domain.CycleCountSession, error) {
+func (r *cycleCountRepository) CreateCycleCountSession(ctx context.Context, request types.CreateCycleCountSessionRequest) (*types.CycleCountSession, error) {
 	query := `
 		INSERT INTO inventory_cycle_count_sessions (
 			id, organization_id, plan_id, name, location_id, user_id,
@@ -189,7 +189,7 @@ func (r *cycleCountRepository) CreateCycleCountSession(ctx context.Context, requ
 			created_at, updated_at
 	`
 
-	var session domain.CycleCountSession
+	var session types.CycleCountSession
 	err := r.db.QueryRowContext(ctx, query,
 		request.OrganizationID, request.PlanID, request.Name, request.LocationID,
 		request.UserID, "in_progress", request.CountMethod, request.DeviceID, request.Notes,
@@ -208,7 +208,7 @@ func (r *cycleCountRepository) CreateCycleCountSession(ctx context.Context, requ
 }
 
 // GetCycleCountSession retrieves a cycle count session
-func (r *cycleCountRepository) GetCycleCountSession(ctx context.Context, orgID uuid.UUID, sessionID uuid.UUID) (*domain.CycleCountSession, error) {
+func (r *cycleCountRepository) GetCycleCountSession(ctx context.Context, orgID uuid.UUID, sessionID uuid.UUID) (*types.CycleCountSession, error) {
 	query := `
 		SELECT
 			id, organization_id, plan_id, name, location_id, user_id,
@@ -218,7 +218,7 @@ func (r *cycleCountRepository) GetCycleCountSession(ctx context.Context, orgID u
 		WHERE organization_id = $1 AND id = $2
 	`
 
-	var session domain.CycleCountSession
+	var session types.CycleCountSession
 	err := r.db.QueryRowContext(ctx, query, orgID, sessionID).Scan(
 		&session.ID, &session.OrganizationID, &session.PlanID, &session.Name,
 		&session.LocationID, &session.UserID, &session.StartTime, &session.EndTime,
@@ -237,7 +237,7 @@ func (r *cycleCountRepository) GetCycleCountSession(ctx context.Context, orgID u
 }
 
 // ListCycleCountSessions retrieves cycle count sessions for an organization
-func (r *cycleCountRepository) ListCycleCountSessions(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]domain.CycleCountSession, error) {
+func (r *cycleCountRepository) ListCycleCountSessions(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]types.CycleCountSession, error) {
 	query := `
 		SELECT
 			id, organization_id, plan_id, name, location_id, user_id,
@@ -264,9 +264,9 @@ func (r *cycleCountRepository) ListCycleCountSessions(ctx context.Context, orgID
 	}
 	defer rows.Close()
 
-	var sessions []domain.CycleCountSession
+	var sessions []types.CycleCountSession
 	for rows.Next() {
-		var session domain.CycleCountSession
+		var session types.CycleCountSession
 		err := rows.Scan(
 			&session.ID, &session.OrganizationID, &session.PlanID, &session.Name,
 			&session.LocationID, &session.UserID, &session.StartTime, &session.EndTime,
@@ -324,7 +324,7 @@ func (r *cycleCountRepository) CompleteCycleCountSession(ctx context.Context, or
 }
 
 // AddCycleCountLine adds a count line to a session
-func (r *cycleCountRepository) AddCycleCountLine(ctx context.Context, request domain.AddCycleCountLineRequest) (*domain.CycleCountLine, error) {
+func (r *cycleCountRepository) AddCycleCountLine(ctx context.Context, request types.AddCycleCountLineRequest) (*types.CycleCountLine, error) {
 	// Get current system quantity
 	var systemQty float64
 	query := `
@@ -343,15 +343,6 @@ func (r *cycleCountRepository) AddCycleCountLine(ctx context.Context, request do
 		return nil, err
 	}
 
-	// Calculate variance
-	variance := request.CountedQuantity - systemQty
-	var variancePct float64
-	if systemQty == 0 {
-		variancePct = 0
-	} else {
-		variancePct = (variance / systemQty) * 100
-	}
-
 	// Create count line
 	lineQuery := `
 		INSERT INTO inventory_cycle_count_lines (
@@ -366,7 +357,7 @@ func (r *cycleCountRepository) AddCycleCountLine(ctx context.Context, request do
 			count_time, counted_by, created_at, updated_at
 	`
 
-	var line domain.CycleCountLine
+	var line types.CycleCountLine
 	err = r.db.QueryRowContext(ctx, lineQuery,
 		request.SessionID, request.OrganizationID, request.ProductID, request.LocationID,
 		request.CountedQuantity, systemQty, request.CountedBy, request.LotID, request.PackageID,
@@ -384,7 +375,7 @@ func (r *cycleCountRepository) AddCycleCountLine(ctx context.Context, request do
 }
 
 // GetCycleCountLine retrieves a count line
-func (r *cycleCountRepository) GetCycleCountLine(ctx context.Context, orgID uuid.UUID, lineID uuid.UUID) (*domain.CycleCountLine, error) {
+func (r *cycleCountRepository) GetCycleCountLine(ctx context.Context, orgID uuid.UUID, lineID uuid.UUID) (*types.CycleCountLine, error) {
 	query := `
 		SELECT
 			id, session_id, organization_id, product_id, location_id,
@@ -395,7 +386,7 @@ func (r *cycleCountRepository) GetCycleCountLine(ctx context.Context, orgID uuid
 		WHERE organization_id = $1 AND id = $2
 	`
 
-	var line domain.CycleCountLine
+	var line types.CycleCountLine
 	err := r.db.QueryRowContext(ctx, query, orgID, lineID).Scan(
 		&line.ID, &line.SessionID, &line.OrganizationID, &line.ProductID, &line.LocationID,
 		&line.CountedQuantity, &line.SystemQuantity, &line.Variance, &line.VariancePercentage,
@@ -414,7 +405,7 @@ func (r *cycleCountRepository) GetCycleCountLine(ctx context.Context, orgID uuid
 }
 
 // ListCycleCountLines retrieves count lines for a session
-func (r *cycleCountRepository) ListCycleCountLines(ctx context.Context, orgID uuid.UUID, sessionID uuid.UUID) ([]domain.CycleCountLine, error) {
+func (r *cycleCountRepository) ListCycleCountLines(ctx context.Context, orgID uuid.UUID, sessionID uuid.UUID) ([]types.CycleCountLine, error) {
 	query := `
 		SELECT
 			id, session_id, organization_id, product_id, location_id,
@@ -432,9 +423,9 @@ func (r *cycleCountRepository) ListCycleCountLines(ctx context.Context, orgID uu
 	}
 	defer rows.Close()
 
-	var lines []domain.CycleCountLine
+	var lines []types.CycleCountLine
 	for rows.Next() {
-		var line domain.CycleCountLine
+		var line types.CycleCountLine
 		err := rows.Scan(
 			&line.ID, &line.SessionID, &line.OrganizationID, &line.ProductID, &line.LocationID,
 			&line.CountedQuantity, &line.SystemQuantity, &line.Variance, &line.VariancePercentage,
@@ -451,7 +442,7 @@ func (r *cycleCountRepository) ListCycleCountLines(ctx context.Context, orgID uu
 }
 
 // VerifyCycleCountLine verifies a count line
-func (r *cycleCountRepository) VerifyCycleCountLine(ctx context.Context, request domain.VerifyCycleCountLineRequest) (bool, error) {
+func (r *cycleCountRepository) VerifyCycleCountLine(ctx context.Context, request types.VerifyCycleCountLineRequest) (bool, error) {
 	query := `
 		UPDATE inventory_cycle_count_lines
 		SET
@@ -474,9 +465,9 @@ func (r *cycleCountRepository) VerifyCycleCountLine(ctx context.Context, request
 }
 
 // CreateAdjustmentFromVariance creates an adjustment from a count variance
-func (r *cycleCountRepository) CreateAdjustmentFromVariance(ctx context.Context, request domain.CreateAdjustmentRequest) (*domain.CycleCountAdjustment, error) {
+func (r *cycleCountRepository) CreateAdjustmentFromVariance(ctx context.Context, request types.CreateAdjustmentRequest) (*types.CycleCountAdjustment, error) {
 	// Get count line
-	var line domain.CycleCountLine
+	var line types.CycleCountLine
 	query := `
 		SELECT
 			product_id, location_id, system_quantity, counted_quantity
@@ -505,7 +496,7 @@ func (r *cycleCountRepository) CreateAdjustmentFromVariance(ctx context.Context,
 			reason, adjusted_by, status, created_at, updated_at
 	`
 
-	var adjustment domain.CycleCountAdjustment
+	var adjustment types.CycleCountAdjustment
 	err = r.db.QueryRowContext(ctx, adjustmentQuery,
 		request.OrganizationID, request.LineID, line.ProductID, line.LocationID,
 		line.SystemQuantity, line.CountedQuantity, request.AdjustmentType, request.Reason,
@@ -526,7 +517,7 @@ func (r *cycleCountRepository) CreateAdjustmentFromVariance(ctx context.Context,
 }
 
 // GetCycleCountAdjustment retrieves an adjustment
-func (r *cycleCountRepository) GetCycleCountAdjustment(ctx context.Context, orgID uuid.UUID, adjustmentID uuid.UUID) (*domain.CycleCountAdjustment, error) {
+func (r *cycleCountRepository) GetCycleCountAdjustment(ctx context.Context, orgID uuid.UUID, adjustmentID uuid.UUID) (*types.CycleCountAdjustment, error) {
 	query := `
 		SELECT
 			id, organization_id, count_line_id, product_id, location_id,
@@ -537,7 +528,7 @@ func (r *cycleCountRepository) GetCycleCountAdjustment(ctx context.Context, orgI
 		WHERE organization_id = $1 AND id = $2
 	`
 
-	var adjustment domain.CycleCountAdjustment
+	var adjustment types.CycleCountAdjustment
 	err := r.db.QueryRowContext(ctx, query, orgID, adjustmentID).Scan(
 		&adjustment.ID, &adjustment.OrganizationID, &adjustment.CountLineID,
 		&adjustment.ProductID, &adjustment.LocationID, &adjustment.OldQuantity,
@@ -558,7 +549,7 @@ func (r *cycleCountRepository) GetCycleCountAdjustment(ctx context.Context, orgI
 }
 
 // ListCycleCountAdjustments retrieves adjustments for an organization
-func (r *cycleCountRepository) ListCycleCountAdjustments(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]domain.CycleCountAdjustment, error) {
+func (r *cycleCountRepository) ListCycleCountAdjustments(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]types.CycleCountAdjustment, error) {
 	query := `
 		SELECT
 			id, organization_id, count_line_id, product_id, location_id,
@@ -586,9 +577,9 @@ func (r *cycleCountRepository) ListCycleCountAdjustments(ctx context.Context, or
 	}
 	defer rows.Close()
 
-	var adjustments []domain.CycleCountAdjustment
+	var adjustments []types.CycleCountAdjustment
 	for rows.Next() {
-		var adjustment domain.CycleCountAdjustment
+		var adjustment types.CycleCountAdjustment
 		err := rows.Scan(
 			&adjustment.ID, &adjustment.OrganizationID, &adjustment.CountLineID,
 			&adjustment.ProductID, &adjustment.LocationID, &adjustment.OldQuantity,
@@ -607,7 +598,7 @@ func (r *cycleCountRepository) ListCycleCountAdjustments(ctx context.Context, or
 }
 
 // ApproveCycleCountAdjustment approves an adjustment and updates stock
-func (r *cycleCountRepository) ApproveCycleCountAdjustment(ctx context.Context, request domain.ApproveAdjustmentRequest) (bool, error) {
+func (r *cycleCountRepository) ApproveCycleCountAdjustment(ctx context.Context, request types.ApproveAdjustmentRequest) (bool, error) {
 	// Start transaction
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -616,7 +607,7 @@ func (r *cycleCountRepository) ApproveCycleCountAdjustment(ctx context.Context, 
 	defer tx.Rollback()
 
 	// Get adjustment
-	var adjustment domain.CycleCountAdjustment
+	var adjustment types.CycleCountAdjustment
 	query := `
 		SELECT
 			product_id, location_id, new_quantity
@@ -698,7 +689,7 @@ func (r *cycleCountRepository) ApproveCycleCountAdjustment(ctx context.Context, 
 }
 
 // GetCycleCountAccuracyMetrics retrieves accuracy metrics
-func (r *cycleCountRepository) GetCycleCountAccuracyMetrics(ctx context.Context, request domain.GetAccuracyMetricsRequest) (*domain.CycleCountMetrics, error) {
+func (r *cycleCountRepository) GetCycleCountAccuracyMetrics(ctx context.Context, request types.GetAccuracyMetricsRequest) (*types.CycleCountMetrics, error) {
 	query := `
 		SELECT
 			COUNT(*) as total_counts,
@@ -713,7 +704,7 @@ func (r *cycleCountRepository) GetCycleCountAccuracyMetrics(ctx context.Context,
 		AND ($3 IS NULL OR count_date <= $3)
 	`
 
-	var metrics domain.CycleCountMetrics
+	var metrics types.CycleCountMetrics
 	err := r.db.QueryRowContext(ctx, query,
 		request.OrganizationID, request.DateFrom, request.DateTo,
 	).Scan(
@@ -730,7 +721,7 @@ func (r *cycleCountRepository) GetCycleCountAccuracyMetrics(ctx context.Context,
 }
 
 // GetProductsNeedingCycleCount retrieves products that need cycle counting
-func (r *cycleCountRepository) GetProductsNeedingCycleCount(ctx context.Context, request domain.GetProductsNeedingCountRequest) ([]domain.ProductNeedingCycleCount, error) {
+func (r *cycleCountRepository) GetProductsNeedingCycleCount(ctx context.Context, request types.GetProductsNeedingCountRequest) ([]types.ProductNeedingCycleCount, error) {
 	daysSince := 30
 	minVariance := 5.0
 
@@ -775,9 +766,9 @@ func (r *cycleCountRepository) GetProductsNeedingCycleCount(ctx context.Context,
 	}
 	defer rows.Close()
 
-	var products []domain.ProductNeedingCycleCount
+	var products []types.ProductNeedingCycleCount
 	for rows.Next() {
-		var product domain.ProductNeedingCycleCount
+		var product types.ProductNeedingCycleCount
 		err := rows.Scan(
 			&product.ProductID, &product.ProductName, &product.DefaultCode,
 			&product.CategoryID, &product.LastCountDate, &product.DaysSinceCount,
@@ -794,7 +785,7 @@ func (r *cycleCountRepository) GetProductsNeedingCycleCount(ctx context.Context,
 }
 
 // GetCycleCountAccuracyHistory retrieves accuracy history
-func (r *cycleCountRepository) GetCycleCountAccuracyHistory(ctx context.Context, orgID uuid.UUID, productID *uuid.UUID, limit, offset int) ([]domain.CycleCountAccuracy, error) {
+func (r *cycleCountRepository) GetCycleCountAccuracyHistory(ctx context.Context, orgID uuid.UUID, productID *uuid.UUID, limit, offset int) ([]types.CycleCountAccuracy, error) {
 	query := `
 		SELECT
 			id, organization_id, product_id, location_id, count_date,
@@ -821,9 +812,9 @@ func (r *cycleCountRepository) GetCycleCountAccuracyHistory(ctx context.Context,
 	}
 	defer rows.Close()
 
-	var history []domain.CycleCountAccuracy
+	var history []types.CycleCountAccuracy
 	for rows.Next() {
-		var record domain.CycleCountAccuracy
+		var record types.CycleCountAccuracy
 		err := rows.Scan(
 			&record.ID, &record.OrganizationID, &record.ProductID, &record.LocationID,
 			&record.CountDate, &record.SystemQuantity, &record.CountedQuantity,

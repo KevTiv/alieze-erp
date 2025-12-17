@@ -19,7 +19,7 @@ func NewQualityChecklistItemRepository(db *sql.DB) QualityChecklistItemRepositor
 	return &qualityChecklistItemRepository{db: db}
 }
 
-func (r *qualityChecklistItemRepository) Create(ctx context.Context, item domain.QualityChecklistItem) (*domain.QualityChecklistItem, error) {
+func (r *qualityChecklistItemRepository) Create(ctx context.Context, item types.QualityChecklistItem) (*types.QualityChecklistItem, error) {
 	query := `
 		INSERT INTO quality_checklist_items
 		(id, checklist_id, description, criteria, sequence, active, created_at)
@@ -40,7 +40,7 @@ func (r *qualityChecklistItemRepository) Create(ctx context.Context, item domain
 		item.Active = true
 	}
 
-	var created domain.QualityChecklistItem
+	var created types.QualityChecklistItem
 	err := r.db.QueryRowContext(ctx, query,
 		item.ID, item.ChecklistID, item.Description, item.Criteria, item.Sequence, item.Active, item.CreatedAt,
 	).Scan(
@@ -53,13 +53,13 @@ func (r *qualityChecklistItemRepository) Create(ctx context.Context, item domain
 	return &created, nil
 }
 
-func (r *qualityChecklistItemRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.QualityChecklistItem, error) {
+func (r *qualityChecklistItemRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.QualityChecklistItem, error) {
 	query := `
 		SELECT id, checklist_id, description, criteria, sequence, active, created_at
 		FROM quality_checklist_items WHERE id = $1
 	`
 
-	var item domain.QualityChecklistItem
+	var item types.QualityChecklistItem
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&item.ID, &item.ChecklistID, &item.Description, &item.Criteria, &item.Sequence, &item.Active, &item.CreatedAt,
 	)
@@ -73,7 +73,7 @@ func (r *qualityChecklistItemRepository) FindByID(ctx context.Context, id uuid.U
 	return &item, nil
 }
 
-func (r *qualityChecklistItemRepository) FindByChecklist(ctx context.Context, checklistID uuid.UUID) ([]domain.QualityChecklistItem, error) {
+func (r *qualityChecklistItemRepository) FindByChecklist(ctx context.Context, checklistID uuid.UUID) ([]types.QualityChecklistItem, error) {
 	query := `
 		SELECT id, checklist_id, description, criteria, sequence, active, created_at
 		FROM quality_checklist_items WHERE checklist_id = $1
@@ -86,9 +86,9 @@ func (r *qualityChecklistItemRepository) FindByChecklist(ctx context.Context, ch
 	}
 	defer rows.Close()
 
-	var items []domain.QualityChecklistItem
+	var items []types.QualityChecklistItem
 	for rows.Next() {
-		var item domain.QualityChecklistItem
+		var item types.QualityChecklistItem
 		err := rows.Scan(
 			&item.ID, &item.ChecklistID, &item.Description, &item.Criteria, &item.Sequence, &item.Active, &item.CreatedAt,
 		)
@@ -102,7 +102,7 @@ func (r *qualityChecklistItemRepository) FindByChecklist(ctx context.Context, ch
 	return items, nil
 }
 
-func (r *qualityChecklistItemRepository) FindActiveByChecklist(ctx context.Context, checklistID uuid.UUID) ([]domain.QualityChecklistItem, error) {
+func (r *qualityChecklistItemRepository) FindActiveByChecklist(ctx context.Context, checklistID uuid.UUID) ([]types.QualityChecklistItem, error) {
 	query := `
 		SELECT id, checklist_id, description, criteria, sequence, active, created_at
 		FROM quality_checklist_items WHERE checklist_id = $1 AND active = true
@@ -115,9 +115,9 @@ func (r *qualityChecklistItemRepository) FindActiveByChecklist(ctx context.Conte
 	}
 	defer rows.Close()
 
-	var items []domain.QualityChecklistItem
+	var items []types.QualityChecklistItem
 	for rows.Next() {
-		var item domain.QualityChecklistItem
+		var item types.QualityChecklistItem
 		err := rows.Scan(
 			&item.ID, &item.ChecklistID, &item.Description, &item.Criteria, &item.Sequence, &item.Active, &item.CreatedAt,
 		)
@@ -131,7 +131,7 @@ func (r *qualityChecklistItemRepository) FindActiveByChecklist(ctx context.Conte
 	return items, nil
 }
 
-func (r *qualityChecklistItemRepository) Update(ctx context.Context, item domain.QualityChecklistItem) (*domain.QualityChecklistItem, error) {
+func (r *qualityChecklistItemRepository) Update(ctx context.Context, item types.QualityChecklistItem) (*types.QualityChecklistItem, error) {
 	query := `
 		UPDATE quality_checklist_items
 		SET description = $2, criteria = $3, sequence = $4, active = $5
@@ -139,7 +139,7 @@ func (r *qualityChecklistItemRepository) Update(ctx context.Context, item domain
 		RETURNING id, checklist_id, description, criteria, sequence, active, created_at
 	`
 
-	var updated domain.QualityChecklistItem
+	var updated types.QualityChecklistItem
 	err := r.db.QueryRowContext(ctx, query,
 		item.ID, item.Description, item.Criteria, item.Sequence, item.Active,
 	).Scan(

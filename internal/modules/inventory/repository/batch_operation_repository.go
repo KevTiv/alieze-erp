@@ -11,28 +11,28 @@ import (
 
 // BatchOperationRepository interface
 type BatchOperationRepository interface {
-	Create(ctx context.Context, operation domain.BatchOperation) (*domain.BatchOperation, error)
-	FindByID(ctx context.Context, id uuid.UUID) (*domain.BatchOperation, error)
-	FindAll(ctx context.Context, organizationID uuid.UUID, limit int) ([]domain.BatchOperation, error)
-	FindByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]domain.BatchOperation, error)
-	FindByType(ctx context.Context, organizationID uuid.UUID, operationType domain.BatchOperationType) ([]domain.BatchOperation, error)
-	FindByDateRange(ctx context.Context, organizationID uuid.UUID, fromTime, toTime time.Time) ([]domain.BatchOperation, error)
-	FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]domain.BatchOperation, error)
-	Update(ctx context.Context, operation domain.BatchOperation) (*domain.BatchOperation, error)
+	Create(ctx context.Context, operation types.BatchOperation) (*types.BatchOperation, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*types.BatchOperation, error)
+	FindAll(ctx context.Context, organizationID uuid.UUID, limit int) ([]types.BatchOperation, error)
+	FindByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]types.BatchOperation, error)
+	FindByType(ctx context.Context, organizationID uuid.UUID, operationType types.BatchOperationType) ([]types.BatchOperation, error)
+	FindByDateRange(ctx context.Context, organizationID uuid.UUID, fromTime, toTime time.Time) ([]types.BatchOperation, error)
+	FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]types.BatchOperation, error)
+	Update(ctx context.Context, operation types.BatchOperation) (*types.BatchOperation, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 
 	// Business logic methods
-	ProcessBatchOperation(ctx context.Context, operationID uuid.UUID, processedBy uuid.UUID) (*domain.BatchOperationResult, error)
-	GetStatistics(ctx context.Context, organizationID uuid.UUID, fromTime, toTime *time.Time, operationType *domain.BatchOperationType) (domain.BatchOperationStatistics, error)
+	ProcessBatchOperation(ctx context.Context, operationID uuid.UUID, processedBy uuid.UUID) (*types.BatchOperationResult, error)
+	GetStatistics(ctx context.Context, organizationID uuid.UUID, fromTime, toTime *time.Time, operationType *types.BatchOperationType) (types.BatchOperationStatistics, error)
 }
 
 // BatchOperationItemRepository interface
 type BatchOperationItemRepository interface {
-	Create(ctx context.Context, item domain.BatchOperationItem) (*domain.BatchOperationItem, error)
-	FindByID(ctx context.Context, id uuid.UUID) (*domain.BatchOperationItem, error)
-	FindByBatchOperation(ctx context.Context, batchOperationID uuid.UUID) ([]domain.BatchOperationItem, error)
-	FindByStatus(ctx context.Context, batchOperationID uuid.UUID, status string) ([]domain.BatchOperationItem, error)
-	Update(ctx context.Context, item domain.BatchOperationItem) (*domain.BatchOperationItem, error)
+	Create(ctx context.Context, item types.BatchOperationItem) (*types.BatchOperationItem, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*types.BatchOperationItem, error)
+	FindByBatchOperation(ctx context.Context, batchOperationID uuid.UUID) ([]types.BatchOperationItem, error)
+	FindByStatus(ctx context.Context, batchOperationID uuid.UUID, status string) ([]types.BatchOperationItem, error)
+	Update(ctx context.Context, item types.BatchOperationItem) (*types.BatchOperationItem, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	DeleteByBatchOperation(ctx context.Context, batchOperationID uuid.UUID) error
 }

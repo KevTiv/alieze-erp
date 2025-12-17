@@ -106,7 +106,7 @@ func (h *QualityControlHandler) RegisterRoutes(router chi.Router) {
 func (h *QualityControlHandler) CreateInspection(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var inspection domain.QualityControlInspection
+	var inspection types.QualityControlInspection
 	if err := json.NewDecoder(r.Body).Decode(&inspection); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -230,7 +230,7 @@ func (h *QualityControlHandler) UpdateInspection(w http.ResponseWriter, r *http.
 		return
 	}
 
-	var inspection domain.QualityControlInspection
+	var inspection types.QualityControlInspection
 	if err := json.NewDecoder(r.Body).Decode(&inspection); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -271,7 +271,7 @@ func (h *QualityControlHandler) DeleteInspection(w http.ResponseWriter, r *http.
 func (h *QualityControlHandler) CreateChecklist(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var checklist domain.QualityControlChecklist
+	var checklist types.QualityControlChecklist
 	if err := json.NewDecoder(r.Body).Decode(&checklist); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -384,7 +384,7 @@ func (h *QualityControlHandler) UpdateChecklist(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	var checklist domain.QualityControlChecklist
+	var checklist types.QualityControlChecklist
 	if err := json.NewDecoder(r.Body).Decode(&checklist); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -425,7 +425,7 @@ func (h *QualityControlHandler) DeleteChecklist(w http.ResponseWriter, r *http.R
 func (h *QualityControlHandler) CreateChecklistItem(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var item domain.QualityChecklistItem
+	var item types.QualityChecklistItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -507,7 +507,7 @@ func (h *QualityControlHandler) UpdateChecklistItem(w http.ResponseWriter, r *ht
 		return
 	}
 
-	var item domain.QualityChecklistItem
+	var item types.QualityChecklistItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -548,7 +548,7 @@ func (h *QualityControlHandler) DeleteChecklistItem(w http.ResponseWriter, r *ht
 func (h *QualityControlHandler) CreateInspectionItem(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var item domain.QualityControlInspectionItem
+	var item types.QualityControlInspectionItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -611,7 +611,7 @@ func (h *QualityControlHandler) UpdateInspectionItem(w http.ResponseWriter, r *h
 		return
 	}
 
-	var item domain.QualityControlInspectionItem
+	var item types.QualityControlInspectionItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -686,7 +686,7 @@ func (h *QualityControlHandler) DeleteInspectionItem(w http.ResponseWriter, r *h
 func (h *QualityControlHandler) CreateAlert(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var alert domain.QualityControlAlert
+	var alert types.QualityControlAlert
 	if err := json.NewDecoder(r.Body).Decode(&alert); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -774,7 +774,7 @@ func (h *QualityControlHandler) UpdateAlert(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var alert domain.QualityControlAlert
+	var alert types.QualityControlAlert
 	if err := json.NewDecoder(r.Body).Decode(&alert); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -930,7 +930,7 @@ func (h *QualityControlHandler) CompleteInspection(w http.ResponseWriter, r *htt
 
 	var request struct {
 		Status  string                          `json:"status"`
-		Results []domain.QualityControlInspectionItem `json:"results"`
+		Results []types.QualityControlInspectionItem `json:"results"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -1031,7 +1031,7 @@ func (h *QualityControlHandler) ProcessQualityControlResult(w http.ResponseWrite
 
 	var request struct {
 		InspectionID uuid.UUID                          `json:"inspection_id"`
-		Results      []domain.QualityControlInspectionItem `json:"results"`
+		Results      []types.QualityControlInspectionItem `json:"results"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {

@@ -21,7 +21,7 @@ func NewCycleCountService(cycleCountRepo repository.CycleCountRepository) *Cycle
 }
 
 // CreateCycleCountPlan creates a new cycle count plan
-func (s *CycleCountService) CreateCycleCountPlan(ctx context.Context, request domain.CreateCycleCountPlanRequest) (*domain.CycleCountPlan, error) {
+func (s *CycleCountService) CreateCycleCountPlan(ctx context.Context, request types.CreateCycleCountPlanRequest) (*types.CycleCountPlan, error) {
 	if request.OrganizationID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -42,7 +42,7 @@ func (s *CycleCountService) CreateCycleCountPlan(ctx context.Context, request do
 }
 
 // GetCycleCountPlan retrieves a cycle count plan
-func (s *CycleCountService) GetCycleCountPlan(ctx context.Context, orgID uuid.UUID, planID uuid.UUID) (*domain.CycleCountPlan, error) {
+func (s *CycleCountService) GetCycleCountPlan(ctx context.Context, orgID uuid.UUID, planID uuid.UUID) (*types.CycleCountPlan, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -54,7 +54,7 @@ func (s *CycleCountService) GetCycleCountPlan(ctx context.Context, orgID uuid.UU
 }
 
 // ListCycleCountPlans retrieves cycle count plans for an organization
-func (s *CycleCountService) ListCycleCountPlans(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]domain.CycleCountPlan, error) {
+func (s *CycleCountService) ListCycleCountPlans(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]types.CycleCountPlan, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -78,7 +78,7 @@ func (s *CycleCountService) UpdateCycleCountPlanStatus(ctx context.Context, orgI
 }
 
 // CreateCycleCountSession creates a new cycle count session
-func (s *CycleCountService) CreateCycleCountSession(ctx context.Context, request domain.CreateCycleCountSessionRequest) (*domain.CycleCountSession, error) {
+func (s *CycleCountService) CreateCycleCountSession(ctx context.Context, request types.CreateCycleCountSessionRequest) (*types.CycleCountSession, error) {
 	if request.OrganizationID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -96,7 +96,7 @@ func (s *CycleCountService) CreateCycleCountSession(ctx context.Context, request
 }
 
 // GetCycleCountSession retrieves a cycle count session
-func (s *CycleCountService) GetCycleCountSession(ctx context.Context, orgID uuid.UUID, sessionID uuid.UUID) (*domain.CycleCountSession, error) {
+func (s *CycleCountService) GetCycleCountSession(ctx context.Context, orgID uuid.UUID, sessionID uuid.UUID) (*types.CycleCountSession, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -108,7 +108,7 @@ func (s *CycleCountService) GetCycleCountSession(ctx context.Context, orgID uuid
 }
 
 // ListCycleCountSessions retrieves cycle count sessions for an organization
-func (s *CycleCountService) ListCycleCountSessions(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]domain.CycleCountSession, error) {
+func (s *CycleCountService) ListCycleCountSessions(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]types.CycleCountSession, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -129,7 +129,7 @@ func (s *CycleCountService) CompleteCycleCountSession(ctx context.Context, orgID
 }
 
 // AddCycleCountLine adds a count line to a session
-func (s *CycleCountService) AddCycleCountLine(ctx context.Context, request domain.AddCycleCountLineRequest) (*domain.CycleCountLine, error) {
+func (s *CycleCountService) AddCycleCountLine(ctx context.Context, request types.AddCycleCountLineRequest) (*types.CycleCountLine, error) {
 	if request.SessionID == uuid.Nil {
 		return nil, fmt.Errorf("session_id is required")
 	}
@@ -153,7 +153,7 @@ func (s *CycleCountService) AddCycleCountLine(ctx context.Context, request domai
 }
 
 // GetCycleCountLine retrieves a count line
-func (s *CycleCountService) GetCycleCountLine(ctx context.Context, orgID uuid.UUID, lineID uuid.UUID) (*domain.CycleCountLine, error) {
+func (s *CycleCountService) GetCycleCountLine(ctx context.Context, orgID uuid.UUID, lineID uuid.UUID) (*types.CycleCountLine, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -165,7 +165,7 @@ func (s *CycleCountService) GetCycleCountLine(ctx context.Context, orgID uuid.UU
 }
 
 // ListCycleCountLines retrieves count lines for a session
-func (s *CycleCountService) ListCycleCountLines(ctx context.Context, orgID uuid.UUID, sessionID uuid.UUID) ([]domain.CycleCountLine, error) {
+func (s *CycleCountService) ListCycleCountLines(ctx context.Context, orgID uuid.UUID, sessionID uuid.UUID) ([]types.CycleCountLine, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -177,7 +177,7 @@ func (s *CycleCountService) ListCycleCountLines(ctx context.Context, orgID uuid.
 }
 
 // VerifyCycleCountLine verifies a count line
-func (s *CycleCountService) VerifyCycleCountLine(ctx context.Context, request domain.VerifyCycleCountLineRequest) (bool, error) {
+func (s *CycleCountService) VerifyCycleCountLine(ctx context.Context, request types.VerifyCycleCountLineRequest) (bool, error) {
 	if request.LineID == uuid.Nil {
 		return false, fmt.Errorf("line_id is required")
 	}
@@ -195,7 +195,7 @@ func (s *CycleCountService) VerifyCycleCountLine(ctx context.Context, request do
 }
 
 // CreateAdjustmentFromVariance creates an adjustment from a count variance
-func (s *CycleCountService) CreateAdjustmentFromVariance(ctx context.Context, request domain.CreateAdjustmentRequest) (*domain.CycleCountAdjustment, error) {
+func (s *CycleCountService) CreateAdjustmentFromVariance(ctx context.Context, request types.CreateAdjustmentRequest) (*types.CycleCountAdjustment, error) {
 	if request.LineID == uuid.Nil {
 		return nil, fmt.Errorf("line_id is required")
 	}
@@ -213,7 +213,7 @@ func (s *CycleCountService) CreateAdjustmentFromVariance(ctx context.Context, re
 }
 
 // GetCycleCountAdjustment retrieves an adjustment
-func (s *CycleCountService) GetCycleCountAdjustment(ctx context.Context, orgID uuid.UUID, adjustmentID uuid.UUID) (*domain.CycleCountAdjustment, error) {
+func (s *CycleCountService) GetCycleCountAdjustment(ctx context.Context, orgID uuid.UUID, adjustmentID uuid.UUID) (*types.CycleCountAdjustment, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -225,7 +225,7 @@ func (s *CycleCountService) GetCycleCountAdjustment(ctx context.Context, orgID u
 }
 
 // ListCycleCountAdjustments retrieves adjustments for an organization
-func (s *CycleCountService) ListCycleCountAdjustments(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]domain.CycleCountAdjustment, error) {
+func (s *CycleCountService) ListCycleCountAdjustments(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]types.CycleCountAdjustment, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -234,7 +234,7 @@ func (s *CycleCountService) ListCycleCountAdjustments(ctx context.Context, orgID
 }
 
 // ApproveCycleCountAdjustment approves an adjustment and updates stock
-func (s *CycleCountService) ApproveCycleCountAdjustment(ctx context.Context, request domain.ApproveAdjustmentRequest) (bool, error) {
+func (s *CycleCountService) ApproveCycleCountAdjustment(ctx context.Context, request types.ApproveAdjustmentRequest) (bool, error) {
 	if request.AdjustmentID == uuid.Nil {
 		return false, fmt.Errorf("adjustment_id is required")
 	}
@@ -249,7 +249,7 @@ func (s *CycleCountService) ApproveCycleCountAdjustment(ctx context.Context, req
 }
 
 // GetCycleCountAccuracyMetrics retrieves accuracy metrics
-func (s *CycleCountService) GetCycleCountAccuracyMetrics(ctx context.Context, request domain.GetAccuracyMetricsRequest) (*domain.CycleCountMetrics, error) {
+func (s *CycleCountService) GetCycleCountAccuracyMetrics(ctx context.Context, request types.GetAccuracyMetricsRequest) (*types.CycleCountMetrics, error) {
 	if request.OrganizationID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -258,7 +258,7 @@ func (s *CycleCountService) GetCycleCountAccuracyMetrics(ctx context.Context, re
 }
 
 // GetProductsNeedingCycleCount retrieves products that need cycle counting
-func (s *CycleCountService) GetProductsNeedingCycleCount(ctx context.Context, request domain.GetProductsNeedingCountRequest) ([]domain.ProductNeedingCycleCount, error) {
+func (s *CycleCountService) GetProductsNeedingCycleCount(ctx context.Context, request types.GetProductsNeedingCountRequest) ([]types.ProductNeedingCycleCount, error) {
 	if request.OrganizationID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -267,7 +267,7 @@ func (s *CycleCountService) GetProductsNeedingCycleCount(ctx context.Context, re
 }
 
 // GetCycleCountAccuracyHistory retrieves accuracy history
-func (s *CycleCountService) GetCycleCountAccuracyHistory(ctx context.Context, orgID uuid.UUID, productID *uuid.UUID, limit, offset int) ([]domain.CycleCountAccuracy, error) {
+func (s *CycleCountService) GetCycleCountAccuracyHistory(ctx context.Context, orgID uuid.UUID, productID *uuid.UUID, limit, offset int) ([]types.CycleCountAccuracy, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -298,7 +298,7 @@ func (s *CycleCountService) GetCycleCountDashboard(ctx context.Context, orgID uu
 	dashboard["in_progress_sessions"] = sessions
 
 	// Get accuracy metrics (last 30 days)
-	metrics, err := s.GetCycleCountAccuracyMetrics(ctx, domain.GetAccuracyMetricsRequest{
+	metrics, err := s.GetCycleCountAccuracyMetrics(ctx, types.GetAccuracyMetricsRequest{
 		OrganizationID: orgID,
 		DateFrom:       func() *time.Time { d := time.Now().AddDate(0, 0, -30); return &d }(),
 	})
@@ -308,7 +308,7 @@ func (s *CycleCountService) GetCycleCountDashboard(ctx context.Context, orgID uu
 	dashboard["accuracy_metrics"] = metrics
 
 	// Get products needing attention
-	products, err := s.GetProductsNeedingCycleCount(ctx, domain.GetProductsNeedingCountRequest{
+	products, err := s.GetProductsNeedingCycleCount(ctx, types.GetProductsNeedingCountRequest{
 		OrganizationID: orgID,
 		DaysSinceLastCount: func() *int { d := 30; return &d }(),
 		MinVariancePercentage: func() *float64 { v := 5.0; return &v }(),

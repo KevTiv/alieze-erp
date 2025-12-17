@@ -12,18 +12,18 @@ import (
 )
 
 type SalesOrderRepository interface {
-	Create(ctx context.Context, order domain.SalesOrder) (*domain.SalesOrder, error)
-	FindByID(ctx context.Context, id uuid.UUID) (*domain.SalesOrder, error)
-	FindAll(ctx context.Context, filters SalesOrderFilter) ([]domain.SalesOrder, error)
-	Update(ctx context.Context, order domain.SalesOrder) (*domain.SalesOrder, error)
+	Create(ctx context.Context, order types.SalesOrder) (*types.SalesOrder, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*types.SalesOrder, error)
+	FindAll(ctx context.Context, filters SalesOrderFilter) ([]types.SalesOrder, error)
+	Update(ctx context.Context, order types.SalesOrder) (*types.SalesOrder, error)
 	Delete(ctx context.Context, id uuid.UUID) error
-	FindByCustomerID(ctx context.Context, customerID uuid.UUID) ([]domain.SalesOrder, error)
-	FindByStatus(ctx context.Context, status domain.SalesOrderStatus) ([]domain.SalesOrder, error)
+	FindByCustomerID(ctx context.Context, customerID uuid.UUID) ([]types.SalesOrder, error)
+	FindByStatus(ctx context.Context, status types.SalesOrderStatus) ([]types.SalesOrder, error)
 }
 
 type SalesOrderFilter struct {
 	CustomerID *uuid.UUID
-	Status     *domain.SalesOrderStatus
+	Status     *types.SalesOrderStatus
 	DateFrom   *time.Time
 	DateTo     *time.Time
 	Limit      int
@@ -38,7 +38,7 @@ func NewSalesOrderRepository(db *sql.DB) SalesOrderRepository {
 	return &salesOrderRepository{db: db}
 }
 
-func (r *salesOrderRepository) Create(ctx context.Context, order domain.SalesOrder) (*domain.SalesOrder, error) {
+func (r *salesOrderRepository) Create(ctx context.Context, order types.SalesOrder) (*types.SalesOrder, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -59,7 +59,7 @@ func (r *salesOrderRepository) Create(ctx context.Context, order domain.SalesOrd
 		 created_at, updated_at, created_by, updated_by
 	`
 
-	var createdOrder domain.SalesOrder
+	var createdOrder types.SalesOrder
 	err = tx.QueryRowContext(ctx, query,
 		order.ID, order.OrganizationID, order.CompanyID, order.CustomerID, order.SalesTeamID,
 		order.Reference, order.Status, order.OrderDate, order.ConfirmationDate, order.ValidityDate,
@@ -92,7 +92,7 @@ func (r *salesOrderRepository) Create(ctx context.Context, order domain.SalesOrd
 			 created_at, updated_at
 		`
 
-		var createdLine domain.SalesOrderLine
+		var createdLine types.SalesOrderLine
 		err = tx.QueryRowContext(ctx, lineQuery,
 			line.ID, createdOrder.ID, line.ProductID, line.ProductName, line.Description,
 			line.Quantity, line.UomID, line.UnitPrice, line.Discount, line.TaxID,
@@ -117,7 +117,7 @@ func (r *salesOrderRepository) Create(ctx context.Context, order domain.SalesOrd
 	return &createdOrder, nil
 }
 
-func (r *salesOrderRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.SalesOrder, error) {
+func (r *salesOrderRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.SalesOrder, error) {
 	query := `
 		SELECT id, organization_id, company_id, customer_id, sales_team_id, reference, status,
 		 order_date, confirmation_date, validity_date, payment_term_id, fiscal_position_id,
@@ -127,7 +127,7 @@ func (r *salesOrderRepository) FindByID(ctx context.Context, id uuid.UUID) (*dom
 		WHERE id = $1
 	`
 
-	var order domain.SalesOrder
+	var order types.SalesOrder
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&order.ID, &order.OrganizationID, &order.CompanyID, &order.CustomerID,
 		&order.SalesTeamID, &order.Reference, &order.Status,
@@ -154,7 +154,7 @@ func (r *salesOrderRepository) FindByID(ctx context.Context, id uuid.UUID) (*dom
 	return &order, nil
 }
 
-func (r *salesOrderRepository) findLinesByOrderID(ctx context.Context, orderID uuid.UUID) ([]domain.SalesOrderLine, error) {
+func (r *salesOrderRepository) findLinesByOrderID(ctx context.Context, orderID uuid.UUID) ([]types.SalesOrderLine, error) {
 	query := `
 		SELECT id, sales_order_id, product_id, product_name, description, quantity, uom_id,
 		 unit_price, discount, tax_id, price_subtotal, price_tax, price_total, sequence,
@@ -170,9 +170,9 @@ func (r *salesOrderRepository) findLinesByOrderID(ctx context.Context, orderID u
 	}
 	defer rows.Close()
 
-	var lines []domain.SalesOrderLine
+	var lines []types.SalesOrderLine
 	for rows.Next() {
-		var line domain.SalesOrderLine
+		var line types.SalesOrderLine
 		err = rows.Scan(
 			&line.ID, &line.SalesOrderID, &line.ProductID, &line.ProductName,
 			&line.Description, &line.Quantity, &line.UomID, &line.UnitPrice,
@@ -188,7 +188,7 @@ func (r *salesOrderRepository) findLinesByOrderID(ctx context.Context, orderID u
 	return lines, nil
 }
 
-func (r *salesOrderRepository) FindAll(ctx context.Context, filters SalesOrderFilter) ([]domain.SalesOrder, error) {
+func (r *salesOrderRepository) FindAll(ctx context.Context, filters SalesOrderFilter) ([]types.SalesOrder, error) {
 	query := `
 		SELECT id, organization_id, company_id, customer_id, sales_team_id, reference, status,
 		 order_date, confirmation_date, validity_date, payment_term_id, fiscal_position_id,
@@ -235,9 +235,9 @@ func (r *salesOrderRepository) FindAll(ctx context.Context, filters SalesOrderFi
 	}
 	defer rows.Close()
 
-	var orders []domain.SalesOrder
+	var orders []types.SalesOrder
 	for rows.Next() {
-		var order domain.SalesOrder
+		var order types.SalesOrder
 		err = rows.Scan(
 			&order.ID, &order.OrganizationID, &order.CompanyID, &order.CustomerID,
 			&order.SalesTeamID, &order.Reference, &order.Status,
@@ -265,7 +265,7 @@ func (r *salesOrderRepository) FindAll(ctx context.Context, filters SalesOrderFi
 	return orders, nil
 }
 
-func (r *salesOrderRepository) Update(ctx context.Context, order domain.SalesOrder) (*domain.SalesOrder, error) {
+func (r *salesOrderRepository) Update(ctx context.Context, order types.SalesOrder) (*types.SalesOrder, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -287,7 +287,7 @@ func (r *salesOrderRepository) Update(ctx context.Context, order domain.SalesOrd
 		 created_at, updated_at, created_by, updated_by
 	`
 
-	var updatedOrder domain.SalesOrder
+	var updatedOrder types.SalesOrder
 	err = tx.QueryRowContext(ctx, query,
 		order.CustomerID, order.SalesTeamID, order.Reference, order.Status,
 		order.OrderDate, order.ConfirmationDate, order.ValidityDate,
@@ -326,7 +326,7 @@ func (r *salesOrderRepository) Update(ctx context.Context, order domain.SalesOrd
 			 created_at, updated_at
 		`
 
-		var createdLine domain.SalesOrderLine
+		var createdLine types.SalesOrderLine
 		err = tx.QueryRowContext(ctx, lineQuery,
 			line.ID, updatedOrder.ID, line.ProductID, line.ProductName, line.Description,
 			line.Quantity, line.UomID, line.UnitPrice, line.Discount, line.TaxID,
@@ -377,7 +377,7 @@ func (r *salesOrderRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *salesOrderRepository) FindByCustomerID(ctx context.Context, customerID uuid.UUID) ([]domain.SalesOrder, error) {
+func (r *salesOrderRepository) FindByCustomerID(ctx context.Context, customerID uuid.UUID) ([]types.SalesOrder, error) {
 	query := `
 		SELECT id, organization_id, company_id, customer_id, sales_team_id, reference, status,
 		 order_date, confirmation_date, validity_date, payment_term_id, fiscal_position_id,
@@ -394,9 +394,9 @@ func (r *salesOrderRepository) FindByCustomerID(ctx context.Context, customerID 
 	}
 	defer rows.Close()
 
-	var orders []domain.SalesOrder
+	var orders []types.SalesOrder
 	for rows.Next() {
-		var order domain.SalesOrder
+		var order types.SalesOrder
 		err = rows.Scan(
 			&order.ID, &order.OrganizationID, &order.CompanyID, &order.CustomerID,
 			&order.SalesTeamID, &order.Reference, &order.Status,
@@ -424,7 +424,7 @@ func (r *salesOrderRepository) FindByCustomerID(ctx context.Context, customerID 
 	return orders, nil
 }
 
-func (r *salesOrderRepository) FindByStatus(ctx context.Context, status domain.SalesOrderStatus) ([]domain.SalesOrder, error) {
+func (r *salesOrderRepository) FindByStatus(ctx context.Context, status types.SalesOrderStatus) ([]types.SalesOrder, error) {
 	query := `
 		SELECT id, organization_id, company_id, customer_id, sales_team_id, reference, status,
 		 order_date, confirmation_date, validity_date, payment_term_id, fiscal_position_id,
@@ -441,9 +441,9 @@ func (r *salesOrderRepository) FindByStatus(ctx context.Context, status domain.S
 	}
 	defer rows.Close()
 
-	var orders []domain.SalesOrder
+	var orders []types.SalesOrder
 	for rows.Next() {
-		var order domain.SalesOrder
+		var order types.SalesOrder
 		err = rows.Scan(
 			&order.ID, &order.OrganizationID, &order.CompanyID, &order.CustomerID,
 			&order.SalesTeamID, &order.Reference, &order.Status,

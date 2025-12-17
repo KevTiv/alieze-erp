@@ -38,7 +38,7 @@ func (h *InvoiceHandler) RegisterRoutes(router *httprouter.Router) {
 }
 
 func (h *InvoiceHandler) CreateInvoice(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var req domain.Invoice
+	var req types.Invoice
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -100,12 +100,12 @@ func (h *InvoiceHandler) ListInvoices(w http.ResponseWriter, r *http.Request, _ 
 	}
 
 	if statusStr != "" {
-		status := domain.InvoiceStatus(statusStr)
+		status := types.InvoiceStatus(statusStr)
 		filters.Status = &status
 	}
 
 	if typeStr != "" {
-		invoiceType := domain.InvoiceType(typeStr)
+		invoiceType := types.InvoiceType(typeStr)
 		filters.Type = &invoiceType
 	}
 
@@ -145,7 +145,7 @@ func (h *InvoiceHandler) UpdateInvoice(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	var req domain.Invoice
+	var req types.Invoice
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -221,7 +221,7 @@ func (h *InvoiceHandler) RecordPayment(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	var req domain.Payment
+	var req types.Payment
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -257,7 +257,7 @@ func (h *InvoiceHandler) GetInvoicesByPartner(w http.ResponseWriter, r *http.Req
 }
 
 func (h *InvoiceHandler) GetInvoicesByStatus(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	status := domain.InvoiceStatus(ps.ByName("status"))
+	status := types.InvoiceStatus(ps.ByName("status"))
 
 	invoices, err := h.service.GetInvoicesByStatus(r.Context(), status)
 	if err != nil {
@@ -271,7 +271,7 @@ func (h *InvoiceHandler) GetInvoicesByStatus(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *InvoiceHandler) GetInvoicesByType(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	invoiceType := domain.InvoiceType(ps.ByName("type"))
+	invoiceType := types.InvoiceType(ps.ByName("type"))
 
 	invoices, err := h.service.GetInvoicesByType(r.Context(), invoiceType)
 	if err != nil {

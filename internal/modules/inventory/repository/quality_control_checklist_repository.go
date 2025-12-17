@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -20,7 +19,7 @@ func NewQualityControlChecklistRepository(db *sql.DB) QualityControlChecklistRep
 	return &qualityControlChecklistRepository{db: db}
 }
 
-func (r *qualityControlChecklistRepository) Create(ctx context.Context, checklist domain.QualityControlChecklist) (*domain.QualityControlChecklist, error) {
+func (r *qualityControlChecklistRepository) Create(ctx context.Context, checklist types.QualityControlChecklist) (*types.QualityControlChecklist, error) {
 	query := `
 		INSERT INTO quality_control_checklists
 		(id, organization_id, company_id, name, description, product_id, product_category_id,
@@ -46,7 +45,7 @@ func (r *qualityControlChecklistRepository) Create(ctx context.Context, checklis
 		checklist.Active = true
 	}
 
-	var created domain.QualityControlChecklist
+	var created types.QualityControlChecklist
 	err := r.db.QueryRowContext(ctx, query,
 		checklist.ID, checklist.OrganizationID, checklist.CompanyID, checklist.Name, checklist.Description,
 		checklist.ProductID, checklist.ProductCategoryID, checklist.InspectionType, checklist.Active,
@@ -63,14 +62,14 @@ func (r *qualityControlChecklistRepository) Create(ctx context.Context, checklis
 	return &created, nil
 }
 
-func (r *qualityControlChecklistRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.QualityControlChecklist, error) {
+func (r *qualityControlChecklistRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.QualityControlChecklist, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, description, product_id, product_category_id,
 		 inspection_type, active, priority, created_at, updated_at
 		FROM quality_control_checklists WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	var checklist domain.QualityControlChecklist
+	var checklist types.QualityControlChecklist
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&checklist.ID, &checklist.OrganizationID, &checklist.CompanyID, &checklist.Name, &checklist.Description,
 		&checklist.ProductID, &checklist.ProductCategoryID, &checklist.InspectionType, &checklist.Active,
@@ -86,7 +85,7 @@ func (r *qualityControlChecklistRepository) FindByID(ctx context.Context, id uui
 	return &checklist, nil
 }
 
-func (r *qualityControlChecklistRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]domain.QualityControlChecklist, error) {
+func (r *qualityControlChecklistRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]types.QualityControlChecklist, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, description, product_id, product_category_id,
 		 inspection_type, active, priority, created_at, updated_at
@@ -100,9 +99,9 @@ func (r *qualityControlChecklistRepository) FindAll(ctx context.Context, organiz
 	}
 	defer rows.Close()
 
-	var checklists []domain.QualityControlChecklist
+	var checklists []types.QualityControlChecklist
 	for rows.Next() {
-		var checklist domain.QualityControlChecklist
+		var checklist types.QualityControlChecklist
 		err := rows.Scan(
 			&checklist.ID, &checklist.OrganizationID, &checklist.CompanyID, &checklist.Name, &checklist.Description,
 			&checklist.ProductID, &checklist.ProductCategoryID, &checklist.InspectionType, &checklist.Active,
@@ -118,7 +117,7 @@ func (r *qualityControlChecklistRepository) FindAll(ctx context.Context, organiz
 	return checklists, nil
 }
 
-func (r *qualityControlChecklistRepository) FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]domain.QualityControlChecklist, error) {
+func (r *qualityControlChecklistRepository) FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]types.QualityControlChecklist, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, description, product_id, product_category_id,
 		 inspection_type, active, priority, created_at, updated_at
@@ -132,9 +131,9 @@ func (r *qualityControlChecklistRepository) FindByProduct(ctx context.Context, o
 	}
 	defer rows.Close()
 
-	var checklists []domain.QualityControlChecklist
+	var checklists []types.QualityControlChecklist
 	for rows.Next() {
-		var checklist domain.QualityControlChecklist
+		var checklist types.QualityControlChecklist
 		err := rows.Scan(
 			&checklist.ID, &checklist.OrganizationID, &checklist.CompanyID, &checklist.Name, &checklist.Description,
 			&checklist.ProductID, &checklist.ProductCategoryID, &checklist.InspectionType, &checklist.Active,
@@ -150,7 +149,7 @@ func (r *qualityControlChecklistRepository) FindByProduct(ctx context.Context, o
 	return checklists, nil
 }
 
-func (r *qualityControlChecklistRepository) FindByCategory(ctx context.Context, organizationID, categoryID uuid.UUID) ([]domain.QualityControlChecklist, error) {
+func (r *qualityControlChecklistRepository) FindByCategory(ctx context.Context, organizationID, categoryID uuid.UUID) ([]types.QualityControlChecklist, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, description, product_id, product_category_id,
 		 inspection_type, active, priority, created_at, updated_at
@@ -164,9 +163,9 @@ func (r *qualityControlChecklistRepository) FindByCategory(ctx context.Context, 
 	}
 	defer rows.Close()
 
-	var checklists []domain.QualityControlChecklist
+	var checklists []types.QualityControlChecklist
 	for rows.Next() {
-		var checklist domain.QualityControlChecklist
+		var checklist types.QualityControlChecklist
 		err := rows.Scan(
 			&checklist.ID, &checklist.OrganizationID, &checklist.CompanyID, &checklist.Name, &checklist.Description,
 			&checklist.ProductID, &checklist.ProductCategoryID, &checklist.InspectionType, &checklist.Active,
@@ -182,7 +181,7 @@ func (r *qualityControlChecklistRepository) FindByCategory(ctx context.Context, 
 	return checklists, nil
 }
 
-func (r *qualityControlChecklistRepository) FindByInspectionType(ctx context.Context, organizationID uuid.UUID, inspectionType string) ([]domain.QualityControlChecklist, error) {
+func (r *qualityControlChecklistRepository) FindByInspectionType(ctx context.Context, organizationID uuid.UUID, inspectionType string) ([]types.QualityControlChecklist, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, description, product_id, product_category_id,
 		 inspection_type, active, priority, created_at, updated_at
@@ -196,9 +195,9 @@ func (r *qualityControlChecklistRepository) FindByInspectionType(ctx context.Con
 	}
 	defer rows.Close()
 
-	var checklists []domain.QualityControlChecklist
+	var checklists []types.QualityControlChecklist
 	for rows.Next() {
-		var checklist domain.QualityControlChecklist
+		var checklist types.QualityControlChecklist
 		err := rows.Scan(
 			&checklist.ID, &checklist.OrganizationID, &checklist.CompanyID, &checklist.Name, &checklist.Description,
 			&checklist.ProductID, &checklist.ProductCategoryID, &checklist.InspectionType, &checklist.Active,
@@ -214,7 +213,7 @@ func (r *qualityControlChecklistRepository) FindByInspectionType(ctx context.Con
 	return checklists, nil
 }
 
-func (r *qualityControlChecklistRepository) FindActive(ctx context.Context, organizationID uuid.UUID) ([]domain.QualityControlChecklist, error) {
+func (r *qualityControlChecklistRepository) FindActive(ctx context.Context, organizationID uuid.UUID) ([]types.QualityControlChecklist, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, description, product_id, product_category_id,
 		 inspection_type, active, priority, created_at, updated_at
@@ -228,9 +227,9 @@ func (r *qualityControlChecklistRepository) FindActive(ctx context.Context, orga
 	}
 	defer rows.Close()
 
-	var checklists []domain.QualityControlChecklist
+	var checklists []types.QualityControlChecklist
 	for rows.Next() {
-		var checklist domain.QualityControlChecklist
+		var checklist types.QualityControlChecklist
 		err := rows.Scan(
 			&checklist.ID, &checklist.OrganizationID, &checklist.CompanyID, &checklist.Name, &checklist.Description,
 			&checklist.ProductID, &checklist.ProductCategoryID, &checklist.InspectionType, &checklist.Active,
@@ -246,7 +245,7 @@ func (r *qualityControlChecklistRepository) FindActive(ctx context.Context, orga
 	return checklists, nil
 }
 
-func (r *qualityControlChecklistRepository) Update(ctx context.Context, checklist domain.QualityControlChecklist) (*domain.QualityControlChecklist, error) {
+func (r *qualityControlChecklistRepository) Update(ctx context.Context, checklist types.QualityControlChecklist) (*types.QualityControlChecklist, error) {
 	query := `
 		UPDATE quality_control_checklists
 		SET name = $2, description = $3, product_id = $4, product_category_id = $5,
@@ -257,7 +256,7 @@ func (r *qualityControlChecklistRepository) Update(ctx context.Context, checklis
 	`
 
 	checklist.UpdatedAt = time.Now()
-	var updated domain.QualityControlChecklist
+	var updated types.QualityControlChecklist
 	err := r.db.QueryRowContext(ctx, query,
 		checklist.ID, checklist.Name, checklist.Description, checklist.ProductID, checklist.ProductCategoryID,
 		checklist.InspectionType, checklist.Active, checklist.Priority, checklist.UpdatedAt,

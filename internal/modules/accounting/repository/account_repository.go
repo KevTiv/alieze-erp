@@ -13,13 +13,13 @@ import (
 )
 
 type AccountRepository interface {
-	Create(ctx context.Context, account domain.Account) (*domain.Account, error)
-	FindByID(ctx context.Context, id uuid.UUID) (*domain.Account, error)
-	FindAll(ctx context.Context, filters AccountFilter) ([]domain.Account, error)
-	Update(ctx context.Context, account domain.Account) (*domain.Account, error)
+	Create(ctx context.Context, account types.Account) (*types.Account, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*types.Account, error)
+	FindAll(ctx context.Context, filters AccountFilter) ([]types.Account, error)
+	Update(ctx context.Context, account types.Account) (*types.Account, error)
 	Delete(ctx context.Context, id uuid.UUID) error
-	FindByCode(ctx context.Context, organizationID uuid.UUID, code string) (*domain.Account, error)
-	FindByType(ctx context.Context, organizationID uuid.UUID, accountType string) ([]domain.Account, error)
+	FindByCode(ctx context.Context, organizationID uuid.UUID, code string) (*types.Account, error)
+	FindByType(ctx context.Context, organizationID uuid.UUID, accountType string) ([]types.Account, error)
 }
 
 type AccountFilter struct {
@@ -41,7 +41,7 @@ func NewAccountRepository(db *sql.DB) AccountRepository {
 	return &accountRepository{db: db}
 }
 
-func (r *accountRepository) Create(ctx context.Context, account domain.Account) (*domain.Account, error) {
+func (r *accountRepository) Create(ctx context.Context, account types.Account) (*types.Account, error) {
 	query := `
 		INSERT INTO account_accounts
 		(id, organization_id, company_id, name, code, deprecated, account_type,
@@ -64,7 +64,7 @@ func (r *accountRepository) Create(ctx context.Context, account domain.Account) 
 		account.UpdatedAt = now
 	}
 
-	var createdAccount domain.Account
+	var createdAccount types.Account
 	err := r.db.QueryRowContext(ctx, query,
 		account.ID, account.OrganizationID, account.CompanyID, account.Name,
 		account.Code, account.Deprecated, account.AccountType, account.InternalType,
@@ -87,7 +87,7 @@ func (r *accountRepository) Create(ctx context.Context, account domain.Account) 
 	return &createdAccount, nil
 }
 
-func (r *accountRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Account, error) {
+func (r *accountRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Account, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, code, deprecated, account_type,
 		 internal_type, internal_group, user_type_id, reconcile, currency_id,
@@ -96,7 +96,7 @@ func (r *accountRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	var account domain.Account
+	var account types.Account
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&account.ID, &account.OrganizationID, &account.CompanyID,
 		&account.Name, &account.Code, &account.Deprecated,
@@ -116,7 +116,7 @@ func (r *accountRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain
 	return &account, nil
 }
 
-func (r *accountRepository) FindAll(ctx context.Context, filters AccountFilter) ([]domain.Account, error) {
+func (r *accountRepository) FindAll(ctx context.Context, filters AccountFilter) ([]types.Account, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, code, deprecated, account_type,
 		 internal_type, internal_group, user_type_id, reconcile, currency_id,
@@ -178,9 +178,9 @@ func (r *accountRepository) FindAll(ctx context.Context, filters AccountFilter) 
 	}
 	defer rows.Close()
 
-	var accounts []domain.Account
+	var accounts []types.Account
 	for rows.Next() {
-		var account domain.Account
+		var account types.Account
 		err := rows.Scan(
 			&account.ID, &account.OrganizationID, &account.CompanyID,
 			&account.Name, &account.Code, &account.Deprecated,
@@ -199,7 +199,7 @@ func (r *accountRepository) FindAll(ctx context.Context, filters AccountFilter) 
 	return accounts, nil
 }
 
-func (r *accountRepository) Update(ctx context.Context, account domain.Account) (*domain.Account, error) {
+func (r *accountRepository) Update(ctx context.Context, account types.Account) (*types.Account, error) {
 	query := `
 		UPDATE account_accounts
 		SET name = $2, code = $3, deprecated = $4, account_type = $5,
@@ -215,7 +215,7 @@ func (r *accountRepository) Update(ctx context.Context, account domain.Account) 
 
 	account.UpdatedAt = time.Now()
 
-	var updatedAccount domain.Account
+	var updatedAccount types.Account
 	err := r.db.QueryRowContext(ctx, query,
 		account.ID, account.Name, account.Code, account.Deprecated, account.AccountType,
 		account.InternalType, account.InternalGroup, account.UserTypeID, account.Reconcile,
@@ -265,7 +265,7 @@ func (r *accountRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *accountRepository) FindByCode(ctx context.Context, organizationID uuid.UUID, code string) (*domain.Account, error) {
+func (r *accountRepository) FindByCode(ctx context.Context, organizationID uuid.UUID, code string) (*types.Account, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, code, deprecated, account_type,
 		 internal_type, internal_group, user_type_id, reconcile, currency_id,
@@ -274,7 +274,7 @@ func (r *accountRepository) FindByCode(ctx context.Context, organizationID uuid.
 		WHERE organization_id = $1 AND code = $2 AND deleted_at IS NULL
 	`
 
-	var account domain.Account
+	var account types.Account
 	err := r.db.QueryRowContext(ctx, query, organizationID, code).Scan(
 		&account.ID, &account.OrganizationID, &account.CompanyID,
 		&account.Name, &account.Code, &account.Deprecated,
@@ -294,7 +294,7 @@ func (r *accountRepository) FindByCode(ctx context.Context, organizationID uuid.
 	return &account, nil
 }
 
-func (r *accountRepository) FindByType(ctx context.Context, organizationID uuid.UUID, accountType string) ([]domain.Account, error) {
+func (r *accountRepository) FindByType(ctx context.Context, organizationID uuid.UUID, accountType string) ([]types.Account, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, code, deprecated, account_type,
 		 internal_type, internal_group, user_type_id, reconcile, currency_id,
@@ -310,9 +310,9 @@ func (r *accountRepository) FindByType(ctx context.Context, organizationID uuid.
 	}
 	defer rows.Close()
 
-	var accounts []domain.Account
+	var accounts []types.Account
 	for rows.Next() {
-		var account domain.Account
+		var account types.Account
 		err := rows.Scan(
 			&account.ID, &account.OrganizationID, &account.CompanyID,
 			&account.Name, &account.Code, &account.Deprecated,

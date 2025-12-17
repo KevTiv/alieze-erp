@@ -62,7 +62,7 @@ func (h *ReplenishmentHandler) RegisterRoutes(router chi.Router) {
 func (h *ReplenishmentHandler) CreateReplenishmentRule(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var rule domain.ReplenishmentRule
+	var rule types.ReplenishmentRule
 	if err := json.NewDecoder(r.Body).Decode(&rule); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -132,7 +132,7 @@ func (h *ReplenishmentHandler) UpdateReplenishmentRule(w http.ResponseWriter, r 
 		return
 	}
 
-	var rule domain.ReplenishmentRule
+	var rule types.ReplenishmentRule
 	if err := json.NewDecoder(r.Body).Decode(&rule); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -173,7 +173,7 @@ func (h *ReplenishmentHandler) DeleteReplenishmentRule(w http.ResponseWriter, r 
 func (h *ReplenishmentHandler) CreateReplenishmentOrder(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var order domain.ReplenishmentOrder
+	var order types.ReplenishmentOrder
 	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -263,7 +263,7 @@ func (h *ReplenishmentHandler) UpdateReplenishmentOrder(w http.ResponseWriter, r
 		return
 	}
 
-	var order domain.ReplenishmentOrder
+	var order types.ReplenishmentOrder
 	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return

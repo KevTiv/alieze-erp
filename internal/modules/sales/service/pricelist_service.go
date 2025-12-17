@@ -20,7 +20,7 @@ func NewPricelistService(repo repository.PricelistRepository) *PricelistService 
 	}
 }
 
-func (s *PricelistService) CreatePricelist(ctx context.Context, pricelist domain.Pricelist) (*domain.Pricelist, error) {
+func (s *PricelistService) CreatePricelist(ctx context.Context, pricelist types.Pricelist) (*types.Pricelist, error) {
 	// Validate the pricelist
 	if err := s.validatePricelist(pricelist); err != nil {
 		return nil, fmt.Errorf("invalid pricelist: %w", err)
@@ -52,7 +52,7 @@ func (s *PricelistService) CreatePricelist(ctx context.Context, pricelist domain
 	return createdPricelist, nil
 }
 
-func (s *PricelistService) GetPricelist(ctx context.Context, id uuid.UUID) (*domain.Pricelist, error) {
+func (s *PricelistService) GetPricelist(ctx context.Context, id uuid.UUID) (*types.Pricelist, error) {
 	pricelist, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pricelist: %w", err)
@@ -64,7 +64,7 @@ func (s *PricelistService) GetPricelist(ctx context.Context, id uuid.UUID) (*dom
 	return pricelist, nil
 }
 
-func (s *PricelistService) ListPricelists(ctx context.Context, organizationID uuid.UUID) ([]domain.Pricelist, error) {
+func (s *PricelistService) ListPricelists(ctx context.Context, organizationID uuid.UUID) ([]types.Pricelist, error) {
 	pricelists, err := s.repo.FindAll(ctx, organizationID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pricelists: %w", err)
@@ -73,7 +73,7 @@ func (s *PricelistService) ListPricelists(ctx context.Context, organizationID uu
 	return pricelists, nil
 }
 
-func (s *PricelistService) ListPricelistsByCompany(ctx context.Context, companyID uuid.UUID) ([]domain.Pricelist, error) {
+func (s *PricelistService) ListPricelistsByCompany(ctx context.Context, companyID uuid.UUID) ([]types.Pricelist, error) {
 	pricelists, err := s.repo.FindByCompanyID(ctx, companyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pricelists by company: %w", err)
@@ -82,7 +82,7 @@ func (s *PricelistService) ListPricelistsByCompany(ctx context.Context, companyI
 	return pricelists, nil
 }
 
-func (s *PricelistService) ListActivePricelistsByCompany(ctx context.Context, companyID uuid.UUID) ([]domain.Pricelist, error) {
+func (s *PricelistService) ListActivePricelistsByCompany(ctx context.Context, companyID uuid.UUID) ([]types.Pricelist, error) {
 	pricelists, err := s.repo.FindActiveByCompanyID(ctx, companyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list active pricelists by company: %w", err)
@@ -91,7 +91,7 @@ func (s *PricelistService) ListActivePricelistsByCompany(ctx context.Context, co
 	return pricelists, nil
 }
 
-func (s *PricelistService) UpdatePricelist(ctx context.Context, pricelist domain.Pricelist) (*domain.Pricelist, error) {
+func (s *PricelistService) UpdatePricelist(ctx context.Context, pricelist types.Pricelist) (*types.Pricelist, error) {
 	// Validate the pricelist
 	if err := s.validatePricelist(pricelist); err != nil {
 		return nil, fmt.Errorf("invalid pricelist: %w", err)
@@ -152,7 +152,7 @@ func (s *PricelistService) DeletePricelist(ctx context.Context, id uuid.UUID) er
 	return nil
 }
 
-func (s *PricelistService) validatePricelist(pricelist domain.Pricelist) error {
+func (s *PricelistService) validatePricelist(pricelist types.Pricelist) error {
 	if pricelist.OrganizationID == uuid.Nil {
 		return fmt.Errorf("organization ID is required")
 	}

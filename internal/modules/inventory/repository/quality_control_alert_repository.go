@@ -19,7 +19,7 @@ func NewQualityControlAlertRepository(db *sql.DB) QualityControlAlertRepository 
 	return &qualityControlAlertRepository{db: db}
 }
 
-func (r *qualityControlAlertRepository) Create(ctx context.Context, alert domain.QualityControlAlert) (*domain.QualityControlAlert, error) {
+func (r *qualityControlAlertRepository) Create(ctx context.Context, alert types.QualityControlAlert) (*types.QualityControlAlert, error) {
 	query := `
 		INSERT INTO quality_control_alerts
 		(id, organization_id, alert_type, severity, title, message, related_inspection_id, product_id,
@@ -42,7 +42,7 @@ func (r *qualityControlAlertRepository) Create(ctx context.Context, alert domain
 		alert.Status = "open"
 	}
 
-	var created domain.QualityControlAlert
+	var created types.QualityControlAlert
 	err := r.db.QueryRowContext(ctx, query,
 		alert.ID, alert.OrganizationID, alert.AlertType, alert.Severity, alert.Title, alert.Message,
 		alert.RelatedInspectionID, alert.ProductID, alert.Status, alert.CreatedAt, alert.UpdatedAt,
@@ -59,14 +59,14 @@ func (r *qualityControlAlertRepository) Create(ctx context.Context, alert domain
 	return &created, nil
 }
 
-func (r *qualityControlAlertRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.QualityControlAlert, error) {
+func (r *qualityControlAlertRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.QualityControlAlert, error) {
 	query := `
 		SELECT id, organization_id, alert_type, severity, title, message, related_inspection_id, product_id,
 		 status, created_at, updated_at, resolved_at, resolved_by
 		FROM quality_control_alerts WHERE id = $1
 	`
 
-	var alert domain.QualityControlAlert
+	var alert types.QualityControlAlert
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&alert.ID, &alert.OrganizationID, &alert.AlertType, &alert.Severity, &alert.Title,
 		&alert.Message, &alert.RelatedInspectionID, &alert.ProductID, &alert.Status,
@@ -82,7 +82,7 @@ func (r *qualityControlAlertRepository) FindByID(ctx context.Context, id uuid.UU
 	return &alert, nil
 }
 
-func (r *qualityControlAlertRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]domain.QualityControlAlert, error) {
+func (r *qualityControlAlertRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]types.QualityControlAlert, error) {
 	query := `
 		SELECT id, organization_id, alert_type, severity, title, message, related_inspection_id, product_id,
 		 status, created_at, updated_at, resolved_at, resolved_by
@@ -97,9 +97,9 @@ func (r *qualityControlAlertRepository) FindAll(ctx context.Context, organizatio
 	}
 	defer rows.Close()
 
-	var alerts []domain.QualityControlAlert
+	var alerts []types.QualityControlAlert
 	for rows.Next() {
-		var alert domain.QualityControlAlert
+		var alert types.QualityControlAlert
 		err := rows.Scan(
 			&alert.ID, &alert.OrganizationID, &alert.AlertType, &alert.Severity, &alert.Title,
 			&alert.Message, &alert.RelatedInspectionID, &alert.ProductID, &alert.Status,
@@ -115,7 +115,7 @@ func (r *qualityControlAlertRepository) FindAll(ctx context.Context, organizatio
 	return alerts, nil
 }
 
-func (r *qualityControlAlertRepository) FindByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]domain.QualityControlAlert, error) {
+func (r *qualityControlAlertRepository) FindByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]types.QualityControlAlert, error) {
 	query := `
 		SELECT id, organization_id, alert_type, severity, title, message, related_inspection_id, product_id,
 		 status, created_at, updated_at, resolved_at, resolved_by
@@ -129,9 +129,9 @@ func (r *qualityControlAlertRepository) FindByStatus(ctx context.Context, organi
 	}
 	defer rows.Close()
 
-	var alerts []domain.QualityControlAlert
+	var alerts []types.QualityControlAlert
 	for rows.Next() {
-		var alert domain.QualityControlAlert
+		var alert types.QualityControlAlert
 		err := rows.Scan(
 			&alert.ID, &alert.OrganizationID, &alert.AlertType, &alert.Severity, &alert.Title,
 			&alert.Message, &alert.RelatedInspectionID, &alert.ProductID, &alert.Status,
@@ -147,7 +147,7 @@ func (r *qualityControlAlertRepository) FindByStatus(ctx context.Context, organi
 	return alerts, nil
 }
 
-func (r *qualityControlAlertRepository) FindBySeverity(ctx context.Context, organizationID uuid.UUID, severity string) ([]domain.QualityControlAlert, error) {
+func (r *qualityControlAlertRepository) FindBySeverity(ctx context.Context, organizationID uuid.UUID, severity string) ([]types.QualityControlAlert, error) {
 	query := `
 		SELECT id, organization_id, alert_type, severity, title, message, related_inspection_id, product_id,
 		 status, created_at, updated_at, resolved_at, resolved_by
@@ -161,9 +161,9 @@ func (r *qualityControlAlertRepository) FindBySeverity(ctx context.Context, orga
 	}
 	defer rows.Close()
 
-	var alerts []domain.QualityControlAlert
+	var alerts []types.QualityControlAlert
 	for rows.Next() {
-		var alert domain.QualityControlAlert
+		var alert types.QualityControlAlert
 		err := rows.Scan(
 			&alert.ID, &alert.OrganizationID, &alert.AlertType, &alert.Severity, &alert.Title,
 			&alert.Message, &alert.RelatedInspectionID, &alert.ProductID, &alert.Status,
@@ -179,7 +179,7 @@ func (r *qualityControlAlertRepository) FindBySeverity(ctx context.Context, orga
 	return alerts, nil
 }
 
-func (r *qualityControlAlertRepository) FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]domain.QualityControlAlert, error) {
+func (r *qualityControlAlertRepository) FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]types.QualityControlAlert, error) {
 	query := `
 		SELECT id, organization_id, alert_type, severity, title, message, related_inspection_id, product_id,
 		 status, created_at, updated_at, resolved_at, resolved_by
@@ -193,9 +193,9 @@ func (r *qualityControlAlertRepository) FindByProduct(ctx context.Context, organ
 	}
 	defer rows.Close()
 
-	var alerts []domain.QualityControlAlert
+	var alerts []types.QualityControlAlert
 	for rows.Next() {
-		var alert domain.QualityControlAlert
+		var alert types.QualityControlAlert
 		err := rows.Scan(
 			&alert.ID, &alert.OrganizationID, &alert.AlertType, &alert.Severity, &alert.Title,
 			&alert.Message, &alert.RelatedInspectionID, &alert.ProductID, &alert.Status,
@@ -211,7 +211,7 @@ func (r *qualityControlAlertRepository) FindByProduct(ctx context.Context, organ
 	return alerts, nil
 }
 
-func (r *qualityControlAlertRepository) FindOpen(ctx context.Context, organizationID uuid.UUID) ([]domain.QualityControlAlert, error) {
+func (r *qualityControlAlertRepository) FindOpen(ctx context.Context, organizationID uuid.UUID) ([]types.QualityControlAlert, error) {
 	query := `
 		SELECT id, organization_id, alert_type, severity, title, message, related_inspection_id, product_id,
 		 status, created_at, updated_at, resolved_at, resolved_by
@@ -225,9 +225,9 @@ func (r *qualityControlAlertRepository) FindOpen(ctx context.Context, organizati
 	}
 	defer rows.Close()
 
-	var alerts []domain.QualityControlAlert
+	var alerts []types.QualityControlAlert
 	for rows.Next() {
-		var alert domain.QualityControlAlert
+		var alert types.QualityControlAlert
 		err := rows.Scan(
 			&alert.ID, &alert.OrganizationID, &alert.AlertType, &alert.Severity, &alert.Title,
 			&alert.Message, &alert.RelatedInspectionID, &alert.ProductID, &alert.Status,
@@ -243,7 +243,7 @@ func (r *qualityControlAlertRepository) FindOpen(ctx context.Context, organizati
 	return alerts, nil
 }
 
-func (r *qualityControlAlertRepository) Update(ctx context.Context, alert domain.QualityControlAlert) (*domain.QualityControlAlert, error) {
+func (r *qualityControlAlertRepository) Update(ctx context.Context, alert types.QualityControlAlert) (*types.QualityControlAlert, error) {
 	query := `
 		UPDATE quality_control_alerts
 		SET alert_type = $2, severity = $3, title = $4, message = $5, related_inspection_id = $6,
@@ -254,7 +254,7 @@ func (r *qualityControlAlertRepository) Update(ctx context.Context, alert domain
 	`
 
 	alert.UpdatedAt = time.Now()
-	var updated domain.QualityControlAlert
+	var updated types.QualityControlAlert
 	err := r.db.QueryRowContext(ctx, query,
 		alert.ID, alert.AlertType, alert.Severity, alert.Title, alert.Message, alert.RelatedInspectionID,
 		alert.ProductID, alert.Status, alert.UpdatedAt, alert.ResolvedAt, alert.ResolvedBy,
@@ -305,7 +305,7 @@ func (r *qualityControlAlertRepository) Delete(ctx context.Context, id uuid.UUID
 	return nil
 }
 
-func (r *qualityControlAlertRepository) CreateFromInspection(ctx context.Context, inspectionID uuid.UUID, alertType, severity, title, message string) (*domain.QualityControlAlert, error) {
+func (r *qualityControlAlertRepository) CreateFromInspection(ctx context.Context, inspectionID uuid.UUID, alertType, severity, title, message string) (*types.QualityControlAlert, error) {
 	// Get inspection details to populate alert
 	var productID uuid.UUID
 	err := r.db.QueryRowContext(ctx, `
@@ -316,7 +316,7 @@ func (r *qualityControlAlertRepository) CreateFromInspection(ctx context.Context
 	}
 
 	// Create the alert
-	alert := domain.QualityControlAlert{
+	alert := types.QualityControlAlert{
 		OrganizationID:          uuid.Nil, // Will be set by the function
 		AlertType:               alertType,
 		Severity:                severity,

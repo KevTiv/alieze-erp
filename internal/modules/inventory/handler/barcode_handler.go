@@ -57,7 +57,7 @@ func (h *BarcodeHandler) ScanBarcode(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	// Parse request
-	var request domain.BarcodeScanRequest
+	var request types.BarcodeScanRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -156,7 +156,7 @@ func (h *BarcodeHandler) CreateScanningSession(w http.ResponseWriter, r *http.Re
 	}
 
 	// Parse request
-	var request domain.CreateScanningSessionRequest
+	var request types.CreateScanningSessionRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -268,7 +268,7 @@ func (h *BarcodeHandler) AddScanToSession(w http.ResponseWriter, r *http.Request
 	}
 
 	// Parse request
-	var request domain.AddScanToSessionRequest
+	var request types.AddScanToSessionRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -308,7 +308,7 @@ func (h *BarcodeHandler) CompleteScanningSession(w http.ResponseWriter, r *http.
 	}
 
 	// Create request
-	request := domain.CompleteSessionRequest{
+	request := types.CompleteSessionRequest{
 		SessionID:    sessionID,
 		OrganizationID: orgID,
 	}
@@ -376,7 +376,7 @@ func (h *BarcodeHandler) GenerateBarcode(w http.ResponseWriter, r *http.Request,
 	}
 
 	// Parse request
-	var request domain.BarcodeGenerationRequest
+	var request types.BarcodeGenerationRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

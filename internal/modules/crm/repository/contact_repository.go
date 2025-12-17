@@ -22,7 +22,7 @@ func NewContactRepository(db *sql.DB) *ContactRepository {
 	return &ContactRepository{db: db}
 }
 
-func (r *ContactRepository) Create(ctx context.Context, contact domain.Contact) (*domain.Contact, error) {
+func (r *ContactRepository) Create(ctx context.Context, contact types.Contact) (*types.Contact, error) {
 	if contact.ID == uuid.Nil {
 		contact.ID = uuid.New()
 	}
@@ -64,7 +64,7 @@ func (r *ContactRepository) Create(ctx context.Context, contact domain.Contact) 
 		nil,
 	)
 
-	var created domain.Contact
+	var created types.Contact
 	err := result.Scan(
 		&created.ID,
 		&created.OrganizationID,
@@ -89,7 +89,7 @@ func (r *ContactRepository) Create(ctx context.Context, contact domain.Contact) 
 	return &created, nil
 }
 
-func (r *ContactRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Contact, error) {
+func (r *ContactRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Contact, error) {
 	if id == uuid.Nil {
 		return nil, errors.New("invalid contact id")
 	}
@@ -101,7 +101,7 @@ func (r *ContactRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	var contact domain.Contact
+	var contact types.Contact
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&contact.ID,
 		&contact.OrganizationID,
@@ -129,7 +129,7 @@ func (r *ContactRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain
 	return &contact, nil
 }
 
-func (r *ContactRepository) FindAll(ctx context.Context, filter domain.ContactFilter) ([]domain.Contact, error) {
+func (r *ContactRepository) FindAll(ctx context.Context, filter types.ContactFilter) ([]types.Contact, error) {
 	query := `SELECT id, organization_id, name, email, phone, is_customer, is_vendor,
 		street, city, state_id, country_id, created_at, updated_at, deleted_at
 		FROM contacts WHERE deleted_at IS NULL`
@@ -192,9 +192,9 @@ func (r *ContactRepository) FindAll(ctx context.Context, filter domain.ContactFi
 	}
 	defer rows.Close()
 
-	var contacts []domain.Contact
+	var contacts []types.Contact
 	for rows.Next() {
-		var contact domain.Contact
+		var contact types.Contact
 		err := rows.Scan(
 			&contact.ID,
 			&contact.OrganizationID,
@@ -224,7 +224,7 @@ func (r *ContactRepository) FindAll(ctx context.Context, filter domain.ContactFi
 	return contacts, nil
 }
 
-func (r *ContactRepository) Update(ctx context.Context, contact domain.Contact) (*domain.Contact, error) {
+func (r *ContactRepository) Update(ctx context.Context, contact types.Contact) (*types.Contact, error) {
 	if contact.ID == uuid.Nil {
 		return nil, errors.New("contact id is required")
 	}
@@ -272,7 +272,7 @@ func (r *ContactRepository) Update(ctx context.Context, contact domain.Contact) 
 		contact.ID,
 	)
 
-	var updated domain.Contact
+	var updated types.Contact
 	err := result.Scan(
 		&updated.ID,
 		&updated.OrganizationID,
@@ -328,7 +328,7 @@ func (r *ContactRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *ContactRepository) Count(ctx context.Context, filter domain.ContactFilter) (int, error) {
+func (r *ContactRepository) Count(ctx context.Context, filter types.ContactFilter) (int, error) {
 	query := `SELECT COUNT(*) FROM contacts WHERE deleted_at IS NULL`
 
 	var conditions []string

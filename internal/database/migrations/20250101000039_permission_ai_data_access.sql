@@ -164,7 +164,7 @@ CREATE TABLE ai_sanitization_rules (
 
     -- Advanced options
     preserve_format boolean DEFAULT false, -- Keep format (e.g., XXX-XX-1234 for SSN)
-    preserve_domain boolean DEFAULT false, -- For emails, keep @domain.com
+    preserve_domain boolean DEFAULT false, -- For emails, keep @types.com
     generalization_level integer, -- For generalization method (1-5)
 
     -- Conditions

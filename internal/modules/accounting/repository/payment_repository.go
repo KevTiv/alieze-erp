@@ -12,13 +12,13 @@ import (
 )
 
 type PaymentRepository interface {
-	Create(ctx context.Context, payment domain.Payment) (*domain.Payment, error)
-	FindByID(ctx context.Context, id uuid.UUID) (*domain.Payment, error)
-	FindAll(ctx context.Context, filters PaymentFilter) ([]domain.Payment, error)
-	Update(ctx context.Context, payment domain.Payment) (*domain.Payment, error)
+	Create(ctx context.Context, payment types.Payment) (*types.Payment, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*types.Payment, error)
+	FindAll(ctx context.Context, filters PaymentFilter) ([]types.Payment, error)
+	Update(ctx context.Context, payment types.Payment) (*types.Payment, error)
 	Delete(ctx context.Context, id uuid.UUID) error
-	FindByInvoiceID(ctx context.Context, invoiceID uuid.UUID) ([]domain.Payment, error)
-	FindByPartnerID(ctx context.Context, partnerID uuid.UUID) ([]domain.Payment, error)
+	FindByInvoiceID(ctx context.Context, invoiceID uuid.UUID) ([]types.Payment, error)
+	FindByPartnerID(ctx context.Context, partnerID uuid.UUID) ([]types.Payment, error)
 }
 
 type PaymentFilter struct {
@@ -38,7 +38,7 @@ func NewPaymentRepository(db *sql.DB) PaymentRepository {
 	return &paymentRepository{db: db}
 }
 
-func (r *paymentRepository) Create(ctx context.Context, payment domain.Payment) (*domain.Payment, error) {
+func (r *paymentRepository) Create(ctx context.Context, payment types.Payment) (*types.Payment, error) {
 	query := `
 		INSERT INTO payments
 		(id, organization_id, company_id, invoice_id, partner_id, payment_date,
@@ -50,7 +50,7 @@ func (r *paymentRepository) Create(ctx context.Context, payment domain.Payment) 
 		 created_at, updated_at, created_by, updated_by
 	`
 
-	var createdPayment domain.Payment
+	var createdPayment types.Payment
 	err := r.db.QueryRowContext(ctx, query,
 		payment.ID, payment.OrganizationID, payment.CompanyID, payment.InvoiceID,
 		payment.PartnerID, payment.PaymentDate, payment.Amount, payment.CurrencyID,
@@ -71,7 +71,7 @@ func (r *paymentRepository) Create(ctx context.Context, payment domain.Payment) 
 	return &createdPayment, nil
 }
 
-func (r *paymentRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Payment, error) {
+func (r *paymentRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Payment, error) {
 	query := `
 		SELECT id, organization_id, company_id, invoice_id, partner_id, payment_date,
 		 amount, currency_id, journal_id, payment_method, reference, note,
@@ -80,7 +80,7 @@ func (r *paymentRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain
 		WHERE id = $1
 	`
 
-	var payment domain.Payment
+	var payment types.Payment
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&payment.ID, &payment.OrganizationID, &payment.CompanyID,
 		&payment.InvoiceID, &payment.PartnerID, &payment.PaymentDate,
@@ -99,7 +99,7 @@ func (r *paymentRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain
 	return &payment, nil
 }
 
-func (r *paymentRepository) FindAll(ctx context.Context, filters PaymentFilter) ([]domain.Payment, error) {
+func (r *paymentRepository) FindAll(ctx context.Context, filters PaymentFilter) ([]types.Payment, error) {
 	query := `
 		SELECT id, organization_id, company_id, invoice_id, partner_id, payment_date,
 		 amount, currency_id, journal_id, payment_method, reference, note,
@@ -145,9 +145,9 @@ func (r *paymentRepository) FindAll(ctx context.Context, filters PaymentFilter) 
 	}
 	defer rows.Close()
 
-	var payments []domain.Payment
+	var payments []types.Payment
 	for rows.Next() {
-		var payment domain.Payment
+		var payment types.Payment
 		err = rows.Scan(
 			&payment.ID, &payment.OrganizationID, &payment.CompanyID,
 			&payment.InvoiceID, &payment.PartnerID, &payment.PaymentDate,
@@ -165,7 +165,7 @@ func (r *paymentRepository) FindAll(ctx context.Context, filters PaymentFilter) 
 	return payments, nil
 }
 
-func (r *paymentRepository) Update(ctx context.Context, payment domain.Payment) (*domain.Payment, error) {
+func (r *paymentRepository) Update(ctx context.Context, payment types.Payment) (*types.Payment, error) {
 	query := `
 		UPDATE payments
 		SET invoice_id = $1, partner_id = $2, payment_date = $3, amount = $4,
@@ -177,7 +177,7 @@ func (r *paymentRepository) Update(ctx context.Context, payment domain.Payment) 
 		 created_at, updated_at, created_by, updated_by
 	`
 
-	var updatedPayment domain.Payment
+	var updatedPayment types.Payment
 	err := r.db.QueryRowContext(ctx, query,
 		payment.InvoiceID, payment.PartnerID, payment.PaymentDate, payment.Amount,
 		payment.CurrencyID, payment.JournalID, payment.PaymentMethod, payment.Reference,
@@ -206,7 +206,7 @@ func (r *paymentRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *paymentRepository) FindByInvoiceID(ctx context.Context, invoiceID uuid.UUID) ([]domain.Payment, error) {
+func (r *paymentRepository) FindByInvoiceID(ctx context.Context, invoiceID uuid.UUID) ([]types.Payment, error) {
 	query := `
 		SELECT id, organization_id, company_id, invoice_id, partner_id, payment_date,
 		 amount, currency_id, journal_id, payment_method, reference, note,
@@ -222,9 +222,9 @@ func (r *paymentRepository) FindByInvoiceID(ctx context.Context, invoiceID uuid.
 	}
 	defer rows.Close()
 
-	var payments []domain.Payment
+	var payments []types.Payment
 	for rows.Next() {
-		var payment domain.Payment
+		var payment types.Payment
 		err = rows.Scan(
 			&payment.ID, &payment.OrganizationID, &payment.CompanyID,
 			&payment.InvoiceID, &payment.PartnerID, &payment.PaymentDate,
@@ -242,7 +242,7 @@ func (r *paymentRepository) FindByInvoiceID(ctx context.Context, invoiceID uuid.
 	return payments, nil
 }
 
-func (r *paymentRepository) FindByPartnerID(ctx context.Context, partnerID uuid.UUID) ([]domain.Payment, error) {
+func (r *paymentRepository) FindByPartnerID(ctx context.Context, partnerID uuid.UUID) ([]types.Payment, error) {
 	query := `
 		SELECT id, organization_id, company_id, invoice_id, partner_id, payment_date,
 		 amount, currency_id, journal_id, payment_method, reference, note,
@@ -258,9 +258,9 @@ func (r *paymentRepository) FindByPartnerID(ctx context.Context, partnerID uuid.
 	}
 	defer rows.Close()
 
-	var payments []domain.Payment
+	var payments []types.Payment
 	for rows.Next() {
-		var payment domain.Payment
+		var payment types.Payment
 		err = rows.Scan(
 			&payment.ID, &payment.OrganizationID, &payment.CompanyID,
 			&payment.InvoiceID, &payment.PartnerID, &payment.PaymentDate,

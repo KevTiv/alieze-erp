@@ -34,7 +34,7 @@ func (h *ProductHandler) RegisterRoutes(router *httprouter.Router) {
 }
 
 func (h *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var req domain.Product
+	var req types.Product
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -84,7 +84,7 @@ func (h *ProductHandler) ListProducts(w http.ResponseWriter, r *http.Request, _ 
 	limitStr := r.URL.Query().Get("limit")
 	offsetStr := r.URL.Query().Get("offset")
 
-	filters := domain.ProductFilter{
+	filters := types.ProductFilter{
 		Limit:  10,
 		Offset: 0,
 	}
@@ -159,7 +159,7 @@ func (h *ProductHandler) UpdateProduct(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	var req domain.Product
+	var req types.Product
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -199,7 +199,7 @@ func (h *ProductHandler) GetProductsByCategory(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	filters := domain.ProductFilter{
+	filters := types.ProductFilter{
 		CategoryID: &categoryID,
 	}
 
@@ -217,7 +217,7 @@ func (h *ProductHandler) GetProductsByCategory(w http.ResponseWriter, r *http.Re
 func (h *ProductHandler) GetProductsByType(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	productType := ps.ByName("product_type")
 
-	filters := domain.ProductFilter{
+	filters := types.ProductFilter{
 		ProductType: &productType,
 	}
 
@@ -240,7 +240,7 @@ func (h *ProductHandler) GetProductsByActiveStatus(w http.ResponseWriter, r *htt
 		return
 	}
 
-	filters := domain.ProductFilter{
+	filters := types.ProductFilter{
 		Active: &active,
 	}
 

@@ -26,7 +26,7 @@ func (h *AuthHandler) RegisterRoutes(router *httprouter.Router) {
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var req domain.RegisterRequest
+	var req types.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
@@ -44,7 +44,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var req domain.LoginRequest
+	var req types.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return

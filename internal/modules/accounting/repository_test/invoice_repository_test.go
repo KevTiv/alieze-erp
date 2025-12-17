@@ -30,14 +30,14 @@ func TestInvoiceRepository_Create(t *testing.T) {
 	journalID := uuid.New()
 	accountID := uuid.New()
 
-	invoice := domain.Invoice{
+	invoice := types.Invoice{
 		ID:             uuid.New(),
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		PartnerID:      partnerID,
 		Reference:      "INV-001",
-		Status:         domain.InvoiceStatusDraft,
-		Type:           domain.InvoiceTypeCustomer,
+		Status:         types.InvoiceStatusDraft,
+		Type:           types.InvoiceTypeCustomer,
 		InvoiceDate:    time.Now(),
 		DueDate:        time.Now().AddDate(0, 0, 30),
 		CurrencyID:     currencyID,
@@ -51,7 +51,7 @@ func TestInvoiceRepository_Create(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		CreatedBy:      uuid.New(),
 		UpdatedBy:      uuid.New(),
-		Lines: []domain.InvoiceLine{
+		Lines: []types.InvoiceLine{
 			{
 				ID:            uuid.New(),
 				ProductName:   "Test Product",
@@ -100,14 +100,14 @@ func TestInvoiceRepository_FindByID(t *testing.T) {
 	journalID := uuid.New()
 	accountID := uuid.New()
 
-	invoice := domain.Invoice{
+	invoice := types.Invoice{
 		ID:             uuid.New(),
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		PartnerID:      partnerID,
 		Reference:      "INV-002",
-		Status:         domain.InvoiceStatusDraft,
-		Type:           domain.InvoiceTypeCustomer,
+		Status:         types.InvoiceStatusDraft,
+		Type:           types.InvoiceTypeCustomer,
 		InvoiceDate:    time.Now(),
 		DueDate:        time.Now().AddDate(0, 0, 30),
 		CurrencyID:     currencyID,
@@ -121,7 +121,7 @@ func TestInvoiceRepository_FindByID(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		CreatedBy:      uuid.New(),
 		UpdatedBy:      uuid.New(),
-		Lines: []domain.InvoiceLine{
+		Lines: []types.InvoiceLine{
 			{
 				ID:            uuid.New(),
 				ProductName:   "Test Product",
@@ -177,14 +177,14 @@ func TestInvoiceRepository_FindAll(t *testing.T) {
 
 	// Create multiple invoices
 	for i := 0; i < 3; i++ {
-		invoice := domain.Invoice{
+		invoice := types.Invoice{
 			ID:             uuid.New(),
 			OrganizationID: orgID,
 			CompanyID:      companyID,
 			PartnerID:      partnerID,
 			Reference:      fmt.Sprintf("INV-%03d", i),
-			Status:         domain.InvoiceStatusDraft,
-			Type:           domain.InvoiceTypeCustomer,
+			Status:         types.InvoiceStatusDraft,
+			Type:           types.InvoiceTypeCustomer,
 			InvoiceDate:    time.Now(),
 			DueDate:        time.Now().AddDate(0, 0, 30),
 			CurrencyID:     currencyID,
@@ -198,7 +198,7 @@ func TestInvoiceRepository_FindAll(t *testing.T) {
 			UpdatedAt:      time.Now(),
 			CreatedBy:      uuid.New(),
 			UpdatedBy:      uuid.New(),
-			Lines: []domain.InvoiceLine{
+			Lines: []types.InvoiceLine{
 				{
 					ID:            uuid.New(),
 					ProductName:   "Test Product",
@@ -234,7 +234,7 @@ func TestInvoiceRepository_FindAll(t *testing.T) {
 		assert.Equal(t, orgID, invoice.OrganizationID)
 		assert.Equal(t, companyID, invoice.CompanyID)
 		assert.Equal(t, partnerID, invoice.PartnerID)
-		assert.Equal(t, domain.InvoiceTypeCustomer, invoice.Type)
+		assert.Equal(t, types.InvoiceTypeCustomer, invoice.Type)
 		assert.Len(t, invoice.Lines, 1)
 		assert.Len(t, invoice.Payments, 0)
 	}
@@ -255,14 +255,14 @@ func TestInvoiceRepository_Update(t *testing.T) {
 	journalID := uuid.New()
 	accountID := uuid.New()
 
-	invoice := domain.Invoice{
+	invoice := types.Invoice{
 		ID:             uuid.New(),
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		PartnerID:      partnerID,
 		Reference:      "INV-003",
-		Status:         domain.InvoiceStatusDraft,
-		Type:           domain.InvoiceTypeCustomer,
+		Status:         types.InvoiceStatusDraft,
+		Type:           types.InvoiceTypeCustomer,
 		InvoiceDate:    time.Now(),
 		DueDate:        time.Now().AddDate(0, 0, 30),
 		CurrencyID:     currencyID,
@@ -276,7 +276,7 @@ func TestInvoiceRepository_Update(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		CreatedBy:      uuid.New(),
 		UpdatedBy:      uuid.New(),
-		Lines: []domain.InvoiceLine{
+		Lines: []types.InvoiceLine{
 			{
 				ID:            uuid.New(),
 				ProductName:   "Test Product",
@@ -301,7 +301,7 @@ func TestInvoiceRepository_Update(t *testing.T) {
 
 	// Modify the invoice
 	createdInvoice.Reference = "UPDATED-003"
-	createdInvoice.Status = domain.InvoiceStatusOpen
+	createdInvoice.Status = types.InvoiceStatusOpen
 	createdInvoice.Note = "Updated test invoice"
 	createdInvoice.AmountResidual = 100.0
 	createdInvoice.UpdatedAt = time.Now()
@@ -313,7 +313,7 @@ func TestInvoiceRepository_Update(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, updatedInvoice)
 	assert.Equal(t, "UPDATED-003", updatedInvoice.Reference)
-	assert.Equal(t, domain.InvoiceStatusOpen, updatedInvoice.Status)
+	assert.Equal(t, types.InvoiceStatusOpen, updatedInvoice.Status)
 	assert.Equal(t, "Updated test invoice", updatedInvoice.Note)
 	assert.Equal(t, 100.0, updatedInvoice.AmountResidual)
 	assert.Len(t, updatedInvoice.Lines, 1)
@@ -334,14 +334,14 @@ func TestInvoiceRepository_Delete(t *testing.T) {
 	journalID := uuid.New()
 	accountID := uuid.New()
 
-	invoice := domain.Invoice{
+	invoice := types.Invoice{
 		ID:             uuid.New(),
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		PartnerID:      partnerID,
 		Reference:      "INV-004",
-		Status:         domain.InvoiceStatusDraft,
-		Type:           domain.InvoiceTypeCustomer,
+		Status:         types.InvoiceStatusDraft,
+		Type:           types.InvoiceTypeCustomer,
 		InvoiceDate:    time.Now(),
 		DueDate:        time.Now().AddDate(0, 0, 30),
 		CurrencyID:     currencyID,
@@ -355,7 +355,7 @@ func TestInvoiceRepository_Delete(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		CreatedBy:      uuid.New(),
 		UpdatedBy:      uuid.New(),
-		Lines: []domain.InvoiceLine{
+		Lines: []types.InvoiceLine{
 			{
 				ID:            uuid.New(),
 				ProductName:   "Test Product",
@@ -408,14 +408,14 @@ func TestInvoiceRepository_FindByPartnerID(t *testing.T) {
 
 	// Create invoices for partner 1
 	for i := 0; i < 2; i++ {
-		invoice := domain.Invoice{
+		invoice := types.Invoice{
 			ID:             uuid.New(),
 			OrganizationID: orgID,
 			CompanyID:      companyID,
 			PartnerID:      partnerID1,
 			Reference:      fmt.Sprintf("PART1-%03d", i),
-			Status:         domain.InvoiceStatusDraft,
-			Type:           domain.InvoiceTypeCustomer,
+			Status:         types.InvoiceStatusDraft,
+			Type:           types.InvoiceTypeCustomer,
 			InvoiceDate:    time.Now(),
 			DueDate:        time.Now().AddDate(0, 0, 30),
 			CurrencyID:     currencyID,
@@ -429,7 +429,7 @@ func TestInvoiceRepository_FindByPartnerID(t *testing.T) {
 			UpdatedAt:      time.Now(),
 			CreatedBy:      uuid.New(),
 			UpdatedBy:      uuid.New(),
-			Lines: []domain.InvoiceLine{
+			Lines: []types.InvoiceLine{
 				{
 					ID:            uuid.New(),
 					ProductName:   "Test Product",
@@ -452,14 +452,14 @@ func TestInvoiceRepository_FindByPartnerID(t *testing.T) {
 	}
 
 	// Create invoice for partner 2
-	invoice := domain.Invoice{
+	invoice := types.Invoice{
 		ID:             uuid.New(),
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		PartnerID:      partnerID2,
 		Reference:      "PART2-001",
-		Status:         domain.InvoiceStatusDraft,
-		Type:           domain.InvoiceTypeCustomer,
+		Status:         types.InvoiceStatusDraft,
+		Type:           types.InvoiceTypeCustomer,
 		InvoiceDate:    time.Now(),
 		DueDate:        time.Now().AddDate(0, 0, 30),
 		CurrencyID:     currencyID,
@@ -473,7 +473,7 @@ func TestInvoiceRepository_FindByPartnerID(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		CreatedBy:      uuid.New(),
 		UpdatedBy:      uuid.New(),
-		Lines: []domain.InvoiceLine{
+		Lines: []types.InvoiceLine{
 			{
 				ID:            uuid.New(),
 				ProductName:   "Test Product",
@@ -504,7 +504,7 @@ func TestInvoiceRepository_FindByPartnerID(t *testing.T) {
 		assert.Equal(t, partnerID1, invoice.PartnerID)
 		assert.Equal(t, orgID, invoice.OrganizationID)
 		assert.Equal(t, companyID, invoice.CompanyID)
-		assert.Equal(t, domain.InvoiceTypeCustomer, invoice.Type)
+		assert.Equal(t, types.InvoiceTypeCustomer, invoice.Type)
 		assert.Len(t, invoice.Lines, 1)
 		assert.Len(t, invoice.Payments, 0)
 	}
@@ -527,14 +527,14 @@ func TestInvoiceRepository_FindByStatus(t *testing.T) {
 
 	// Create draft invoices
 	for i := 0; i < 2; i++ {
-		invoice := domain.Invoice{
+		invoice := types.Invoice{
 			ID:             uuid.New(),
 			OrganizationID: orgID,
 			CompanyID:      companyID,
 			PartnerID:      partnerID,
 			Reference:      fmt.Sprintf("DRAFT-%03d", i),
-			Status:         domain.InvoiceStatusDraft,
-			Type:           domain.InvoiceTypeCustomer,
+			Status:         types.InvoiceStatusDraft,
+			Type:           types.InvoiceTypeCustomer,
 			InvoiceDate:    time.Now(),
 			DueDate:        time.Now().AddDate(0, 0, 30),
 			CurrencyID:     currencyID,
@@ -548,7 +548,7 @@ func TestInvoiceRepository_FindByStatus(t *testing.T) {
 			UpdatedAt:      time.Now(),
 			CreatedBy:      uuid.New(),
 			UpdatedBy:      uuid.New(),
-			Lines: []domain.InvoiceLine{
+			Lines: []types.InvoiceLine{
 				{
 					ID:            uuid.New(),
 					ProductName:   "Test Product",
@@ -571,14 +571,14 @@ func TestInvoiceRepository_FindByStatus(t *testing.T) {
 	}
 
 	// Create open invoice
-	invoice := domain.Invoice{
+	invoice := types.Invoice{
 		ID:             uuid.New(),
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		PartnerID:      partnerID,
 		Reference:      "OPEN-001",
-		Status:         domain.InvoiceStatusOpen,
-		Type:           domain.InvoiceTypeCustomer,
+		Status:         types.InvoiceStatusOpen,
+		Type:           types.InvoiceTypeCustomer,
 		InvoiceDate:    time.Now(),
 		DueDate:        time.Now().AddDate(0, 0, 30),
 		CurrencyID:     currencyID,
@@ -592,7 +592,7 @@ func TestInvoiceRepository_FindByStatus(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		CreatedBy:      uuid.New(),
 		UpdatedBy:      uuid.New(),
-		Lines: []domain.InvoiceLine{
+		Lines: []types.InvoiceLine{
 			{
 				ID:            uuid.New(),
 				ProductName:   "Test Product",
@@ -614,17 +614,17 @@ func TestInvoiceRepository_FindByStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// Execute
-	invoices, err := repo.FindByStatus(context.Background(), domain.InvoiceStatusDraft)
+	invoices, err := repo.FindByStatus(context.Background(), types.InvoiceStatusDraft)
 
 	// Assert
 	require.NoError(t, err)
 	assert.Len(t, invoices, 2)
 	for _, invoice := range invoices {
-		assert.Equal(t, domain.InvoiceStatusDraft, invoice.Status)
+		assert.Equal(t, types.InvoiceStatusDraft, invoice.Status)
 		assert.Equal(t, orgID, invoice.OrganizationID)
 		assert.Equal(t, companyID, invoice.CompanyID)
 		assert.Equal(t, partnerID, invoice.PartnerID)
-		assert.Equal(t, domain.InvoiceTypeCustomer, invoice.Type)
+		assert.Equal(t, types.InvoiceTypeCustomer, invoice.Type)
 		assert.Len(t, invoice.Lines, 1)
 		assert.Len(t, invoice.Payments, 0)
 	}
@@ -647,14 +647,14 @@ func TestInvoiceRepository_FindByType(t *testing.T) {
 
 	// Create customer invoices
 	for i := 0; i < 2; i++ {
-		invoice := domain.Invoice{
+		invoice := types.Invoice{
 			ID:             uuid.New(),
 			OrganizationID: orgID,
 			CompanyID:      companyID,
 			PartnerID:      partnerID,
 			Reference:      fmt.Sprintf("CUST-%03d", i),
-			Status:         domain.InvoiceStatusDraft,
-			Type:           domain.InvoiceTypeCustomer,
+			Status:         types.InvoiceStatusDraft,
+			Type:           types.InvoiceTypeCustomer,
 			InvoiceDate:    time.Now(),
 			DueDate:        time.Now().AddDate(0, 0, 30),
 			CurrencyID:     currencyID,
@@ -668,7 +668,7 @@ func TestInvoiceRepository_FindByType(t *testing.T) {
 			UpdatedAt:      time.Now(),
 			CreatedBy:      uuid.New(),
 			UpdatedBy:      uuid.New(),
-			Lines: []domain.InvoiceLine{
+			Lines: []types.InvoiceLine{
 				{
 					ID:            uuid.New(),
 					ProductName:   "Test Product",
@@ -691,14 +691,14 @@ func TestInvoiceRepository_FindByType(t *testing.T) {
 	}
 
 	// Create supplier invoice
-	invoice := domain.Invoice{
+	invoice := types.Invoice{
 		ID:             uuid.New(),
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		PartnerID:      partnerID,
 		Reference:      "SUPP-001",
-		Status:         domain.InvoiceStatusDraft,
-		Type:           domain.InvoiceTypeSupplier,
+		Status:         types.InvoiceStatusDraft,
+		Type:           types.InvoiceTypeSupplier,
 		InvoiceDate:    time.Now(),
 		DueDate:        time.Now().AddDate(0, 0, 30),
 		CurrencyID:     currencyID,
@@ -712,7 +712,7 @@ func TestInvoiceRepository_FindByType(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		CreatedBy:      uuid.New(),
 		UpdatedBy:      uuid.New(),
-		Lines: []domain.InvoiceLine{
+		Lines: []types.InvoiceLine{
 			{
 				ID:            uuid.New(),
 				ProductName:   "Test Product",
@@ -734,17 +734,17 @@ func TestInvoiceRepository_FindByType(t *testing.T) {
 	require.NoError(t, err)
 
 	// Execute
-	invoices, err := repo.FindByType(context.Background(), domain.InvoiceTypeCustomer)
+	invoices, err := repo.FindByType(context.Background(), types.InvoiceTypeCustomer)
 
 	// Assert
 	require.NoError(t, err)
 	assert.Len(t, invoices, 2)
 	for _, invoice := range invoices {
-		assert.Equal(t, domain.InvoiceTypeCustomer, invoice.Type)
+		assert.Equal(t, types.InvoiceTypeCustomer, invoice.Type)
 		assert.Equal(t, orgID, invoice.OrganizationID)
 		assert.Equal(t, companyID, invoice.CompanyID)
 		assert.Equal(t, partnerID, invoice.PartnerID)
-		assert.Equal(t, domain.InvoiceStatusDraft, invoice.Status)
+		assert.Equal(t, types.InvoiceStatusDraft, invoice.Status)
 		assert.Len(t, invoice.Lines, 1)
 		assert.Len(t, invoice.Payments, 0)
 	}

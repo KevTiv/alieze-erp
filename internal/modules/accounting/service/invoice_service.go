@@ -43,7 +43,7 @@ func NewInvoiceServiceWithDependencies(repo repository.InvoiceRepository, paymen
 	return service
 }
 
-func (s *InvoiceService) CreateInvoice(ctx context.Context, invoice domain.Invoice) (*domain.Invoice, error) {
+func (s *InvoiceService) CreateInvoice(ctx context.Context, invoice types.Invoice) (*types.Invoice, error) {
 	// Validate the invoice
 	if err := s.validateInvoice(invoice); err != nil {
 		return nil, fmt.Errorf("invalid invoice: %w", err)
@@ -51,7 +51,7 @@ func (s *InvoiceService) CreateInvoice(ctx context.Context, invoice domain.Invoi
 
 	// Set default values
 	if invoice.Status == "" {
-		invoice.Status = domain.InvoiceStatusDraft
+		invoice.Status = types.InvoiceStatusDraft
 	}
 	if invoice.InvoiceDate.IsZero() {
 		invoice.InvoiceDate = time.Now()
@@ -83,7 +83,7 @@ func (s *InvoiceService) CreateInvoice(ctx context.Context, invoice domain.Invoi
 	return createdInvoice, nil
 }
 
-func (s *InvoiceService) GetInvoice(ctx context.Context, id uuid.UUID) (*domain.Invoice, error) {
+func (s *InvoiceService) GetInvoice(ctx context.Context, id uuid.UUID) (*types.Invoice, error) {
 	invoice, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get invoice: %w", err)
@@ -95,7 +95,7 @@ func (s *InvoiceService) GetInvoice(ctx context.Context, id uuid.UUID) (*domain.
 	return invoice, nil
 }
 
-func (s *InvoiceService) ListInvoices(ctx context.Context, filters repository.InvoiceFilter) ([]domain.Invoice, error) {
+func (s *InvoiceService) ListInvoices(ctx context.Context, filters repository.InvoiceFilter) ([]types.Invoice, error) {
 	invoices, err := s.repo.FindAll(ctx, filters)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list invoices: %w", err)
@@ -104,7 +104,7 @@ func (s *InvoiceService) ListInvoices(ctx context.Context, filters repository.In
 	return invoices, nil
 }
 
-func (s *InvoiceService) UpdateInvoice(ctx context.Context, invoice domain.Invoice) (*domain.Invoice, error) {
+func (s *InvoiceService) UpdateInvoice(ctx context.Context, invoice types.Invoice) (*types.Invoice, error) {
 	// Validate the invoice
 	if err := s.validateInvoice(invoice); err != nil {
 		return nil, fmt.Errorf("invalid invoice: %w", err)
@@ -138,7 +138,7 @@ func (s *InvoiceService) DeleteInvoice(ctx context.Context, id uuid.UUID) error 
 	}
 
 	// Prevent deletion of confirmed invoices
-	if invoice.Status == domain.InvoiceStatusPaid {
+	if invoice.Status == types.InvoiceStatusPaid {
 		return fmt.Errorf("cannot delete paid invoices")
 	}
 
@@ -157,7 +157,7 @@ func (s *InvoiceService) DeleteInvoice(ctx context.Context, id uuid.UUID) error 
 	return nil
 }
 
-func (s *InvoiceService) ConfirmInvoice(ctx context.Context, id uuid.UUID) (*domain.Invoice, error) {
+func (s *InvoiceService) ConfirmInvoice(ctx context.Context, id uuid.UUID) (*types.Invoice, error) {
 	invoice, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get invoice: %w", err)
@@ -177,7 +177,7 @@ func (s *InvoiceService) ConfirmInvoice(ctx context.Context, id uuid.UUID) (*dom
 			// State machine has updated the status
 		} else {
 			// Fallback to hardcoded validation
-			if invoice.Status != domain.InvoiceStatusDraft {
+			if invoice.Status != types.InvoiceStatusDraft {
 				return nil, fmt.Errorf("only draft invoices can be confirmed")
 			}
 
@@ -186,11 +186,11 @@ func (s *InvoiceService) ConfirmInvoice(ctx context.Context, id uuid.UUID) (*dom
 			}
 
 			// Update status to open
-			invoice.Status = domain.InvoiceStatusOpen
+			invoice.Status = types.InvoiceStatusOpen
 		}
 	} else {
 		// Fallback to hardcoded validation
-		if invoice.Status != domain.InvoiceStatusDraft {
+		if invoice.Status != types.InvoiceStatusDraft {
 			return nil, fmt.Errorf("only draft invoices can be confirmed")
 		}
 
@@ -199,7 +199,7 @@ func (s *InvoiceService) ConfirmInvoice(ctx context.Context, id uuid.UUID) (*dom
 		}
 
 		// Update status to open
-		invoice.Status = domain.InvoiceStatusOpen
+		invoice.Status = types.InvoiceStatusOpen
 	}
 	invoice.UpdatedAt = time.Now()
 
@@ -214,7 +214,7 @@ func (s *InvoiceService) ConfirmInvoice(ctx context.Context, id uuid.UUID) (*dom
 	return updatedInvoice, nil
 }
 
-func (s *InvoiceService) CancelInvoice(ctx context.Context, id uuid.UUID) (*domain.Invoice, error) {
+func (s *InvoiceService) CancelInvoice(ctx context.Context, id uuid.UUID) (*types.Invoice, error) {
 	invoice, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get invoice: %w", err)
@@ -224,12 +224,12 @@ func (s *InvoiceService) CancelInvoice(ctx context.Context, id uuid.UUID) (*doma
 	}
 
 	// Validate invoice for cancellation
-	if invoice.Status == domain.InvoiceStatusCancelled || invoice.Status == domain.InvoiceStatusPaid {
+	if invoice.Status == types.InvoiceStatusCancelled || invoice.Status == types.InvoiceStatusPaid {
 		return nil, fmt.Errorf("invoice cannot be cancelled in its current state")
 	}
 
 	// Update status
-	invoice.Status = domain.InvoiceStatusCancelled
+	invoice.Status = types.InvoiceStatusCancelled
 	invoice.UpdatedAt = time.Now()
 
 	updatedInvoice, err := s.repo.Update(ctx, *invoice)
@@ -243,7 +243,7 @@ func (s *InvoiceService) CancelInvoice(ctx context.Context, id uuid.UUID) (*doma
 	return updatedInvoice, nil
 }
 
-func (s *InvoiceService) RecordPayment(ctx context.Context, invoiceID uuid.UUID, payment domain.Payment) (*domain.Invoice, error) {
+func (s *InvoiceService) RecordPayment(ctx context.Context, invoiceID uuid.UUID, payment types.Payment) (*types.Invoice, error) {
 	// Get the invoice
 	invoice, err := s.repo.FindByID(ctx, invoiceID)
 	if err != nil {
@@ -254,7 +254,7 @@ func (s *InvoiceService) RecordPayment(ctx context.Context, invoiceID uuid.UUID,
 	}
 
 	// Validate invoice for payment
-	if invoice.Status != domain.InvoiceStatusOpen {
+	if invoice.Status != types.InvoiceStatusOpen {
 		return nil, fmt.Errorf("only open invoices can receive payments")
 	}
 
@@ -290,7 +290,7 @@ func (s *InvoiceService) RecordPayment(ctx context.Context, invoiceID uuid.UUID,
 
 	// Check if invoice is now paid
 	if invoice.AmountResidual <= 0 {
-		invoice.Status = domain.InvoiceStatusPaid
+		invoice.Status = types.InvoiceStatusPaid
 	}
 
 	invoice.UpdatedAt = time.Now()
@@ -309,14 +309,14 @@ func (s *InvoiceService) RecordPayment(ctx context.Context, invoiceID uuid.UUID,
 	})
 
 	// If invoice is now paid, publish invoice.paid event
-	if updatedInvoice.Status == domain.InvoiceStatusPaid {
+	if updatedInvoice.Status == types.InvoiceStatusPaid {
 		s.publishEvent(ctx, "invoice.paid", updatedInvoice)
 	}
 
 	return updatedInvoice, nil
 }
 
-func (s *InvoiceService) GetInvoicesByPartner(ctx context.Context, partnerID uuid.UUID) ([]domain.Invoice, error) {
+func (s *InvoiceService) GetInvoicesByPartner(ctx context.Context, partnerID uuid.UUID) ([]types.Invoice, error) {
 	invoices, err := s.repo.FindByPartnerID(ctx, partnerID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get invoices by partner: %w", err)
@@ -325,7 +325,7 @@ func (s *InvoiceService) GetInvoicesByPartner(ctx context.Context, partnerID uui
 	return invoices, nil
 }
 
-func (s *InvoiceService) GetInvoicesByStatus(ctx context.Context, status domain.InvoiceStatus) ([]domain.Invoice, error) {
+func (s *InvoiceService) GetInvoicesByStatus(ctx context.Context, status types.InvoiceStatus) ([]types.Invoice, error) {
 	invoices, err := s.repo.FindByStatus(ctx, status)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get invoices by status: %w", err)
@@ -334,7 +334,7 @@ func (s *InvoiceService) GetInvoicesByStatus(ctx context.Context, status domain.
 	return invoices, nil
 }
 
-func (s *InvoiceService) GetInvoicesByType(ctx context.Context, invoiceType domain.InvoiceType) ([]domain.Invoice, error) {
+func (s *InvoiceService) GetInvoicesByType(ctx context.Context, invoiceType types.InvoiceType) ([]types.Invoice, error) {
 	invoices, err := s.repo.FindByType(ctx, invoiceType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get invoices by type: %w", err)
@@ -343,7 +343,7 @@ func (s *InvoiceService) GetInvoicesByType(ctx context.Context, invoiceType doma
 	return invoices, nil
 }
 
-func (s *InvoiceService) validateInvoice(invoice domain.Invoice) error {
+func (s *InvoiceService) validateInvoice(invoice types.Invoice) error {
 	if invoice.OrganizationID == uuid.Nil {
 		return fmt.Errorf("organization ID is required")
 	}
@@ -388,7 +388,7 @@ func (s *InvoiceService) validateInvoice(invoice domain.Invoice) error {
 	return nil
 }
 
-func (s *InvoiceService) calculateInvoiceAmounts(ctx context.Context, invoice *domain.Invoice) error {
+func (s *InvoiceService) calculateInvoiceAmounts(ctx context.Context, invoice *types.Invoice) error {
 	var amountUntaxed, amountTax, amountTotal float64
 
 	for i, line := range invoice.Lines {

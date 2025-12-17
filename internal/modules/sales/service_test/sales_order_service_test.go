@@ -20,24 +20,24 @@ type MockSalesOrderRepository struct {
 	mock.Mock
 }
 
-func (m *MockSalesOrderRepository) Create(ctx context.Context, order domain.SalesOrder) (*domain.SalesOrder, error) {
+func (m *MockSalesOrderRepository) Create(ctx context.Context, order types.SalesOrder) (*types.SalesOrder, error) {
 	args := m.Called(ctx, order)
-	return args.Get(0).(*domain.SalesOrder), args.Error(1)
+	return args.Get(0).(*types.SalesOrder), args.Error(1)
 }
 
-func (m *MockSalesOrderRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.SalesOrder, error) {
+func (m *MockSalesOrderRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.SalesOrder, error) {
 	args := m.Called(ctx, id)
-	return args.Get(0).(*domain.SalesOrder), args.Error(1)
+	return args.Get(0).(*types.SalesOrder), args.Error(1)
 }
 
-func (m *MockSalesOrderRepository) FindAll(ctx context.Context, filters repository.SalesOrderFilter) ([]domain.SalesOrder, error) {
+func (m *MockSalesOrderRepository) FindAll(ctx context.Context, filters repository.SalesOrderFilter) ([]types.SalesOrder, error) {
 	args := m.Called(ctx, filters)
-	return args.Get(0).([]domain.SalesOrder), args.Error(1)
+	return args.Get(0).([]types.SalesOrder), args.Error(1)
 }
 
-func (m *MockSalesOrderRepository) Update(ctx context.Context, order domain.SalesOrder) (*domain.SalesOrder, error) {
+func (m *MockSalesOrderRepository) Update(ctx context.Context, order types.SalesOrder) (*types.SalesOrder, error) {
 	args := m.Called(ctx, order)
-	return args.Get(0).(*domain.SalesOrder), args.Error(1)
+	return args.Get(0).(*types.SalesOrder), args.Error(1)
 }
 
 func (m *MockSalesOrderRepository) Delete(ctx context.Context, id uuid.UUID) error {
@@ -45,14 +45,14 @@ func (m *MockSalesOrderRepository) Delete(ctx context.Context, id uuid.UUID) err
 	return args.Error(0)
 }
 
-func (m *MockSalesOrderRepository) FindByCustomerID(ctx context.Context, customerID uuid.UUID) ([]domain.SalesOrder, error) {
+func (m *MockSalesOrderRepository) FindByCustomerID(ctx context.Context, customerID uuid.UUID) ([]types.SalesOrder, error) {
 	args := m.Called(ctx, customerID)
-	return args.Get(0).([]domain.SalesOrder), args.Error(1)
+	return args.Get(0).([]types.SalesOrder), args.Error(1)
 }
 
-func (m *MockSalesOrderRepository) FindByStatus(ctx context.Context, status domain.SalesOrderStatus) ([]domain.SalesOrder, error) {
+func (m *MockSalesOrderRepository) FindByStatus(ctx context.Context, status types.SalesOrderStatus) ([]types.SalesOrder, error) {
 	args := m.Called(ctx, status)
-	return args.Get(0).([]domain.SalesOrder), args.Error(1)
+	return args.Get(0).([]types.SalesOrder), args.Error(1)
 }
 
 // MockPricelistRepository is a mock implementation for testing
@@ -60,24 +60,24 @@ type MockPricelistRepository struct {
 	mock.Mock
 }
 
-func (m *MockPricelistRepository) Create(ctx context.Context, pricelist domain.Pricelist) (*domain.Pricelist, error) {
+func (m *MockPricelistRepository) Create(ctx context.Context, pricelist types.Pricelist) (*types.Pricelist, error) {
 	args := m.Called(ctx, pricelist)
-	return args.Get(0).(*domain.Pricelist), args.Error(1)
+	return args.Get(0).(*types.Pricelist), args.Error(1)
 }
 
-func (m *MockPricelistRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Pricelist, error) {
+func (m *MockPricelistRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Pricelist, error) {
 	args := m.Called(ctx, id)
-	return args.Get(0).(*domain.Pricelist), args.Error(1)
+	return args.Get(0).(*types.Pricelist), args.Error(1)
 }
 
-func (m *MockPricelistRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]domain.Pricelist, error) {
+func (m *MockPricelistRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]types.Pricelist, error) {
 	args := m.Called(ctx, organizationID)
-	return args.Get(0).([]domain.Pricelist), args.Error(1)
+	return args.Get(0).([]types.Pricelist), args.Error(1)
 }
 
-func (m *MockPricelistRepository) Update(ctx context.Context, pricelist domain.Pricelist) (*domain.Pricelist, error) {
+func (m *MockPricelistRepository) Update(ctx context.Context, pricelist types.Pricelist) (*types.Pricelist, error) {
 	args := m.Called(ctx, pricelist)
-	return args.Get(0).(*domain.Pricelist), args.Error(1)
+	return args.Get(0).(*types.Pricelist), args.Error(1)
 }
 
 func (m *MockPricelistRepository) Delete(ctx context.Context, id uuid.UUID) error {
@@ -85,14 +85,14 @@ func (m *MockPricelistRepository) Delete(ctx context.Context, id uuid.UUID) erro
 	return args.Error(0)
 }
 
-func (m *MockPricelistRepository) FindByCompanyID(ctx context.Context, companyID uuid.UUID) ([]domain.Pricelist, error) {
+func (m *MockPricelistRepository) FindByCompanyID(ctx context.Context, companyID uuid.UUID) ([]types.Pricelist, error) {
 	args := m.Called(ctx, companyID)
-	return args.Get(0).([]domain.Pricelist), args.Error(1)
+	return args.Get(0).([]types.Pricelist), args.Error(1)
 }
 
-func (m *MockPricelistRepository) FindActiveByCompanyID(ctx context.Context, companyID uuid.UUID) ([]domain.Pricelist, error) {
+func (m *MockPricelistRepository) FindActiveByCompanyID(ctx context.Context, companyID uuid.UUID) ([]types.Pricelist, error) {
 	args := m.Called(ctx, companyID)
-	return args.Get(0).([]domain.Pricelist), args.Error(1)
+	return args.Get(0).([]types.Pricelist), args.Error(1)
 }
 
 func TestSalesOrderService_CreateSalesOrder_Success(t *testing.T) {
@@ -110,14 +110,14 @@ func TestSalesOrderService_CreateSalesOrder_Success(t *testing.T) {
 	productID := uuid.New()
 	uomID := uuid.New()
 
-	order := domain.SalesOrder{
+	order := types.SalesOrder{
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		CustomerID:     customerID,
 		Reference:      "TEST-001",
 		PricelistID:    pricelistID,
 		CurrencyID:     currencyID,
-		Lines: []domain.SalesOrderLine{
+		Lines: []types.SalesOrderLine{
 			{
 				ProductID:   productID,
 				ProductName: "Test Product",
@@ -130,7 +130,7 @@ func TestSalesOrderService_CreateSalesOrder_Success(t *testing.T) {
 
 	expectedOrder := order
 	expectedOrder.ID = uuid.New()
-	expectedOrder.Status = domain.SalesOrderStatusDraft
+	expectedOrder.Status = types.SalesOrderStatusDraft
 	expectedOrder.OrderDate = time.Now()
 	expectedOrder.AmountUntaxed = 100.0
 	expectedOrder.AmountTax = 0.0
@@ -146,7 +146,7 @@ func TestSalesOrderService_CreateSalesOrder_Success(t *testing.T) {
 	expectedOrder.Lines[0].UpdatedAt = time.Now()
 
 	// Mock expectations
-	mockOrderRepo.On("Create", context.Background(), mock.AnythingOfType("domain.SalesOrder")).
+	mockOrderRepo.On("Create", context.Background(), mock.AnythingOfType("types.SalesOrder")).
 		Return(&expectedOrder, nil)
 
 	// Execute
@@ -156,7 +156,7 @@ func TestSalesOrderService_CreateSalesOrder_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, createdOrder)
 	assert.Equal(t, expectedOrder.ID, createdOrder.ID)
-	assert.Equal(t, domain.SalesOrderStatusDraft, createdOrder.Status)
+	assert.Equal(t, types.SalesOrderStatusDraft, createdOrder.Status)
 	assert.Equal(t, 100.0, createdOrder.AmountUntaxed)
 	assert.Equal(t, 100.0, createdOrder.AmountTotal)
 	assert.Len(t, createdOrder.Lines, 1)
@@ -172,9 +172,9 @@ func TestSalesOrderService_CreateSalesOrder_ValidationError(t *testing.T) {
 	service := service.NewSalesOrderService(mockOrderRepo, mockPricelistRepo)
 
 	// Test data - missing required fields
-	order := domain.SalesOrder{
+	order := types.SalesOrder{
 		// Missing OrganizationID, CompanyID, CustomerID, PricelistID, CurrencyID
-		Lines: []domain.SalesOrderLine{
+		Lines: []types.SalesOrderLine{
 			{
 				ProductID: uuid.New(),
 				Quantity:  2.0,
@@ -211,13 +211,13 @@ func TestSalesOrderService_ConfirmSalesOrder_Success(t *testing.T) {
 	productID := uuid.New()
 	uomID := uuid.New()
 
-	existingOrder := domain.SalesOrder{
+	existingOrder := types.SalesOrder{
 		ID:             orderID,
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		CustomerID:     customerID,
 		Reference:      "TEST-002",
-		Status:         domain.SalesOrderStatusDraft,
+		Status:         types.SalesOrderStatusDraft,
 		OrderDate:      time.Now(),
 		PricelistID:    pricelistID,
 		CurrencyID:     currencyID,
@@ -229,7 +229,7 @@ func TestSalesOrderService_ConfirmSalesOrder_Success(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		CreatedBy:      uuid.New(),
 		UpdatedBy:      uuid.New(),
-		Lines: []domain.SalesOrderLine{
+		Lines: []types.SalesOrderLine{
 			{
 				ID:            uuid.New(),
 				ProductID:     productID,
@@ -250,14 +250,14 @@ func TestSalesOrderService_ConfirmSalesOrder_Success(t *testing.T) {
 	}
 
 	expectedUpdatedOrder := existingOrder
-	expectedUpdatedOrder.Status = domain.SalesOrderStatusConfirmed
+	expectedUpdatedOrder.Status = types.SalesOrderStatusConfirmed
 	now := time.Now()
 	expectedUpdatedOrder.ConfirmationDate = &now
 	expectedUpdatedOrder.UpdatedAt = now
 
 	// Mock expectations
 	mockOrderRepo.On("FindByID", context.Background(), orderID).Return(&existingOrder, nil)
-	mockOrderRepo.On("Update", context.Background(), mock.AnythingOfType("domain.SalesOrder")).
+	mockOrderRepo.On("Update", context.Background(), mock.AnythingOfType("types.SalesOrder")).
 		Return(&expectedUpdatedOrder, nil)
 
 	// Execute
@@ -266,7 +266,7 @@ func TestSalesOrderService_ConfirmSalesOrder_Success(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, confirmedOrder)
-	assert.Equal(t, domain.SalesOrderStatusConfirmed, confirmedOrder.Status)
+	assert.Equal(t, types.SalesOrderStatusConfirmed, confirmedOrder.Status)
 	require.NotNil(t, confirmedOrder.ConfirmationDate)
 	assert.WithinDuration(t, time.Now(), *confirmedOrder.ConfirmationDate, time.Second)
 
@@ -281,9 +281,9 @@ func TestSalesOrderService_ConfirmSalesOrder_InvalidStatus(t *testing.T) {
 
 	// Test data - order already confirmed
 	orderID := uuid.New()
-	existingOrder := domain.SalesOrder{
+	existingOrder := types.SalesOrder{
 		ID:     orderID,
-		Status: domain.SalesOrderStatusConfirmed,
+		Status: types.SalesOrderStatusConfirmed,
 	}
 
 	// Mock expectations
@@ -314,13 +314,13 @@ func TestSalesOrderService_CancelSalesOrder_Success(t *testing.T) {
 	pricelistID := uuid.New()
 	currencyID := uuid.New()
 
-	existingOrder := domain.SalesOrder{
+	existingOrder := types.SalesOrder{
 		ID:             orderID,
 		OrganizationID: orgID,
 		CompanyID:      companyID,
 		CustomerID:     customerID,
 		Reference:      "TEST-003",
-		Status:         domain.SalesOrderStatusDraft,
+		Status:         types.SalesOrderStatusDraft,
 		OrderDate:      time.Now(),
 		PricelistID:    pricelistID,
 		CurrencyID:     currencyID,
@@ -335,12 +335,12 @@ func TestSalesOrderService_CancelSalesOrder_Success(t *testing.T) {
 	}
 
 	expectedUpdatedOrder := existingOrder
-	expectedUpdatedOrder.Status = domain.SalesOrderStatusCancelled
+	expectedUpdatedOrder.Status = types.SalesOrderStatusCancelled
 	expectedUpdatedOrder.UpdatedAt = time.Now()
 
 	// Mock expectations
 	mockOrderRepo.On("FindByID", context.Background(), orderID).Return(&existingOrder, nil)
-	mockOrderRepo.On("Update", context.Background(), mock.AnythingOfType("domain.SalesOrder")).
+	mockOrderRepo.On("Update", context.Background(), mock.AnythingOfType("types.SalesOrder")).
 		Return(&expectedUpdatedOrder, nil)
 
 	// Execute
@@ -349,7 +349,7 @@ func TestSalesOrderService_CancelSalesOrder_Success(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, cancelledOrder)
-	assert.Equal(t, domain.SalesOrderStatusCancelled, cancelledOrder.Status)
+	assert.Equal(t, types.SalesOrderStatusCancelled, cancelledOrder.Status)
 
 	mockOrderRepo.AssertExpectations(t)
 }
@@ -364,8 +364,8 @@ func TestSalesOrderService_CalculateOrderAmounts(t *testing.T) {
 	productID := uuid.New()
 	uomID := uuid.New()
 
-	order := domain.SalesOrder{
-		Lines: []domain.SalesOrderLine{
+	order := types.SalesOrder{
+		Lines: []types.SalesOrderLine{
 			{
 				ProductID:   productID,
 				ProductName: "Product 1",
@@ -415,9 +415,9 @@ func TestSalesOrderService_DeleteSalesOrder_ConfirmedOrder(t *testing.T) {
 
 	// Test data - confirmed order
 	orderID := uuid.New()
-	existingOrder := domain.SalesOrder{
+	existingOrder := types.SalesOrder{
 		ID:     orderID,
-		Status: domain.SalesOrderStatusConfirmed,
+		Status: types.SalesOrderStatusConfirmed,
 	}
 
 	// Mock expectations

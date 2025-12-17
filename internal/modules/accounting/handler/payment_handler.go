@@ -33,7 +33,7 @@ func (h *PaymentHandler) RegisterRoutes(router *httprouter.Router) {
 }
 
 func (h *PaymentHandler) CreatePayment(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var req domain.Payment
+	var req types.Payment
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -118,7 +118,7 @@ func (h *PaymentHandler) UpdatePayment(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	var req domain.Payment
+	var req types.Payment
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

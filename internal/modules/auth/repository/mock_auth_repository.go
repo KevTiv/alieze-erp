@@ -12,26 +12,26 @@ import (
 
 // MockAuthRepository is a mock implementation of AuthRepository for testing
 type MockAuthRepository struct {
-	users             map[uuid.UUID]domain.User
-	usersByEmail      map[string]domain.User
+	users             map[uuid.UUID]types.User
+	usersByEmail      map[string]types.User
 	organizations     map[uuid.UUID]string
-	organizationUsers map[uuid.UUID][]domain.OrganizationUser
+	organizationUsers map[uuid.UUID][]types.OrganizationUser
 	passwordUpdates   map[uuid.UUID]string
 	errors            map[string]error
 }
 
 func NewMockAuthRepository() *MockAuthRepository {
 	return &MockAuthRepository{
-		users:             make(map[uuid.UUID]domain.User),
-		usersByEmail:      make(map[string]domain.User),
+		users:             make(map[uuid.UUID]types.User),
+		usersByEmail:      make(map[string]types.User),
 		organizations:     make(map[uuid.UUID]string),
-		organizationUsers: make(map[uuid.UUID][]domain.OrganizationUser),
+		organizationUsers: make(map[uuid.UUID][]types.OrganizationUser),
 		passwordUpdates:   make(map[uuid.UUID]string),
 		errors:            make(map[string]error),
 	}
 }
 
-func (m *MockAuthRepository) CreateUser(ctx context.Context, user domain.User) (*domain.User, error) {
+func (m *MockAuthRepository) CreateUser(ctx context.Context, user types.User) (*types.User, error) {
 	if err, exists := m.errors["CreateUser"]; exists {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (m *MockAuthRepository) CreateUser(ctx context.Context, user domain.User) (
 	return &user, nil
 }
 
-func (m *MockAuthRepository) FindUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+func (m *MockAuthRepository) FindUserByID(ctx context.Context, id uuid.UUID) (*types.User, error) {
 	if err, exists := m.errors["FindUserByID"]; exists {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (m *MockAuthRepository) FindUserByID(ctx context.Context, id uuid.UUID) (*d
 	return nil, nil
 }
 
-func (m *MockAuthRepository) FindUserByEmail(ctx context.Context, email string) (*domain.User, error) {
+func (m *MockAuthRepository) FindUserByEmail(ctx context.Context, email string) (*types.User, error) {
 	if err, exists := m.errors["FindUserByEmail"]; exists {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (m *MockAuthRepository) FindUserByEmail(ctx context.Context, email string) 
 	return nil, nil
 }
 
-func (m *MockAuthRepository) UpdateUser(ctx context.Context, user domain.User) (*domain.User, error) {
+func (m *MockAuthRepository) UpdateUser(ctx context.Context, user types.User) (*types.User, error) {
 	if err, exists := m.errors["UpdateUser"]; exists {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (m *MockAuthRepository) FindOrganizationByID(ctx context.Context, id uuid.U
 	return nil, nil
 }
 
-func (m *MockAuthRepository) CreateOrganizationUser(ctx context.Context, orgUser domain.OrganizationUser) (*domain.OrganizationUser, error) {
+func (m *MockAuthRepository) CreateOrganizationUser(ctx context.Context, orgUser types.OrganizationUser) (*types.OrganizationUser, error) {
 	if err, exists := m.errors["CreateOrganizationUser"]; exists {
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (m *MockAuthRepository) CreateOrganizationUser(ctx context.Context, orgUser
 	return &orgUser, nil
 }
 
-func (m *MockAuthRepository) FindOrganizationUser(ctx context.Context, orgID, userID uuid.UUID) (*domain.OrganizationUser, error) {
+func (m *MockAuthRepository) FindOrganizationUser(ctx context.Context, orgID, userID uuid.UUID) (*types.OrganizationUser, error) {
 	if err, exists := m.errors["FindOrganizationUser"]; exists {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (m *MockAuthRepository) FindOrganizationUser(ctx context.Context, orgID, us
 	return nil, nil
 }
 
-func (m *MockAuthRepository) FindOrganizationUsersByUserID(ctx context.Context, userID uuid.UUID) ([]domain.OrganizationUser, error) {
+func (m *MockAuthRepository) FindOrganizationUsersByUserID(ctx context.Context, userID uuid.UUID) ([]types.OrganizationUser, error) {
 	if err, exists := m.errors["FindOrganizationUsersByUserID"]; exists {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func (m *MockAuthRepository) FindOrganizationUsersByUserID(ctx context.Context, 
 	if orgUsers, exists := m.organizationUsers[userID]; exists {
 		return orgUsers, nil
 	}
-	return []domain.OrganizationUser{}, nil
+	return []types.OrganizationUser{}, nil
 }
 
 func (m *MockAuthRepository) UpdateUserPassword(ctx context.Context, userID uuid.UUID, encryptedPassword string) error {
@@ -148,7 +148,7 @@ func (m *MockAuthRepository) UpdateUserPassword(ctx context.Context, userID uuid
 }
 
 // Helper methods for testing
-func (m *MockAuthRepository) AddUser(user domain.User) {
+func (m *MockAuthRepository) AddUser(user types.User) {
 	m.users[user.ID] = user
 	m.usersByEmail[user.Email] = user
 }
@@ -157,7 +157,7 @@ func (m *MockAuthRepository) AddOrganization(orgID uuid.UUID, name string) {
 	m.organizations[orgID] = name
 }
 
-func (m *MockAuthRepository) AddOrganizationUser(orgUser domain.OrganizationUser) {
+func (m *MockAuthRepository) AddOrganizationUser(orgUser types.OrganizationUser) {
 	m.organizationUsers[orgUser.UserID] = append(m.organizationUsers[orgUser.UserID], orgUser)
 }
 
@@ -170,9 +170,9 @@ func (m *MockAuthRepository) ClearErrors() {
 }
 
 // CreateTestUser creates a test user with default values
-func CreateTestUser() domain.User {
+func CreateTestUser() types.User {
 	now := time.Now()
-	return domain.User{
+	return types.User{
 		ID:                uuid.New(),
 		Email:             "test@example.com",
 		EncryptedPassword: "hashed-password",
@@ -185,9 +185,9 @@ func CreateTestUser() domain.User {
 }
 
 // CreateTestOrganizationUser creates a test organization user
-func CreateTestOrganizationUser(userID, orgID uuid.UUID) domain.OrganizationUser {
+func CreateTestOrganizationUser(userID, orgID uuid.UUID) types.OrganizationUser {
 	now := time.Now()
-	return domain.OrganizationUser{
+	return types.OrganizationUser{
 		ID:             uuid.New(),
 		OrganizationID: orgID,
 		UserID:         userID,

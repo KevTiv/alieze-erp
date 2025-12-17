@@ -33,7 +33,7 @@ func (h *JournalHandler) RegisterRoutes(router *httprouter.Router) {
 }
 
 func (h *JournalHandler) CreateJournal(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var req domain.Journal
+	var req types.Journal
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -143,7 +143,7 @@ func (h *JournalHandler) UpdateJournal(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	var req domain.Journal
+	var req types.Journal
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

@@ -54,7 +54,7 @@ func (s *ProductServiceTestSuite) TearDownTest() {
 func (s *ProductServiceTestSuite) TestCreateProductSuccess() {
 	s.T().Run("CreateProduct - Success", func(t *testing.T) {
 		// Setup test data
-		product := domain.Product{
+		product := types.Product{
 			Name:        "Test Product",
 			DefaultCode: stringPtr("TEST-001"),
 			Barcode:     stringPtr("1234567890"),
@@ -69,7 +69,7 @@ func (s *ProductServiceTestSuite) TestCreateProductSuccess() {
 		expectedProduct.OrganizationID = s.orgID
 
 		// Setup mock expectations
-		s.repo.WithCreateFunc(func(ctx context.Context, p domain.Product) (*domain.Product, error) {
+		s.repo.WithCreateFunc(func(ctx context.Context, p types.Product) (*types.Product, error) {
 			require.Equal(t, s.orgID, p.OrganizationID)
 			require.Equal(t, "Test Product", p.Name)
 			require.Equal(t, "storable", p.ProductType)
@@ -91,7 +91,7 @@ func (s *ProductServiceTestSuite) TestCreateProductSuccess() {
 
 func (s *ProductServiceTestSuite) TestCreateProductMissingName() {
 	s.T().Run("CreateProduct - Missing Name", func(t *testing.T) {
-		product := domain.Product{
+		product := types.Product{
 			ProductType: "storable",
 		}
 
@@ -105,7 +105,7 @@ func (s *ProductServiceTestSuite) TestCreateProductMissingName() {
 
 func (s *ProductServiceTestSuite) TestCreateProductInvalidProductType() {
 	s.T().Run("CreateProduct - Invalid Product Type", func(t *testing.T) {
-		product := domain.Product{
+		product := types.Product{
 			Name:        "Test Product",
 			ProductType: "invalid",
 		}
@@ -123,7 +123,7 @@ func (s *ProductServiceTestSuite) TestCreateProductPermissionDenied() {
 		// Setup permission denial
 		s.auth.DenyPermission("products:create")
 
-		product := domain.Product{
+		product := types.Product{
 			Name:        "Test Product",
 			ProductType: "storable",
 		}
@@ -139,7 +139,7 @@ func (s *ProductServiceTestSuite) TestCreateProductPermissionDenied() {
 func (s *ProductServiceTestSuite) TestGetProductSuccess() {
 	s.T().Run("GetProduct - Success", func(t *testing.T) {
 		// Setup test data
-		expectedProduct := domain.Product{
+		expectedProduct := types.Product{
 			ID:             s.productID,
 			OrganizationID: s.orgID,
 			Name:           "Test Product",
@@ -152,7 +152,7 @@ func (s *ProductServiceTestSuite) TestGetProductSuccess() {
 		}
 
 		// Setup mock expectations
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Product, error) {
 			require.Equal(t, s.productID, id)
 			return &expectedProduct, nil
 		})
@@ -196,13 +196,13 @@ func (s *ProductServiceTestSuite) TestGetProductOrganizationMismatch() {
 	s.T().Run("GetProduct - Organization Mismatch", func(t *testing.T) {
 		// Setup test data with different organization
 		otherOrgID := uuid.Must(uuid.NewV7())
-		product := domain.Product{
+		product := types.Product{
 			ID:             s.productID,
 			OrganizationID: otherOrgID,
 			Name:           "Test Product",
 		}
 
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Product, error) {
 			return &product, nil
 		})
 
@@ -219,12 +219,12 @@ func (s *ProductServiceTestSuite) TestGetProductOrganizationMismatch() {
 func (s *ProductServiceTestSuite) TestListProductsSuccess() {
 	s.T().Run("ListProducts - Success", func(t *testing.T) {
 		// Setup test data
-		filter := domain.ProductFilter{
+		filter := types.ProductFilter{
 			Name:   stringPtr("Test"),
 			Active: boolPtr(true),
 		}
 
-		expectedProducts := []domain.Product{
+		expectedProducts := []types.Product{
 			{
 				ID:             uuid.Must(uuid.NewV7()),
 				OrganizationID: s.orgID,
@@ -244,14 +244,14 @@ func (s *ProductServiceTestSuite) TestListProductsSuccess() {
 		}
 
 		// Setup mock expectations
-		s.repo.WithFindAllFunc(func(ctx context.Context, f domain.ProductFilter) ([]domain.Product, error) {
+		s.repo.WithFindAllFunc(func(ctx context.Context, f types.ProductFilter) ([]types.Product, error) {
 			require.Equal(t, s.orgID, f.OrganizationID)
 			require.Equal(t, "Test", *f.Name)
 			require.Equal(t, true, *f.Active)
 			return expectedProducts, nil
 		})
 
-		s.repo.WithCountFunc(func(ctx context.Context, f domain.ProductFilter) (int, error) {
+		s.repo.WithCountFunc(func(ctx context.Context, f types.ProductFilter) (int, error) {
 			return len(expectedProducts), nil
 		})
 
@@ -273,7 +273,7 @@ func (s *ProductServiceTestSuite) TestListProductsPermissionDenied() {
 		// Setup permission denial
 		s.auth.DenyPermission("products:read")
 
-		filter := domain.ProductFilter{
+		filter := types.ProductFilter{
 			Name: stringPtr("Test"),
 		}
 
@@ -288,20 +288,20 @@ func (s *ProductServiceTestSuite) TestListProductsPermissionDenied() {
 
 func (s *ProductServiceTestSuite) TestListProductsDefaultPagination() {
 	s.T().Run("ListProducts - Default Pagination", func(t *testing.T) {
-		filter := domain.ProductFilter{
+		filter := types.ProductFilter{
 			// No limit specified
 		}
 
-		expectedProducts := []domain.Product{
+		expectedProducts := []types.Product{
 			{ID: uuid.Must(uuid.NewV7()), OrganizationID: s.orgID, Name: "Product 1"},
 		}
 
-		s.repo.WithFindAllFunc(func(ctx context.Context, f domain.ProductFilter) ([]domain.Product, error) {
+		s.repo.WithFindAllFunc(func(ctx context.Context, f types.ProductFilter) ([]types.Product, error) {
 			require.Equal(t, 50, f.Limit) // Default limit should be 50
 			return expectedProducts, nil
 		})
 
-		s.repo.WithCountFunc(func(ctx context.Context, f domain.ProductFilter) (int, error) {
+		s.repo.WithCountFunc(func(ctx context.Context, f types.ProductFilter) (int, error) {
 			return 1, nil
 		})
 
@@ -317,7 +317,7 @@ func (s *ProductServiceTestSuite) TestListProductsDefaultPagination() {
 func (s *ProductServiceTestSuite) TestUpdateProductSuccess() {
 	s.T().Run("UpdateProduct - Success", func(t *testing.T) {
 		// Setup test data
-		existingProduct := domain.Product{
+		existingProduct := types.Product{
 			ID:             s.productID,
 			OrganizationID: s.orgID,
 			Name:           "Old Product",
@@ -325,7 +325,7 @@ func (s *ProductServiceTestSuite) TestUpdateProductSuccess() {
 			Active:         true,
 		}
 
-		updatedProduct := domain.Product{
+		updatedProduct := types.Product{
 			ID:          s.productID,
 			Name:        "Updated Product",
 			DefaultCode: stringPtr("UPDATED-001"),
@@ -340,12 +340,12 @@ func (s *ProductServiceTestSuite) TestUpdateProductSuccess() {
 		expectedProduct.OrganizationID = s.orgID
 
 		// Setup mock expectations
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Product, error) {
 			require.Equal(t, s.productID, id)
 			return &existingProduct, nil
 		})
 
-		s.repo.WithUpdateFunc(func(ctx context.Context, p domain.Product) (*domain.Product, error) {
+		s.repo.WithUpdateFunc(func(ctx context.Context, p types.Product) (*types.Product, error) {
 			require.Equal(t, s.productID, p.ID)
 			require.Equal(t, s.orgID, p.OrganizationID)
 			require.Equal(t, "Updated Product", p.Name)
@@ -367,7 +367,7 @@ func (s *ProductServiceTestSuite) TestUpdateProductSuccess() {
 
 func (s *ProductServiceTestSuite) TestUpdateProductMissingID() {
 	s.T().Run("UpdateProduct - Missing ID", func(t *testing.T) {
-		product := domain.Product{
+		product := types.Product{
 			Name:        "Test Product",
 			ProductType: "storable",
 		}
@@ -382,7 +382,7 @@ func (s *ProductServiceTestSuite) TestUpdateProductMissingID() {
 
 func (s *ProductServiceTestSuite) TestUpdateProductMissingName() {
 	s.T().Run("UpdateProduct - Missing Name", func(t *testing.T) {
-		product := domain.Product{
+		product := types.Product{
 			ID:          s.productID,
 			ProductType: "storable",
 		}
@@ -397,20 +397,20 @@ func (s *ProductServiceTestSuite) TestUpdateProductMissingName() {
 
 func (s *ProductServiceTestSuite) TestUpdateProductInvalidProductType() {
 	s.T().Run("UpdateProduct - Invalid Product Type", func(t *testing.T) {
-		existingProduct := domain.Product{
+		existingProduct := types.Product{
 			ID:             s.productID,
 			OrganizationID: s.orgID,
 			Name:           "Test Product",
 			ProductType:    "storable",
 		}
 
-		product := domain.Product{
+		product := types.Product{
 			ID:          s.productID,
 			Name:        "Test Product",
 			ProductType: "invalid",
 		}
 
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Product, error) {
 			return &existingProduct, nil
 		})
 
@@ -426,20 +426,20 @@ func (s *ProductServiceTestSuite) TestUpdateProductOrganizationMismatch() {
 	s.T().Run("UpdateProduct - Organization Mismatch", func(t *testing.T) {
 		// Setup test data with different organization
 		otherOrgID := uuid.Must(uuid.NewV7())
-		existingProduct := domain.Product{
+		existingProduct := types.Product{
 			ID:             s.productID,
 			OrganizationID: otherOrgID,
 			Name:           "Test Product",
 			ProductType:    "storable",
 		}
 
-		product := domain.Product{
+		product := types.Product{
 			ID:          s.productID,
 			Name:        "Updated Product",
 			ProductType: "storable",
 		}
 
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Product, error) {
 			return &existingProduct, nil
 		})
 
@@ -456,20 +456,20 @@ func (s *ProductServiceTestSuite) TestUpdateProductPermissionDenied() {
 		// Setup permission denial
 		s.auth.DenyPermission("products:update")
 
-		existingProduct := domain.Product{
+		existingProduct := types.Product{
 			ID:             s.productID,
 			OrganizationID: s.orgID,
 			Name:           "Test Product",
 			ProductType:    "storable",
 		}
 
-		product := domain.Product{
+		product := types.Product{
 			ID:          s.productID,
 			Name:        "Updated Product",
 			ProductType: "storable",
 		}
 
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Product, error) {
 			return &existingProduct, nil
 		})
 
@@ -484,7 +484,7 @@ func (s *ProductServiceTestSuite) TestUpdateProductPermissionDenied() {
 func (s *ProductServiceTestSuite) TestDeleteProductSuccess() {
 	s.T().Run("DeleteProduct - Success", func(t *testing.T) {
 		// Setup test data
-		existingProduct := domain.Product{
+		existingProduct := types.Product{
 			ID:             s.productID,
 			OrganizationID: s.orgID,
 			Name:           "Test Product",
@@ -493,7 +493,7 @@ func (s *ProductServiceTestSuite) TestDeleteProductSuccess() {
 		}
 
 		// Setup mock expectations
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Product, error) {
 			require.Equal(t, s.productID, id)
 			return &existingProduct, nil
 		})
@@ -524,14 +524,14 @@ func (s *ProductServiceTestSuite) TestDeleteProductOrganizationMismatch() {
 	s.T().Run("DeleteProduct - Organization Mismatch", func(t *testing.T) {
 		// Setup test data with different organization
 		otherOrgID := uuid.Must(uuid.NewV7())
-		existingProduct := domain.Product{
+		existingProduct := types.Product{
 			ID:             s.productID,
 			OrganizationID: otherOrgID,
 			Name:           "Test Product",
 			ProductType:    "storable",
 		}
 
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Product, error) {
 			return &existingProduct, nil
 		})
 
@@ -547,14 +547,14 @@ func (s *ProductServiceTestSuite) TestDeleteProductPermissionDenied() {
 		// Setup permission denial
 		s.auth.DenyPermission("products:delete")
 
-		existingProduct := domain.Product{
+		existingProduct := types.Product{
 			ID:             s.productID,
 			OrganizationID: s.orgID,
 			Name:           "Test Product",
 			ProductType:    "storable",
 		}
 
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Product, error) {
 			return &existingProduct, nil
 		})
 

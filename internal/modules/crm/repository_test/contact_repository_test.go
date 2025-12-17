@@ -43,7 +43,7 @@ func (s *ContactRepositoryTestSuite) TearDownTest() {
 func (s *ContactRepositoryTestSuite) TestCreateContactSuccess() {
 	s.T().Run("CreateContact - Success", func(t *testing.T) {
 		// Setup test data
-		contact := domain.Contact{
+		contact := types.Contact{
 			ID:             s.contactID,
 			OrganizationID: s.orgID,
 			Name:           "John Doe",
@@ -127,12 +127,12 @@ func (s *ContactRepositoryTestSuite) TestCreateContactValidationError() {
 		// Test cases with validation errors
 		testCases := []struct {
 			name        string
-			contact     domain.Contact
+			contact     types.Contact
 			expectedErr string
 		}{
 			{
 				name: "Empty OrganizationID",
-				contact: domain.Contact{
+				contact: types.Contact{
 					ID:   s.contactID,
 					Name: "John Doe",
 				},
@@ -140,7 +140,7 @@ func (s *ContactRepositoryTestSuite) TestCreateContactValidationError() {
 			},
 			{
 				name: "Empty Name",
-				contact: domain.Contact{
+				contact: types.Contact{
 					ID:             s.contactID,
 					OrganizationID: s.orgID,
 				},
@@ -247,7 +247,7 @@ func (s *ContactRepositoryTestSuite) TestFindByIDNotFound() {
 func (s *ContactRepositoryTestSuite) TestFindAllSuccess() {
 	s.T().Run("FindAll - Success", func(t *testing.T) {
 		// Setup test data
-		filter := domain.ContactFilter{
+		filter := types.ContactFilter{
 			OrganizationID: s.orgID,
 			Name:           stringPtr("John"),
 			Limit:          10,
@@ -286,7 +286,7 @@ func (s *ContactRepositoryTestSuite) TestFindAllSuccess() {
 func (s *ContactRepositoryTestSuite) TestUpdateContactSuccess() {
 	s.T().Run("UpdateContact - Success", func(t *testing.T) {
 		// Setup test data
-		contact := domain.Contact{
+		contact := types.Contact{
 			ID:             s.contactID,
 			OrganizationID: s.orgID,
 			Name:           "John Doe Updated",
@@ -414,7 +414,7 @@ func (s *ContactRepositoryTestSuite) TestDeleteContactNotFound() {
 func (s *ContactRepositoryTestSuite) TestCountContactsSuccess() {
 	s.T().Run("Count - Success", func(t *testing.T) {
 		// Setup test data
-		filter := domain.ContactFilter{
+		filter := types.ContactFilter{
 			OrganizationID: s.orgID,
 			IsCustomer:     boolPtr(true),
 		}

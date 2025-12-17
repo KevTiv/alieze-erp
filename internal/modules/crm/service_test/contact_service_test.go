@@ -53,7 +53,7 @@ func (s *ContactServiceTestSuite) TearDownTest() {
 func (s *ContactServiceTestSuite) TestCreateContactSuccess() {
 	s.T().Run("CreateContact - Success", func(t *testing.T) {
 		// Setup test data
-		contact := domain.Contact{
+		contact := types.Contact{
 			Name:       "John Doe",
 			Email:      stringPtr("john@example.com"),
 			Phone:      stringPtr("1234567890"),
@@ -67,7 +67,7 @@ func (s *ContactServiceTestSuite) TestCreateContactSuccess() {
 		expectedContact.CreatedAt = time.Now()
 		expectedContact.UpdatedAt = time.Now()
 
-		s.repo.WithCreateFunc(func(ctx context.Context, c domain.Contact) (*domain.Contact, error) {
+		s.repo.WithCreateFunc(func(ctx context.Context, c types.Contact) (*types.Contact, error) {
 			require.Equal(t, s.orgID, c.OrganizationID)
 			require.Equal(t, contact.Name, c.Name)
 			require.Equal(t, contact.Email, c.Email)
@@ -98,19 +98,19 @@ func (s *ContactServiceTestSuite) TestCreateContactValidationError() {
 		// Test cases with validation errors
 		testCases := []struct {
 			name        string
-			contact     domain.Contact
+			contact     types.Contact
 			expectedErr string
 		}{
 			{
 				name: "Empty Name",
-				contact: domain.Contact{
+				contact: types.Contact{
 					Email: stringPtr("john@example.com"),
 				},
 				expectedErr: "contact name is required",
 			},
 			{
 				name: "Invalid Email",
-				contact: domain.Contact{
+				contact: types.Contact{
 					Name:  "John Doe",
 					Email: stringPtr("invalid-email"),
 				},
@@ -135,7 +135,7 @@ func (s *ContactServiceTestSuite) TestCreateContactValidationError() {
 func (s *ContactServiceTestSuite) TestCreateContactPermissionError() {
 	s.T().Run("CreateContact - Permission Error", func(t *testing.T) {
 		// Setup test data
-		contact := domain.Contact{
+		contact := types.Contact{
 			Name:  "John Doe",
 			Email: stringPtr("john@example.com"),
 		}
@@ -157,7 +157,7 @@ func (s *ContactServiceTestSuite) TestGetContactSuccess() {
 	s.T().Run("GetContact - Success", func(t *testing.T) {
 		// Setup test data
 		contactID := s.contactID
-		expectedContact := domain.Contact{
+		expectedContact := types.Contact{
 			ID:             contactID,
 			OrganizationID: s.orgID,
 			Name:           "John Doe",
@@ -167,7 +167,7 @@ func (s *ContactServiceTestSuite) TestGetContactSuccess() {
 		}
 
 		// Mock repository behavior
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Contact, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Contact, error) {
 			require.Equal(t, contactID, id)
 			return &expectedContact, nil
 		})
@@ -212,8 +212,8 @@ func (s *ContactServiceTestSuite) TestGetContactOrganizationMismatch() {
 		otherOrgID := uuid.Must(uuid.NewV7())
 
 		// Mock repository behavior - return contact from different organization
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Contact, error) {
-			return &domain.Contact{
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Contact, error) {
+			return &types.Contact{
 				ID:             contactID,
 				OrganizationID: otherOrgID, // Different organization
 				Name:           "John Doe",
@@ -233,13 +233,13 @@ func (s *ContactServiceTestSuite) TestGetContactOrganizationMismatch() {
 func (s *ContactServiceTestSuite) TestListContactsSuccess() {
 	s.T().Run("ListContacts - Success", func(t *testing.T) {
 		// Setup test data
-		filter := domain.ContactFilter{
+		filter := types.ContactFilter{
 			Name:  stringPtr("John"),
 			Limit: 10,
 		}
 
 		// Mock repository behavior
-		expectedContacts := []domain.Contact{
+		expectedContacts := []types.Contact{
 			{
 				ID:             uuid.Must(uuid.NewV7()),
 				OrganizationID: s.orgID,
@@ -257,14 +257,14 @@ func (s *ContactServiceTestSuite) TestListContactsSuccess() {
 		}
 		expectedCount := 2
 
-		s.repo.WithFindAllFunc(func(ctx context.Context, f domain.ContactFilter) ([]domain.Contact, error) {
+		s.repo.WithFindAllFunc(func(ctx context.Context, f types.ContactFilter) ([]types.Contact, error) {
 			require.Equal(t, s.orgID, f.OrganizationID)
 			require.Equal(t, filter.Name, f.Name)
 			require.Equal(t, filter.Limit, f.Limit)
 			return expectedContacts, nil
 		})
 
-		s.repo.WithCountFunc(func(ctx context.Context, f domain.ContactFilter) (int, error) {
+		s.repo.WithCountFunc(func(ctx context.Context, f types.ContactFilter) (int, error) {
 			return expectedCount, nil
 		})
 
@@ -285,7 +285,7 @@ func (s *ContactServiceTestSuite) TestUpdateContactSuccess() {
 	s.T().Run("UpdateContact - Success", func(t *testing.T) {
 		// Setup test data
 		contactID := s.contactID
-		contact := domain.Contact{
+		contact := types.Contact{
 			ID:         contactID,
 			Name:       "John Doe Updated",
 			Email:      stringPtr("john.updated@example.com"),
@@ -295,7 +295,7 @@ func (s *ContactServiceTestSuite) TestUpdateContactSuccess() {
 		}
 
 		// Mock repository behavior
-		existingContact := domain.Contact{
+		existingContact := types.Contact{
 			ID:             contactID,
 			OrganizationID: s.orgID,
 			Name:           "John Doe",
@@ -307,12 +307,12 @@ func (s *ContactServiceTestSuite) TestUpdateContactSuccess() {
 		expectedContact.OrganizationID = s.orgID
 		expectedContact.UpdatedAt = time.Now()
 
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Contact, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Contact, error) {
 			require.Equal(t, contactID, id)
 			return &existingContact, nil
 		})
 
-		s.repo.WithUpdateFunc(func(ctx context.Context, c domain.Contact) (*domain.Contact, error) {
+		s.repo.WithUpdateFunc(func(ctx context.Context, c types.Contact) (*types.Contact, error) {
 			require.Equal(t, contactID, c.ID)
 			require.Equal(t, s.orgID, c.OrganizationID)
 			require.Equal(t, contact.Name, c.Name)
@@ -345,13 +345,13 @@ func (s *ContactServiceTestSuite) TestUpdateContactValidationError() {
 		// Test cases with validation errors
 		testCases := []struct {
 			name        string
-			contact     domain.Contact
+			contact     types.Contact
 			expectedErr string
 			mockRepo    bool // Whether to mock the repository for organization check
 		}{
 			{
 				name: "Empty ID",
-				contact: domain.Contact{
+				contact: types.Contact{
 					Name: "John Doe",
 				},
 				expectedErr: "contact id is required",
@@ -359,7 +359,7 @@ func (s *ContactServiceTestSuite) TestUpdateContactValidationError() {
 			},
 			{
 				name: "Empty Name",
-				contact: domain.Contact{
+				contact: types.Contact{
 					ID: s.contactID,
 				},
 				expectedErr: "contact name is required",
@@ -367,7 +367,7 @@ func (s *ContactServiceTestSuite) TestUpdateContactValidationError() {
 			},
 			{
 				name: "Invalid Email",
-				contact: domain.Contact{
+				contact: types.Contact{
 					ID:    s.contactID,
 					Name:  "John Doe",
 					Email: stringPtr("invalid-email"),
@@ -381,13 +381,13 @@ func (s *ContactServiceTestSuite) TestUpdateContactValidationError() {
 			t.Run(tc.name, func(t *testing.T) {
 				// For cases that need organization check, mock the repository
 				if tc.mockRepo {
-					existingContact := domain.Contact{
+					existingContact := types.Contact{
 						ID:             s.contactID,
 						OrganizationID: s.orgID,
 						Name:           "John Doe",
 					}
 
-					s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Contact, error) {
+					s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Contact, error) {
 						return &existingContact, nil
 					})
 				}
@@ -407,19 +407,19 @@ func (s *ContactServiceTestSuite) TestUpdateContactValidationError() {
 func (s *ContactServiceTestSuite) TestUpdateContactPermissionError() {
 	s.T().Run("UpdateContact - Permission Error", func(t *testing.T) {
 		// Setup test data
-		contact := domain.Contact{
+		contact := types.Contact{
 			ID:   s.contactID,
 			Name: "John Doe",
 		}
 
 		// Mock repository behavior - contact belongs to the organization
-		existingContact := domain.Contact{
+		existingContact := types.Contact{
 			ID:             s.contactID,
 			OrganizationID: s.orgID,
 			Name:           "John Doe",
 		}
 
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Contact, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Contact, error) {
 			return &existingContact, nil
 		})
 
@@ -441,14 +441,14 @@ func (s *ContactServiceTestSuite) TestUpdateContactOrganizationMismatch() {
 		// Setup test data
 		contactID := s.contactID
 		otherOrgID := uuid.Must(uuid.NewV7())
-		contact := domain.Contact{
+		contact := types.Contact{
 			ID:   contactID,
 			Name: "John Doe",
 		}
 
 		// Mock repository behavior - return contact from different organization
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Contact, error) {
-			return &domain.Contact{
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Contact, error) {
+			return &types.Contact{
 				ID:             contactID,
 				OrganizationID: otherOrgID, // Different organization
 				Name:           "John Doe",
@@ -471,13 +471,13 @@ func (s *ContactServiceTestSuite) TestDeleteContactSuccess() {
 		contactID := s.contactID
 
 		// Mock repository behavior
-		existingContact := domain.Contact{
+		existingContact := types.Contact{
 			ID:             contactID,
 			OrganizationID: s.orgID,
 			Name:           "John Doe",
 		}
 
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Contact, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Contact, error) {
 			require.Equal(t, contactID, id)
 			return &existingContact, nil
 		})
@@ -498,14 +498,14 @@ func (s *ContactServiceTestSuite) TestDeleteContactSuccess() {
 func (s *ContactServiceTestSuite) TestDeleteContactPermissionError() {
 	s.T().Run("DeleteContact - Permission Error", func(t *testing.T) {
 		// Setup test data - contact belongs to the organization
-		existingContact := domain.Contact{
+		existingContact := types.Contact{
 			ID:             s.contactID,
 			OrganizationID: s.orgID,
 			Name:           "John Doe",
 		}
 
 		// Mock repository behavior
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Contact, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Contact, error) {
 			return &existingContact, nil
 		})
 
@@ -528,8 +528,8 @@ func (s *ContactServiceTestSuite) TestDeleteContactOrganizationMismatch() {
 		otherOrgID := uuid.Must(uuid.NewV7())
 
 		// Mock repository behavior - return contact from different organization
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*domain.Contact, error) {
-			return &domain.Contact{
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Contact, error) {
+			return &types.Contact{
 				ID:             contactID,
 				OrganizationID: otherOrgID, // Different organization
 				Name:           "John Doe",

@@ -51,7 +51,7 @@ func (h *InventoryHandler) RegisterRoutes(router *httprouter.Router) {
 // Warehouse handlers
 
 func (h *InventoryHandler) CreateWarehouse(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var req domain.Warehouse
+	var req types.Warehouse
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -116,7 +116,7 @@ func (h *InventoryHandler) UpdateWarehouse(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var req domain.Warehouse
+	var req types.Warehouse
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -152,7 +152,7 @@ func (h *InventoryHandler) DeleteWarehouse(w http.ResponseWriter, r *http.Reques
 // Stock Location handlers
 
 func (h *InventoryHandler) CreateLocation(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var req domain.StockLocation
+	var req types.StockLocation
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -217,7 +217,7 @@ func (h *InventoryHandler) UpdateLocation(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var req domain.StockLocation
+	var req types.StockLocation
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -342,7 +342,7 @@ func (h *InventoryHandler) GetAvailableQuantity(w http.ResponseWriter, r *http.R
 // Stock Move handlers
 
 func (h *InventoryHandler) CreateMove(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var req domain.StockMove
+	var req types.StockMove
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

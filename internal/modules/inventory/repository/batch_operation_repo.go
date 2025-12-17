@@ -19,7 +19,7 @@ func NewBatchOperationRepository(db *sql.DB) BatchOperationRepository {
 	return &batchOperationRepository{db: db}
 }
 
-func (r *batchOperationRepository) Create(ctx context.Context, operation domain.BatchOperation) (*domain.BatchOperation, error) {
+func (r *batchOperationRepository) Create(ctx context.Context, operation types.BatchOperation) (*types.BatchOperation, error) {
 	query := `
 		INSERT INTO batch_operations
 		(id, organization_id, company_id, operation_type, status, reference, description, priority,
@@ -42,7 +42,7 @@ func (r *batchOperationRepository) Create(ctx context.Context, operation domain.
 		operation.UpdatedAt = now
 	}
 
-	var created domain.BatchOperation
+	var created types.BatchOperation
 	err := r.db.QueryRowContext(ctx, query,
 		operation.ID, operation.OrganizationID, operation.CompanyID, operation.OperationType, operation.Status,
 		operation.Reference, operation.Description, operation.Priority, operation.SourceType, operation.SourceID,
@@ -61,7 +61,7 @@ func (r *batchOperationRepository) Create(ctx context.Context, operation domain.
 	return &created, nil
 }
 
-func (r *batchOperationRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.BatchOperation, error) {
+func (r *batchOperationRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.BatchOperation, error) {
 	query := `
 		SELECT id, organization_id, company_id, operation_type, status, reference, description, priority,
 		 source_type, source_id, created_by, processed_by, processed_at, total_items, successful_items, failed_items,
@@ -69,7 +69,7 @@ func (r *batchOperationRepository) FindByID(ctx context.Context, id uuid.UUID) (
 		FROM batch_operations WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	var operation domain.BatchOperation
+	var operation types.BatchOperation
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&operation.ID, &operation.OrganizationID, &operation.CompanyID, &operation.OperationType, &operation.Status,
 		&operation.Reference, &operation.Description, &operation.Priority, &operation.SourceType, &operation.SourceID,
@@ -86,7 +86,7 @@ func (r *batchOperationRepository) FindByID(ctx context.Context, id uuid.UUID) (
 	return &operation, nil
 }
 
-func (r *batchOperationRepository) FindAll(ctx context.Context, organizationID uuid.UUID, limit int) ([]domain.BatchOperation, error) {
+func (r *batchOperationRepository) FindAll(ctx context.Context, organizationID uuid.UUID, limit int) ([]types.BatchOperation, error) {
 	query := `
 		SELECT id, organization_id, company_id, operation_type, status, reference, description, priority,
 		 source_type, source_id, created_by, processed_by, processed_at, total_items, successful_items, failed_items,
@@ -105,9 +105,9 @@ func (r *batchOperationRepository) FindAll(ctx context.Context, organizationID u
 	}
 	defer rows.Close()
 
-	var operations []domain.BatchOperation
+	var operations []types.BatchOperation
 	for rows.Next() {
-		var operation domain.BatchOperation
+		var operation types.BatchOperation
 		err := rows.Scan(
 			&operation.ID, &operation.OrganizationID, &operation.CompanyID, &operation.OperationType, &operation.Status,
 			&operation.Reference, &operation.Description, &operation.Priority, &operation.SourceType, &operation.SourceID,
@@ -123,7 +123,7 @@ func (r *batchOperationRepository) FindAll(ctx context.Context, organizationID u
 	return operations, nil
 }
 
-func (r *batchOperationRepository) FindByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]domain.BatchOperation, error) {
+func (r *batchOperationRepository) FindByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]types.BatchOperation, error) {
 	query := `
 		SELECT id, organization_id, company_id, operation_type, status, reference, description, priority,
 		 source_type, source_id, created_by, processed_by, processed_at, total_items, successful_items, failed_items,
@@ -138,9 +138,9 @@ func (r *batchOperationRepository) FindByStatus(ctx context.Context, organizatio
 	}
 	defer rows.Close()
 
-	var operations []domain.BatchOperation
+	var operations []types.BatchOperation
 	for rows.Next() {
-		var operation domain.BatchOperation
+		var operation types.BatchOperation
 		err := rows.Scan(
 			&operation.ID, &operation.OrganizationID, &operation.CompanyID, &operation.OperationType, &operation.Status,
 			&operation.Reference, &operation.Description, &operation.Priority, &operation.SourceType, &operation.SourceID,
@@ -156,7 +156,7 @@ func (r *batchOperationRepository) FindByStatus(ctx context.Context, organizatio
 	return operations, nil
 }
 
-func (r *batchOperationRepository) FindByType(ctx context.Context, organizationID uuid.UUID, operationType domain.BatchOperationType) ([]domain.BatchOperation, error) {
+func (r *batchOperationRepository) FindByType(ctx context.Context, organizationID uuid.UUID, operationType types.BatchOperationType) ([]types.BatchOperation, error) {
 	query := `
 		SELECT id, organization_id, company_id, operation_type, status, reference, description, priority,
 		 source_type, source_id, created_by, processed_by, processed_at, total_items, successful_items, failed_items,
@@ -171,9 +171,9 @@ func (r *batchOperationRepository) FindByType(ctx context.Context, organizationI
 	}
 	defer rows.Close()
 
-	var operations []domain.BatchOperation
+	var operations []types.BatchOperation
 	for rows.Next() {
-		var operation domain.BatchOperation
+		var operation types.BatchOperation
 		err := rows.Scan(
 			&operation.ID, &operation.OrganizationID, &operation.CompanyID, &operation.OperationType, &operation.Status,
 			&operation.Reference, &operation.Description, &operation.Priority, &operation.SourceType, &operation.SourceID,
@@ -189,7 +189,7 @@ func (r *batchOperationRepository) FindByType(ctx context.Context, organizationI
 	return operations, nil
 }
 
-func (r *batchOperationRepository) FindByDateRange(ctx context.Context, organizationID uuid.UUID, fromTime, toTime time.Time) ([]domain.BatchOperation, error) {
+func (r *batchOperationRepository) FindByDateRange(ctx context.Context, organizationID uuid.UUID, fromTime, toTime time.Time) ([]types.BatchOperation, error) {
 	query := `
 		SELECT id, organization_id, company_id, operation_type, status, reference, description, priority,
 		 source_type, source_id, created_by, processed_by, processed_at, total_items, successful_items, failed_items,
@@ -204,9 +204,9 @@ func (r *batchOperationRepository) FindByDateRange(ctx context.Context, organiza
 	}
 	defer rows.Close()
 
-	var operations []domain.BatchOperation
+	var operations []types.BatchOperation
 	for rows.Next() {
-		var operation domain.BatchOperation
+		var operation types.BatchOperation
 		err := rows.Scan(
 			&operation.ID, &operation.OrganizationID, &operation.CompanyID, &operation.OperationType, &operation.Status,
 			&operation.Reference, &operation.Description, &operation.Priority, &operation.SourceType, &operation.SourceID,
@@ -222,7 +222,7 @@ func (r *batchOperationRepository) FindByDateRange(ctx context.Context, organiza
 	return operations, nil
 }
 
-func (r *batchOperationRepository) FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]domain.BatchOperation, error) {
+func (r *batchOperationRepository) FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]types.BatchOperation, error) {
 	query := `
 		SELECT DISTINCT bo.id, bo.organization_id, bo.company_id, bo.operation_type, bo.status, bo.reference, bo.description, bo.priority,
 		 bo.source_type, bo.source_id, bo.created_by, bo.processed_by, bo.processed_at, bo.total_items, bo.successful_items, bo.failed_items,
@@ -239,9 +239,9 @@ func (r *batchOperationRepository) FindByProduct(ctx context.Context, organizati
 	}
 	defer rows.Close()
 
-	var operations []domain.BatchOperation
+	var operations []types.BatchOperation
 	for rows.Next() {
-		var operation domain.BatchOperation
+		var operation types.BatchOperation
 		err := rows.Scan(
 			&operation.ID, &operation.OrganizationID, &operation.CompanyID, &operation.OperationType, &operation.Status,
 			&operation.Reference, &operation.Description, &operation.Priority, &operation.SourceType, &operation.SourceID,
@@ -257,7 +257,7 @@ func (r *batchOperationRepository) FindByProduct(ctx context.Context, organizati
 	return operations, nil
 }
 
-func (r *batchOperationRepository) Update(ctx context.Context, operation domain.BatchOperation) (*domain.BatchOperation, error) {
+func (r *batchOperationRepository) Update(ctx context.Context, operation types.BatchOperation) (*types.BatchOperation, error) {
 	query := `
 		UPDATE batch_operations
 		SET operation_type = $2, status = $3, reference = $4, description = $5, priority = $6,
@@ -271,7 +271,7 @@ func (r *batchOperationRepository) Update(ctx context.Context, operation domain.
 	`
 
 	operation.UpdatedAt = time.Now()
-	var updated domain.BatchOperation
+	var updated types.BatchOperation
 	err := r.db.QueryRowContext(ctx, query,
 		operation.ID, operation.OperationType, operation.Status, operation.Reference, operation.Description, operation.Priority,
 		operation.SourceType, operation.SourceID, operation.CreatedBy, operation.ProcessedBy, operation.ProcessedAt,
@@ -306,7 +306,7 @@ func (r *batchOperationRepository) Delete(ctx context.Context, id uuid.UUID) err
 	return nil
 }
 
-func (r *batchOperationRepository) ProcessBatchOperation(ctx context.Context, operationID uuid.UUID, processedBy uuid.UUID) (*domain.BatchOperationResult, error) {
+func (r *batchOperationRepository) ProcessBatchOperation(ctx context.Context, operationID uuid.UUID, processedBy uuid.UUID) (*types.BatchOperationResult, error) {
 	query := `
 		SELECT
 			batch_operation_id, status, total_items, successful_items, failed_items, error_message
@@ -319,8 +319,8 @@ func (r *batchOperationRepository) ProcessBatchOperation(ctx context.Context, op
 	}
 	defer rows.Close()
 
-	var result domain.BatchOperationResult
-	var itemResults []domain.BatchOperationItemResult
+	var result types.BatchOperationResult
+	var itemResults []types.BatchOperationItemResult
 
 	for rows.Next() {
 		var batchOpID uuid.UUID
@@ -335,7 +335,7 @@ func (r *batchOperationRepository) ProcessBatchOperation(ctx context.Context, op
 		}
 
 		if statusStr.Valid {
-			result.Status = domain.BatchOperationStatus(statusStr.String)
+			result.Status = types.BatchOperationStatus(statusStr.String)
 		}
 		if totalItems.Valid {
 			result.TotalItems = int(totalItems.Int32)
@@ -367,7 +367,7 @@ func (r *batchOperationRepository) ProcessBatchOperation(ctx context.Context, op
 	defer itemRows.Close()
 
 	for itemRows.Next() {
-		var itemResult domain.BatchOperationItemResult
+		var itemResult types.BatchOperationItemResult
 		var itemID, productID uuid.UUID
 		var statusStr, errorMsg, beforeValue, afterValue sql.NullString
 		var resultID sql.NullString
@@ -416,13 +416,13 @@ func (r *batchOperationRepository) ProcessBatchOperation(ctx context.Context, op
 	return &result, nil
 }
 
-func (r *batchOperationRepository) GetStatistics(ctx context.Context, organizationID uuid.UUID, fromTime, toTime *time.Time, operationType *domain.BatchOperationType) (domain.BatchOperationStatistics, error) {
+func (r *batchOperationRepository) GetStatistics(ctx context.Context, organizationID uuid.UUID, fromTime, toTime *time.Time, operationType *types.BatchOperationType) (types.BatchOperationStatistics, error) {
 	query := `
 		SELECT
 			get_batch_operation_statistics($1, $2, $3, $4)
 	`
 
-	var stats domain.BatchOperationStatistics
+	var stats types.BatchOperationStatistics
 
 	var fromTimeParam, toTimeParam, opTypeParam interface{}
 	if fromTime != nil {
@@ -443,7 +443,7 @@ func (r *batchOperationRepository) GetStatistics(ctx context.Context, organizati
 	)
 
 	if err != nil {
-		return domain.BatchOperationStatistics{}, fmt.Errorf("failed to get batch operation statistics: %w", err)
+		return types.BatchOperationStatistics{}, fmt.Errorf("failed to get batch operation statistics: %w", err)
 	}
 
 	return stats, nil

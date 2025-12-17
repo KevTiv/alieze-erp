@@ -11,13 +11,13 @@ import (
 )
 
 type PricelistRepository interface {
-	Create(ctx context.Context, pricelist domain.Pricelist) (*domain.Pricelist, error)
-	FindByID(ctx context.Context, id uuid.UUID) (*domain.Pricelist, error)
-	FindAll(ctx context.Context, organizationID uuid.UUID) ([]domain.Pricelist, error)
-	Update(ctx context.Context, pricelist domain.Pricelist) (*domain.Pricelist, error)
+	Create(ctx context.Context, pricelist types.Pricelist) (*types.Pricelist, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*types.Pricelist, error)
+	FindAll(ctx context.Context, organizationID uuid.UUID) ([]types.Pricelist, error)
+	Update(ctx context.Context, pricelist types.Pricelist) (*types.Pricelist, error)
 	Delete(ctx context.Context, id uuid.UUID) error
-	FindByCompanyID(ctx context.Context, companyID uuid.UUID) ([]domain.Pricelist, error)
-	FindActiveByCompanyID(ctx context.Context, companyID uuid.UUID) ([]domain.Pricelist, error)
+	FindByCompanyID(ctx context.Context, companyID uuid.UUID) ([]types.Pricelist, error)
+	FindActiveByCompanyID(ctx context.Context, companyID uuid.UUID) ([]types.Pricelist, error)
 }
 
 type pricelistRepository struct {
@@ -28,7 +28,7 @@ func NewPricelistRepository(db *sql.DB) PricelistRepository {
 	return &pricelistRepository{db: db}
 }
 
-func (r *pricelistRepository) Create(ctx context.Context, pricelist domain.Pricelist) (*domain.Pricelist, error) {
+func (r *pricelistRepository) Create(ctx context.Context, pricelist types.Pricelist) (*types.Pricelist, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -45,7 +45,7 @@ func (r *pricelistRepository) Create(ctx context.Context, pricelist domain.Price
 		 created_at, updated_at, created_by, updated_by
 	`
 
-	var createdPricelist domain.Pricelist
+	var createdPricelist types.Pricelist
 	err = tx.QueryRowContext(ctx, query,
 		pricelist.ID, pricelist.OrganizationID, pricelist.CompanyID, pricelist.Name,
 		pricelist.CurrencyID, pricelist.IsActive, pricelist.CreatedAt, pricelist.UpdatedAt,
@@ -71,7 +71,7 @@ func (r *pricelistRepository) Create(ctx context.Context, pricelist domain.Price
 			 created_at, updated_at
 		`
 
-		var createdItem domain.PricelistItem
+		var createdItem types.PricelistItem
 		err = tx.QueryRowContext(ctx, itemQuery,
 			item.ID, createdPricelist.ID, item.ProductID, item.MinQuantity,
 			item.FixedPrice, item.Discount, item.CreatedAt, item.UpdatedAt,
@@ -93,7 +93,7 @@ func (r *pricelistRepository) Create(ctx context.Context, pricelist domain.Price
 	return &createdPricelist, nil
 }
 
-func (r *pricelistRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Pricelist, error) {
+func (r *pricelistRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Pricelist, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, currency_id, is_active,
 		 created_at, updated_at, created_by, updated_by
@@ -101,7 +101,7 @@ func (r *pricelistRepository) FindByID(ctx context.Context, id uuid.UUID) (*doma
 		WHERE id = $1
 	`
 
-	var pricelist domain.Pricelist
+	var pricelist types.Pricelist
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&pricelist.ID, &pricelist.OrganizationID, &pricelist.CompanyID,
 		&pricelist.Name, &pricelist.CurrencyID, &pricelist.IsActive,
@@ -125,7 +125,7 @@ func (r *pricelistRepository) FindByID(ctx context.Context, id uuid.UUID) (*doma
 	return &pricelist, nil
 }
 
-func (r *pricelistRepository) findItemsByPricelistID(ctx context.Context, pricelistID uuid.UUID) ([]domain.PricelistItem, error) {
+func (r *pricelistRepository) findItemsByPricelistID(ctx context.Context, pricelistID uuid.UUID) ([]types.PricelistItem, error) {
 	query := `
 		SELECT id, pricelist_id, product_id, min_quantity, fixed_price, discount,
 		 created_at, updated_at
@@ -140,9 +140,9 @@ func (r *pricelistRepository) findItemsByPricelistID(ctx context.Context, pricel
 	}
 	defer rows.Close()
 
-	var items []domain.PricelistItem
+	var items []types.PricelistItem
 	for rows.Next() {
-		var item domain.PricelistItem
+		var item types.PricelistItem
 		err = rows.Scan(
 			&item.ID, &item.PricelistID, &item.ProductID,
 			&item.MinQuantity, &item.FixedPrice, &item.Discount,
@@ -157,7 +157,7 @@ func (r *pricelistRepository) findItemsByPricelistID(ctx context.Context, pricel
 	return items, nil
 }
 
-func (r *pricelistRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]domain.Pricelist, error) {
+func (r *pricelistRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]types.Pricelist, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, currency_id, is_active,
 		 created_at, updated_at, created_by, updated_by
@@ -172,9 +172,9 @@ func (r *pricelistRepository) FindAll(ctx context.Context, organizationID uuid.U
 	}
 	defer rows.Close()
 
-	var pricelists []domain.Pricelist
+	var pricelists []types.Pricelist
 	for rows.Next() {
-		var pricelist domain.Pricelist
+		var pricelist types.Pricelist
 		err = rows.Scan(
 			&pricelist.ID, &pricelist.OrganizationID, &pricelist.CompanyID,
 			&pricelist.Name, &pricelist.CurrencyID, &pricelist.IsActive,
@@ -199,7 +199,7 @@ func (r *pricelistRepository) FindAll(ctx context.Context, organizationID uuid.U
 	return pricelists, nil
 }
 
-func (r *pricelistRepository) Update(ctx context.Context, pricelist domain.Pricelist) (*domain.Pricelist, error) {
+func (r *pricelistRepository) Update(ctx context.Context, pricelist types.Pricelist) (*types.Pricelist, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -216,7 +216,7 @@ func (r *pricelistRepository) Update(ctx context.Context, pricelist domain.Price
 		 created_at, updated_at, created_by, updated_by
 	`
 
-	var updatedPricelist domain.Pricelist
+	var updatedPricelist types.Pricelist
 	err = tx.QueryRowContext(ctx, query,
 		pricelist.Name, pricelist.CurrencyID, pricelist.IsActive,
 		pricelist.UpdatedAt, pricelist.UpdatedBy, pricelist.ID,
@@ -247,7 +247,7 @@ func (r *pricelistRepository) Update(ctx context.Context, pricelist domain.Price
 			 created_at, updated_at
 		`
 
-		var createdItem domain.PricelistItem
+		var createdItem types.PricelistItem
 		err = tx.QueryRowContext(ctx, itemQuery,
 			item.ID, updatedPricelist.ID, item.ProductID, item.MinQuantity,
 			item.FixedPrice, item.Discount, item.CreatedAt, item.UpdatedAt,
@@ -295,7 +295,7 @@ func (r *pricelistRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *pricelistRepository) FindByCompanyID(ctx context.Context, companyID uuid.UUID) ([]domain.Pricelist, error) {
+func (r *pricelistRepository) FindByCompanyID(ctx context.Context, companyID uuid.UUID) ([]types.Pricelist, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, currency_id, is_active,
 		 created_at, updated_at, created_by, updated_by
@@ -310,9 +310,9 @@ func (r *pricelistRepository) FindByCompanyID(ctx context.Context, companyID uui
 	}
 	defer rows.Close()
 
-	var pricelists []domain.Pricelist
+	var pricelists []types.Pricelist
 	for rows.Next() {
-		var pricelist domain.Pricelist
+		var pricelist types.Pricelist
 		err = rows.Scan(
 			&pricelist.ID, &pricelist.OrganizationID, &pricelist.CompanyID,
 			&pricelist.Name, &pricelist.CurrencyID, &pricelist.IsActive,
@@ -337,7 +337,7 @@ func (r *pricelistRepository) FindByCompanyID(ctx context.Context, companyID uui
 	return pricelists, nil
 }
 
-func (r *pricelistRepository) FindActiveByCompanyID(ctx context.Context, companyID uuid.UUID) ([]domain.Pricelist, error) {
+func (r *pricelistRepository) FindActiveByCompanyID(ctx context.Context, companyID uuid.UUID) ([]types.Pricelist, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, currency_id, is_active,
 		 created_at, updated_at, created_by, updated_by
@@ -352,9 +352,9 @@ func (r *pricelistRepository) FindActiveByCompanyID(ctx context.Context, company
 	}
 	defer rows.Close()
 
-	var pricelists []domain.Pricelist
+	var pricelists []types.Pricelist
 	for rows.Next() {
-		var pricelist domain.Pricelist
+		var pricelist types.Pricelist
 		err = rows.Scan(
 			&pricelist.ID, &pricelist.OrganizationID, &pricelist.CompanyID,
 			&pricelist.Name, &pricelist.CurrencyID, &pricelist.IsActive,

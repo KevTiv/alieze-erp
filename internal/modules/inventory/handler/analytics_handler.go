@@ -66,7 +66,7 @@ func (h *AnalyticsHandler) GetInventoryValuation(w http.ResponseWriter, r *http.
 	}
 
 	// Parse query parameters
-	var request domain.AnalyticsRequest
+	var request types.AnalyticsRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -154,7 +154,7 @@ func (h *AnalyticsHandler) GetInventoryTurnover(w http.ResponseWriter, r *http.R
 	}
 
 	// Parse query parameters
-	var request domain.AnalyticsRequest
+	var request types.AnalyticsRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -220,7 +220,7 @@ func (h *AnalyticsHandler) GetInventoryAging(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Parse query parameters
-	var request domain.AnalyticsRequest
+	var request types.AnalyticsRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -274,7 +274,7 @@ func (h *AnalyticsHandler) GetDeadStock(w http.ResponseWriter, r *http.Request, 
 	}
 
 	// Parse query parameters
-	var request domain.AnalyticsRequest
+	var request types.AnalyticsRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -328,7 +328,7 @@ func (h *AnalyticsHandler) GetMovementSummary(w http.ResponseWriter, r *http.Req
 	}
 
 	// Parse query parameters
-	var request domain.AnalyticsRequest
+	var request types.AnalyticsRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -360,7 +360,7 @@ func (h *AnalyticsHandler) GetReorderAnalysis(w http.ResponseWriter, r *http.Req
 	}
 
 	// Parse query parameters
-	var request domain.AnalyticsRequest
+	var request types.AnalyticsRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

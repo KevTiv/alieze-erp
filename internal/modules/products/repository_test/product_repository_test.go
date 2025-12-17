@@ -46,7 +46,7 @@ func (s *ProductRepositoryTestSuite) TearDownTest() {
 func (s *ProductRepositoryTestSuite) TestCreateProductSuccess() {
 	s.T().Run("CreateProduct - Success", func(t *testing.T) {
 		// Setup test data
-		product := domain.Product{
+		product := types.Product{
 			ID:             s.productID,
 			OrganizationID: s.orgID,
 			Name:           "Test Product",
@@ -111,7 +111,7 @@ func (s *ProductRepositoryTestSuite) TestCreateProductSuccess() {
 
 func (s *ProductRepositoryTestSuite) TestCreateProductMissingOrganization() {
 	s.T().Run("CreateProduct - Missing Organization", func(t *testing.T) {
-		product := domain.Product{
+		product := types.Product{
 			Name:        "Test Product",
 			ProductType: "storable",
 		}
@@ -126,7 +126,7 @@ func (s *ProductRepositoryTestSuite) TestCreateProductMissingOrganization() {
 
 func (s *ProductRepositoryTestSuite) TestCreateProductMissingName() {
 	s.T().Run("CreateProduct - Missing Name", func(t *testing.T) {
-		product := domain.Product{
+		product := types.Product{
 			OrganizationID: s.orgID,
 			ProductType:    "storable",
 		}
@@ -142,7 +142,7 @@ func (s *ProductRepositoryTestSuite) TestCreateProductMissingName() {
 func (s *ProductRepositoryTestSuite) TestFindByIDSuccess() {
 	s.T().Run("FindByID - Success", func(t *testing.T) {
 		// Setup test data
-		expectedProduct := domain.Product{
+		expectedProduct := types.Product{
 			ID:             s.productID,
 			OrganizationID: s.orgID,
 			Name:           "Test Product",
@@ -228,7 +228,7 @@ func (s *ProductRepositoryTestSuite) TestFindByIDInvalidID() {
 func (s *ProductRepositoryTestSuite) TestFindAllSuccess() {
 	s.T().Run("FindAll - Success", func(t *testing.T) {
 		// Setup test data
-		filter := domain.ProductFilter{
+		filter := types.ProductFilter{
 			OrganizationID: s.orgID,
 			Name:           stringPtr("Test"),
 			Active:         boolPtr(true),
@@ -269,7 +269,7 @@ func (s *ProductRepositoryTestSuite) TestFindAllSuccess() {
 
 func (s *ProductRepositoryTestSuite) TestFindAllEmptyResult() {
 	s.T().Run("FindAll - Empty Result", func(t *testing.T) {
-		filter := domain.ProductFilter{
+		filter := types.ProductFilter{
 			OrganizationID: s.orgID,
 			Name:           stringPtr("NonExistent"),
 		}
@@ -298,7 +298,7 @@ func (s *ProductRepositoryTestSuite) TestFindAllEmptyResult() {
 func (s *ProductRepositoryTestSuite) TestUpdateProductSuccess() {
 	s.T().Run("UpdateProduct - Success", func(t *testing.T) {
 		// Setup test data
-		product := domain.Product{
+		product := types.Product{
 			ID:             s.productID,
 			OrganizationID: s.orgID,
 			Name:           "Updated Product",
@@ -361,7 +361,7 @@ func (s *ProductRepositoryTestSuite) TestUpdateProductSuccess() {
 
 func (s *ProductRepositoryTestSuite) TestUpdateProductMissingID() {
 	s.T().Run("UpdateProduct - Missing ID", func(t *testing.T) {
-		product := domain.Product{
+		product := types.Product{
 			OrganizationID: s.orgID,
 			Name:           "Test Product",
 			ProductType:    "storable",
@@ -435,7 +435,7 @@ func (s *ProductRepositoryTestSuite) TestDeleteProductInvalidID() {
 
 func (s *ProductRepositoryTestSuite) TestCountProductsSuccess() {
 	s.T().Run("CountProducts - Success", func(t *testing.T) {
-		filter := domain.ProductFilter{
+		filter := types.ProductFilter{
 			OrganizationID: s.orgID,
 			Active:         boolPtr(true),
 		}
@@ -460,7 +460,7 @@ func (s *ProductRepositoryTestSuite) TestCountProductsSuccess() {
 
 func (s *ProductRepositoryTestSuite) TestCountProductsZero() {
 	s.T().Run("CountProducts - Zero", func(t *testing.T) {
-		filter := domain.ProductFilter{
+		filter := types.ProductFilter{
 			OrganizationID: s.orgID,
 			Name:           stringPtr("NonExistent"),
 		}

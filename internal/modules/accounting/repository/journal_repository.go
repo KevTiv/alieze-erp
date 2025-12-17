@@ -12,13 +12,13 @@ import (
 )
 
 type JournalRepository interface {
-	Create(ctx context.Context, journal domain.Journal) (*domain.Journal, error)
-	FindByID(ctx context.Context, id uuid.UUID) (*domain.Journal, error)
-	FindAll(ctx context.Context, filters JournalFilter) ([]domain.Journal, error)
-	Update(ctx context.Context, journal domain.Journal) (*domain.Journal, error)
+	Create(ctx context.Context, journal types.Journal) (*types.Journal, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*types.Journal, error)
+	FindAll(ctx context.Context, filters JournalFilter) ([]types.Journal, error)
+	Update(ctx context.Context, journal types.Journal) (*types.Journal, error)
 	Delete(ctx context.Context, id uuid.UUID) error
-	FindByCode(ctx context.Context, organizationID uuid.UUID, code string) (*domain.Journal, error)
-	FindByType(ctx context.Context, organizationID uuid.UUID, journalType string) ([]domain.Journal, error)
+	FindByCode(ctx context.Context, organizationID uuid.UUID, code string) (*types.Journal, error)
+	FindByType(ctx context.Context, organizationID uuid.UUID, journalType string) ([]types.Journal, error)
 }
 
 type JournalFilter struct {
@@ -39,7 +39,7 @@ func NewJournalRepository(db *sql.DB) JournalRepository {
 	return &journalRepository{db: db}
 }
 
-func (r *journalRepository) Create(ctx context.Context, journal domain.Journal) (*domain.Journal, error) {
+func (r *journalRepository) Create(ctx context.Context, journal types.Journal) (*types.Journal, error) {
 	query := `
 		INSERT INTO account_journals
 		(id, organization_id, company_id, name, code, type, default_account_id,
@@ -62,7 +62,7 @@ func (r *journalRepository) Create(ctx context.Context, journal domain.Journal) 
 		journal.UpdatedAt = now
 	}
 
-	var createdJournal domain.Journal
+	var createdJournal types.Journal
 	err := r.db.QueryRowContext(ctx, query,
 		journal.ID, journal.OrganizationID, journal.CompanyID, journal.Name,
 		journal.Code, journal.Type, journal.DefaultAccountID, journal.RefundSequence,
@@ -83,7 +83,7 @@ func (r *journalRepository) Create(ctx context.Context, journal domain.Journal) 
 	return &createdJournal, nil
 }
 
-func (r *journalRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Journal, error) {
+func (r *journalRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Journal, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, code, type, default_account_id,
 		 refund_sequence, sequence_id, currency_id, bank_account_id, color,
@@ -92,7 +92,7 @@ func (r *journalRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain
 		WHERE id = $1
 	`
 
-	var journal domain.Journal
+	var journal types.Journal
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&journal.ID, &journal.OrganizationID, &journal.CompanyID,
 		&journal.Name, &journal.Code, &journal.Type,
@@ -111,7 +111,7 @@ func (r *journalRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain
 	return &journal, nil
 }
 
-func (r *journalRepository) FindAll(ctx context.Context, filters JournalFilter) ([]domain.Journal, error) {
+func (r *journalRepository) FindAll(ctx context.Context, filters JournalFilter) ([]types.Journal, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, code, type, default_account_id,
 		 refund_sequence, sequence_id, currency_id, bank_account_id, color,
@@ -167,9 +167,9 @@ func (r *journalRepository) FindAll(ctx context.Context, filters JournalFilter) 
 	}
 	defer rows.Close()
 
-	var journals []domain.Journal
+	var journals []types.Journal
 	for rows.Next() {
-		var journal domain.Journal
+		var journal types.Journal
 		err := rows.Scan(
 			&journal.ID, &journal.OrganizationID, &journal.CompanyID,
 			&journal.Name, &journal.Code, &journal.Type,
@@ -187,7 +187,7 @@ func (r *journalRepository) FindAll(ctx context.Context, filters JournalFilter) 
 	return journals, nil
 }
 
-func (r *journalRepository) Update(ctx context.Context, journal domain.Journal) (*domain.Journal, error) {
+func (r *journalRepository) Update(ctx context.Context, journal types.Journal) (*types.Journal, error) {
 	query := `
 		UPDATE account_journals
 		SET name = $2, code = $3, type = $4, default_account_id = $5,
@@ -201,7 +201,7 @@ func (r *journalRepository) Update(ctx context.Context, journal domain.Journal) 
 
 	journal.UpdatedAt = time.Now()
 
-	var updatedJournal domain.Journal
+	var updatedJournal types.Journal
 	err := r.db.QueryRowContext(ctx, query,
 		journal.ID, journal.Name, journal.Code, journal.Type,
 		journal.DefaultAccountID, journal.RefundSequence, journal.SequenceID,
@@ -246,7 +246,7 @@ func (r *journalRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *journalRepository) FindByCode(ctx context.Context, organizationID uuid.UUID, code string) (*domain.Journal, error) {
+func (r *journalRepository) FindByCode(ctx context.Context, organizationID uuid.UUID, code string) (*types.Journal, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, code, type, default_account_id,
 		 refund_sequence, sequence_id, currency_id, bank_account_id, color,
@@ -255,7 +255,7 @@ func (r *journalRepository) FindByCode(ctx context.Context, organizationID uuid.
 		WHERE organization_id = $1 AND code = $2
 	`
 
-	var journal domain.Journal
+	var journal types.Journal
 	err := r.db.QueryRowContext(ctx, query, organizationID, code).Scan(
 		&journal.ID, &journal.OrganizationID, &journal.CompanyID,
 		&journal.Name, &journal.Code, &journal.Type,
@@ -274,7 +274,7 @@ func (r *journalRepository) FindByCode(ctx context.Context, organizationID uuid.
 	return &journal, nil
 }
 
-func (r *journalRepository) FindByType(ctx context.Context, organizationID uuid.UUID, journalType string) ([]domain.Journal, error) {
+func (r *journalRepository) FindByType(ctx context.Context, organizationID uuid.UUID, journalType string) ([]types.Journal, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, code, type, default_account_id,
 		 refund_sequence, sequence_id, currency_id, bank_account_id, color,
@@ -290,9 +290,9 @@ func (r *journalRepository) FindByType(ctx context.Context, organizationID uuid.
 	}
 	defer rows.Close()
 
-	var journals []domain.Journal
+	var journals []types.Journal
 	for rows.Next() {
-		var journal domain.Journal
+		var journal types.Journal
 		err := rows.Scan(
 			&journal.ID, &journal.OrganizationID, &journal.CompanyID,
 			&journal.Name, &journal.Code, &journal.Type,

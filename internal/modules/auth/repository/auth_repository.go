@@ -19,7 +19,7 @@ func NewAuthRepository(db *sql.DB) AuthRepository {
 	return &authRepository{db: db}
 }
 
-func (r *authRepository) CreateUser(ctx context.Context, user domain.User) (*domain.User, error) {
+func (r *authRepository) CreateUser(ctx context.Context, user types.User) (*types.User, error) {
 	query := `
 		INSERT INTO auth.users
 		(id, email, encrypted_password, email_confirmed_at, confirmed_at, created_at, updated_at, is_super_admin)
@@ -27,7 +27,7 @@ func (r *authRepository) CreateUser(ctx context.Context, user domain.User) (*dom
 		RETURNING id, email, encrypted_password, email_confirmed_at, confirmed_at, created_at, updated_at, is_super_admin
 	`
 
-	var created domain.User
+	var created types.User
 	var emailConfirmedAt, confirmedAt sql.NullTime
 	err := r.db.QueryRowContext(ctx, query,
 		user.ID, user.Email, user.EncryptedPassword, user.EmailConfirmedAt, user.ConfirmedAt,
@@ -52,7 +52,7 @@ func (r *authRepository) CreateUser(ctx context.Context, user domain.User) (*dom
 	return &created, nil
 }
 
-func (r *authRepository) FindUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+func (r *authRepository) FindUserByID(ctx context.Context, id uuid.UUID) (*types.User, error) {
 	query := `
 		SELECT id, email, encrypted_password, email_confirmed_at, confirmed_at, last_sign_in_at,
 		       created_at, updated_at, is_super_admin
@@ -60,7 +60,7 @@ func (r *authRepository) FindUserByID(ctx context.Context, id uuid.UUID) (*domai
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	var user domain.User
+	var user types.User
 	var emailConfirmedAt, confirmedAt, lastSignInAt sql.NullTime
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&user.ID, &user.Email, &user.EncryptedPassword, &emailConfirmedAt, &confirmedAt,
@@ -87,7 +87,7 @@ func (r *authRepository) FindUserByID(ctx context.Context, id uuid.UUID) (*domai
 	return &user, nil
 }
 
-func (r *authRepository) FindUserByEmail(ctx context.Context, email string) (*domain.User, error) {
+func (r *authRepository) FindUserByEmail(ctx context.Context, email string) (*types.User, error) {
 	query := `
 		SELECT id, email, encrypted_password, email_confirmed_at, confirmed_at, last_sign_in_at,
 		       created_at, updated_at, is_super_admin
@@ -95,7 +95,7 @@ func (r *authRepository) FindUserByEmail(ctx context.Context, email string) (*do
 		WHERE email = $1 AND deleted_at IS NULL
 	`
 
-	var user domain.User
+	var user types.User
 	var emailConfirmedAt, confirmedAt, lastSignInAt sql.NullTime
 	err := r.db.QueryRowContext(ctx, query, email).Scan(
 		&user.ID, &user.Email, &user.EncryptedPassword, &emailConfirmedAt, &confirmedAt,
@@ -122,7 +122,7 @@ func (r *authRepository) FindUserByEmail(ctx context.Context, email string) (*do
 	return &user, nil
 }
 
-func (r *authRepository) UpdateUser(ctx context.Context, user domain.User) (*domain.User, error) {
+func (r *authRepository) UpdateUser(ctx context.Context, user types.User) (*types.User, error) {
 	query := `
 		UPDATE auth.users
 		SET email = $2, email_confirmed_at = $3, confirmed_at = $4, last_sign_in_at = $5,
@@ -132,7 +132,7 @@ func (r *authRepository) UpdateUser(ctx context.Context, user domain.User) (*dom
 		          created_at, updated_at, is_super_admin
 	`
 
-	var updated domain.User
+	var updated types.User
 	var emailConfirmedAt, confirmedAt, lastSignInAt sql.NullTime
 	err := r.db.QueryRowContext(ctx, query,
 		user.ID, user.Email, user.EmailConfirmedAt, user.ConfirmedAt, user.LastSignInAt,
@@ -191,7 +191,7 @@ func (r *authRepository) FindOrganizationByID(ctx context.Context, id uuid.UUID)
 	return &name, nil
 }
 
-func (r *authRepository) CreateOrganizationUser(ctx context.Context, orgUser domain.OrganizationUser) (*domain.OrganizationUser, error) {
+func (r *authRepository) CreateOrganizationUser(ctx context.Context, orgUser types.OrganizationUser) (*types.OrganizationUser, error) {
 	query := `
 		INSERT INTO organization_users
 		(id, organization_id, user_id, role, is_active, joined_at, created_at, updated_at)
@@ -199,7 +199,7 @@ func (r *authRepository) CreateOrganizationUser(ctx context.Context, orgUser dom
 		RETURNING id, organization_id, user_id, role, is_active, joined_at, created_at, updated_at
 	`
 
-	var created domain.OrganizationUser
+	var created types.OrganizationUser
 	err := r.db.QueryRowContext(ctx, query,
 		orgUser.ID, orgUser.OrganizationID, orgUser.UserID, orgUser.Role,
 		orgUser.IsActive, orgUser.JoinedAt, orgUser.CreatedAt, orgUser.UpdatedAt,
@@ -215,14 +215,14 @@ func (r *authRepository) CreateOrganizationUser(ctx context.Context, orgUser dom
 	return &created, nil
 }
 
-func (r *authRepository) FindOrganizationUser(ctx context.Context, orgID, userID uuid.UUID) (*domain.OrganizationUser, error) {
+func (r *authRepository) FindOrganizationUser(ctx context.Context, orgID, userID uuid.UUID) (*types.OrganizationUser, error) {
 	query := `
 		SELECT id, organization_id, user_id, role, is_active, joined_at, created_at, updated_at
 		FROM organization_users
 		WHERE organization_id = $1 AND user_id = $2
 	`
 
-	var orgUser domain.OrganizationUser
+	var orgUser types.OrganizationUser
 	var joinedAt sql.NullTime
 	err := r.db.QueryRowContext(ctx, query, orgID, userID).Scan(
 		&orgUser.ID, &orgUser.OrganizationID, &orgUser.UserID, &orgUser.Role,
@@ -243,7 +243,7 @@ func (r *authRepository) FindOrganizationUser(ctx context.Context, orgID, userID
 	return &orgUser, nil
 }
 
-func (r *authRepository) FindOrganizationUsersByUserID(ctx context.Context, userID uuid.UUID) ([]domain.OrganizationUser, error) {
+func (r *authRepository) FindOrganizationUsersByUserID(ctx context.Context, userID uuid.UUID) ([]types.OrganizationUser, error) {
 	query := `
 		SELECT id, organization_id, user_id, role, is_active, joined_at, created_at, updated_at
 		FROM organization_users
@@ -256,9 +256,9 @@ func (r *authRepository) FindOrganizationUsersByUserID(ctx context.Context, user
 	}
 	defer rows.Close()
 
-	var orgUsers []domain.OrganizationUser
+	var orgUsers []types.OrganizationUser
 	for rows.Next() {
-		var orgUser domain.OrganizationUser
+		var orgUser types.OrganizationUser
 		var joinedAt sql.NullTime
 		err := rows.Scan(
 			&orgUser.ID, &orgUser.OrganizationID, &orgUser.UserID, &orgUser.Role,

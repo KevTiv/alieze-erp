@@ -32,7 +32,7 @@ func (h *PricelistHandler) RegisterRoutes(router *httprouter.Router) {
 }
 
 func (h *PricelistHandler) CreatePricelist(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var req domain.Pricelist
+	var req types.Pricelist
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -129,7 +129,7 @@ func (h *PricelistHandler) UpdatePricelist(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var req domain.Pricelist
+	var req types.Pricelist
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

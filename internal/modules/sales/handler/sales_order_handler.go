@@ -36,7 +36,7 @@ func (h *SalesOrderHandler) RegisterRoutes(router *httprouter.Router) {
 }
 
 func (h *SalesOrderHandler) CreateSalesOrder(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var req domain.SalesOrder
+	var req types.SalesOrder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -97,7 +97,7 @@ func (h *SalesOrderHandler) ListSalesOrders(w http.ResponseWriter, r *http.Reque
 	}
 
 	if statusStr != "" {
-		status := domain.SalesOrderStatus(statusStr)
+		status := types.SalesOrderStatus(statusStr)
 		filters.Status = &status
 	}
 
@@ -137,7 +137,7 @@ func (h *SalesOrderHandler) UpdateSalesOrder(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var req domain.SalesOrder
+	var req types.SalesOrder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -225,7 +225,7 @@ func (h *SalesOrderHandler) GetSalesOrdersByCustomer(w http.ResponseWriter, r *h
 }
 
 func (h *SalesOrderHandler) GetSalesOrdersByStatus(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	status := domain.SalesOrderStatus(ps.ByName("status"))
+	status := types.SalesOrderStatus(ps.ByName("status"))
 
 	orders, err := h.service.GetSalesOrdersByStatus(r.Context(), status)
 	if err != nil {

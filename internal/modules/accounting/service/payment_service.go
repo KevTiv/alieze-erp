@@ -21,7 +21,7 @@ func NewPaymentService(repo repository.PaymentRepository) *PaymentService {
 	}
 }
 
-func (s *PaymentService) CreatePayment(ctx context.Context, payment domain.Payment) (*domain.Payment, error) {
+func (s *PaymentService) CreatePayment(ctx context.Context, payment types.Payment) (*types.Payment, error) {
 	// Validate the payment
 	if err := s.validatePayment(payment); err != nil {
 		return nil, fmt.Errorf("invalid payment: %w", err)
@@ -44,7 +44,7 @@ func (s *PaymentService) CreatePayment(ctx context.Context, payment domain.Payme
 	return createdPayment, nil
 }
 
-func (s *PaymentService) GetPayment(ctx context.Context, id uuid.UUID) (*domain.Payment, error) {
+func (s *PaymentService) GetPayment(ctx context.Context, id uuid.UUID) (*types.Payment, error) {
 	payment, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get payment: %w", err)
@@ -56,7 +56,7 @@ func (s *PaymentService) GetPayment(ctx context.Context, id uuid.UUID) (*domain.
 	return payment, nil
 }
 
-func (s *PaymentService) ListPayments(ctx context.Context, filters repository.PaymentFilter) ([]domain.Payment, error) {
+func (s *PaymentService) ListPayments(ctx context.Context, filters repository.PaymentFilter) ([]types.Payment, error) {
 	payments, err := s.repo.FindAll(ctx, filters)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list payments: %w", err)
@@ -65,7 +65,7 @@ func (s *PaymentService) ListPayments(ctx context.Context, filters repository.Pa
 	return payments, nil
 }
 
-func (s *PaymentService) UpdatePayment(ctx context.Context, payment domain.Payment) (*domain.Payment, error) {
+func (s *PaymentService) UpdatePayment(ctx context.Context, payment types.Payment) (*types.Payment, error) {
 	// Validate the payment
 	if err := s.validatePayment(payment); err != nil {
 		return nil, fmt.Errorf("invalid payment: %w", err)
@@ -99,7 +99,7 @@ func (s *PaymentService) DeletePayment(ctx context.Context, id uuid.UUID) error 
 	return nil
 }
 
-func (s *PaymentService) GetPaymentsByInvoice(ctx context.Context, invoiceID uuid.UUID) ([]domain.Payment, error) {
+func (s *PaymentService) GetPaymentsByInvoice(ctx context.Context, invoiceID uuid.UUID) ([]types.Payment, error) {
 	payments, err := s.repo.FindByInvoiceID(ctx, invoiceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get payments by invoice: %w", err)
@@ -108,7 +108,7 @@ func (s *PaymentService) GetPaymentsByInvoice(ctx context.Context, invoiceID uui
 	return payments, nil
 }
 
-func (s *PaymentService) GetPaymentsByPartner(ctx context.Context, partnerID uuid.UUID) ([]domain.Payment, error) {
+func (s *PaymentService) GetPaymentsByPartner(ctx context.Context, partnerID uuid.UUID) ([]types.Payment, error) {
 	payments, err := s.repo.FindByPartnerID(ctx, partnerID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get payments by partner: %w", err)
@@ -117,7 +117,7 @@ func (s *PaymentService) GetPaymentsByPartner(ctx context.Context, partnerID uui
 	return payments, nil
 }
 
-func (s *PaymentService) validatePayment(payment domain.Payment) error {
+func (s *PaymentService) validatePayment(payment types.Payment) error {
 	if payment.OrganizationID == uuid.Nil {
 		return fmt.Errorf("organization ID is required")
 	}

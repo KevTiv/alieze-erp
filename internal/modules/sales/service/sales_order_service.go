@@ -34,7 +34,7 @@ func NewSalesOrderServiceWithEventBus(repo repository.SalesOrderRepository, pric
 	return service
 }
 
-func (s *SalesOrderService) CreateSalesOrder(ctx context.Context, order domain.SalesOrder) (*domain.SalesOrder, error) {
+func (s *SalesOrderService) CreateSalesOrder(ctx context.Context, order types.SalesOrder) (*types.SalesOrder, error) {
 	// Validate the order
 	if err := s.validateSalesOrder(order); err != nil {
 		return nil, fmt.Errorf("invalid sales order: %w", err)
@@ -42,7 +42,7 @@ func (s *SalesOrderService) CreateSalesOrder(ctx context.Context, order domain.S
 
 	// Set default values
 	if order.Status == "" {
-		order.Status = domain.SalesOrderStatusDraft
+		order.Status = types.SalesOrderStatusDraft
 	}
 	if order.OrderDate.IsZero() {
 		order.OrderDate = time.Now()
@@ -68,7 +68,7 @@ func (s *SalesOrderService) CreateSalesOrder(ctx context.Context, order domain.S
 	return createdOrder, nil
 }
 
-func (s *SalesOrderService) GetSalesOrder(ctx context.Context, id uuid.UUID) (*domain.SalesOrder, error) {
+func (s *SalesOrderService) GetSalesOrder(ctx context.Context, id uuid.UUID) (*types.SalesOrder, error) {
 	order, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get sales order: %w", err)
@@ -80,7 +80,7 @@ func (s *SalesOrderService) GetSalesOrder(ctx context.Context, id uuid.UUID) (*d
 	return order, nil
 }
 
-func (s *SalesOrderService) ListSalesOrders(ctx context.Context, filters repository.SalesOrderFilter) ([]domain.SalesOrder, error) {
+func (s *SalesOrderService) ListSalesOrders(ctx context.Context, filters repository.SalesOrderFilter) ([]types.SalesOrder, error) {
 	orders, err := s.repo.FindAll(ctx, filters)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list sales orders: %w", err)
@@ -89,7 +89,7 @@ func (s *SalesOrderService) ListSalesOrders(ctx context.Context, filters reposit
 	return orders, nil
 }
 
-func (s *SalesOrderService) UpdateSalesOrder(ctx context.Context, order domain.SalesOrder) (*domain.SalesOrder, error) {
+func (s *SalesOrderService) UpdateSalesOrder(ctx context.Context, order types.SalesOrder) (*types.SalesOrder, error) {
 	// Validate the order
 	if err := s.validateSalesOrder(order); err != nil {
 		return nil, fmt.Errorf("invalid sales order: %w", err)
@@ -123,7 +123,7 @@ func (s *SalesOrderService) DeleteSalesOrder(ctx context.Context, id uuid.UUID) 
 	}
 
 	// Prevent deletion of confirmed orders
-	if order.Status == domain.SalesOrderStatusConfirmed || order.Status == domain.SalesOrderStatusDone {
+	if order.Status == types.SalesOrderStatusConfirmed || order.Status == types.SalesOrderStatusDone {
 		return fmt.Errorf("cannot delete confirmed or done sales orders")
 	}
 
@@ -142,7 +142,7 @@ func (s *SalesOrderService) DeleteSalesOrder(ctx context.Context, id uuid.UUID) 
 	return nil
 }
 
-func (s *SalesOrderService) ConfirmSalesOrder(ctx context.Context, id uuid.UUID) (*domain.SalesOrder, error) {
+func (s *SalesOrderService) ConfirmSalesOrder(ctx context.Context, id uuid.UUID) (*types.SalesOrder, error) {
 	order, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get sales order: %w", err)
@@ -152,7 +152,7 @@ func (s *SalesOrderService) ConfirmSalesOrder(ctx context.Context, id uuid.UUID)
 	}
 
 	// Validate order for confirmation
-	if order.Status != domain.SalesOrderStatusDraft && order.Status != domain.SalesOrderStatusQuotation {
+	if order.Status != types.SalesOrderStatusDraft && order.Status != types.SalesOrderStatusQuotation {
 		return nil, fmt.Errorf("only draft or quotation orders can be confirmed")
 	}
 
@@ -161,7 +161,7 @@ func (s *SalesOrderService) ConfirmSalesOrder(ctx context.Context, id uuid.UUID)
 	}
 
 	// Update status and confirmation date
-	order.Status = domain.SalesOrderStatusConfirmed
+	order.Status = types.SalesOrderStatusConfirmed
 	now := time.Now()
 	order.ConfirmationDate = &now
 	order.UpdatedAt = now
@@ -177,7 +177,7 @@ func (s *SalesOrderService) ConfirmSalesOrder(ctx context.Context, id uuid.UUID)
 	return updatedOrder, nil
 }
 
-func (s *SalesOrderService) CancelSalesOrder(ctx context.Context, id uuid.UUID) (*domain.SalesOrder, error) {
+func (s *SalesOrderService) CancelSalesOrder(ctx context.Context, id uuid.UUID) (*types.SalesOrder, error) {
 	order, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get sales order: %w", err)
@@ -187,12 +187,12 @@ func (s *SalesOrderService) CancelSalesOrder(ctx context.Context, id uuid.UUID) 
 	}
 
 	// Validate order for cancellation
-	if order.Status == domain.SalesOrderStatusCancelled || order.Status == domain.SalesOrderStatusDone {
+	if order.Status == types.SalesOrderStatusCancelled || order.Status == types.SalesOrderStatusDone {
 		return nil, fmt.Errorf("order cannot be cancelled in its current state")
 	}
 
 	// Update status
-	order.Status = domain.SalesOrderStatusCancelled
+	order.Status = types.SalesOrderStatusCancelled
 	order.UpdatedAt = time.Now()
 
 	updatedOrder, err := s.repo.Update(ctx, *order)
@@ -206,7 +206,7 @@ func (s *SalesOrderService) CancelSalesOrder(ctx context.Context, id uuid.UUID) 
 	return updatedOrder, nil
 }
 
-func (s *SalesOrderService) GetSalesOrdersByCustomer(ctx context.Context, customerID uuid.UUID) ([]domain.SalesOrder, error) {
+func (s *SalesOrderService) GetSalesOrdersByCustomer(ctx context.Context, customerID uuid.UUID) ([]types.SalesOrder, error) {
 	orders, err := s.repo.FindByCustomerID(ctx, customerID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get sales orders by customer: %w", err)
@@ -215,7 +215,7 @@ func (s *SalesOrderService) GetSalesOrdersByCustomer(ctx context.Context, custom
 	return orders, nil
 }
 
-func (s *SalesOrderService) GetSalesOrdersByStatus(ctx context.Context, status domain.SalesOrderStatus) ([]domain.SalesOrder, error) {
+func (s *SalesOrderService) GetSalesOrdersByStatus(ctx context.Context, status types.SalesOrderStatus) ([]types.SalesOrder, error) {
 	orders, err := s.repo.FindByStatus(ctx, status)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get sales orders by status: %w", err)
@@ -224,7 +224,7 @@ func (s *SalesOrderService) GetSalesOrdersByStatus(ctx context.Context, status d
 	return orders, nil
 }
 
-func (s *SalesOrderService) validateSalesOrder(order domain.SalesOrder) error {
+func (s *SalesOrderService) validateSalesOrder(order types.SalesOrder) error {
 	if order.OrganizationID == uuid.Nil {
 		return fmt.Errorf("organization ID is required")
 	}
@@ -268,7 +268,7 @@ func (s *SalesOrderService) validateSalesOrder(order domain.SalesOrder) error {
 	return nil
 }
 
-func (s *SalesOrderService) calculateOrderAmounts(ctx context.Context, order *domain.SalesOrder) error {
+func (s *SalesOrderService) calculateOrderAmounts(ctx context.Context, order *types.SalesOrder) error {
 	var amountUntaxed, amountTax, amountTotal float64
 
 	for i, line := range order.Lines {

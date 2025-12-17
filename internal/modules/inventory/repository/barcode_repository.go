@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"time"
 
 	"alieze-erp/internal/modules/inventory/types"
 
@@ -12,24 +14,24 @@ import (
 // BarcodeRepository interface for barcode scanning operations
 type BarcodeRepository interface {
 	// Barcode scanning operations
-	ScanBarcode(ctx context.Context, request domain.BarcodeScanRequest) (*domain.BarcodeScanResponse, error)
-	GetScanByID(ctx context.Context, orgID uuid.UUID, scanID uuid.UUID) (*domain.BarcodeScan, error)
-	ListScans(ctx context.Context, orgID uuid.UUID, limit, offset int) ([]domain.BarcodeScan, error)
+	ScanBarcode(ctx context.Context, request types.BarcodeScanRequest) (*types.BarcodeScanResponse, error)
+	GetScanByID(ctx context.Context, orgID uuid.UUID, scanID uuid.UUID) (*types.BarcodeScan, error)
+	ListScans(ctx context.Context, orgID uuid.UUID, limit, offset int) ([]types.BarcodeScan, error)
 
 	// Mobile scanning session operations
-	CreateScanningSession(ctx context.Context, request domain.CreateScanningSessionRequest) (*domain.MobileScanningSession, error)
-	GetScanningSession(ctx context.Context, orgID, sessionID uuid.UUID) (*domain.MobileScanningSession, error)
-	ListScanningSessions(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]domain.MobileScanningSession, error)
-	AddScanToSession(ctx context.Context, request domain.AddScanToSessionRequest) (*domain.BarcodeScanResponse, error)
-	CompleteScanningSession(ctx context.Context, request domain.CompleteSessionRequest) (bool, error)
-	GetSessionLines(ctx context.Context, orgID, sessionID uuid.UUID) ([]domain.MobileScanningSessionLine, error)
+	CreateScanningSession(ctx context.Context, request types.CreateScanningSessionRequest) (*types.MobileScanningSession, error)
+	GetScanningSession(ctx context.Context, orgID, sessionID uuid.UUID) (*types.MobileScanningSession, error)
+	ListScanningSessions(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]types.MobileScanningSession, error)
+	AddScanToSession(ctx context.Context, request types.AddScanToSessionRequest) (*types.BarcodeScanResponse, error)
+	CompleteScanningSession(ctx context.Context, request types.CompleteSessionRequest) (bool, error)
+	GetSessionLines(ctx context.Context, orgID, sessionID uuid.UUID) ([]types.MobileScanningSessionLine, error)
 
 	// Barcode generation operations
-	GenerateBarcode(ctx context.Context, request domain.BarcodeGenerationRequest) (*domain.BarcodeGenerationResponse, error)
+	GenerateBarcode(ctx context.Context, request types.BarcodeGenerationRequest) (*types.BarcodeGenerationResponse, error)
 	GenerateBarcodesForProducts(ctx context.Context, orgID uuid.UUID, productIDs []uuid.UUID, prefix *string) (map[uuid.UUID]string, error)
 
 	// Barcode lookup operations
-	FindEntityByBarcode(ctx context.Context, orgID uuid.UUID, barcode string) (*domain.BarcodeEntity, error)
+	FindEntityByBarcode(ctx context.Context, orgID uuid.UUID, barcode string) (*types.BarcodeEntity, error)
 	ValidateBarcodeFormat(ctx context.Context, barcode string) (bool, error)
 }
 
@@ -42,14 +44,14 @@ func NewBarcodeRepository(db *sql.DB) BarcodeRepository {
 }
 
 // ScanBarcode performs a barcode scan and returns the result
-func (r *barcodeRepository) ScanBarcode(ctx context.Context, request domain.BarcodeScanRequest) (*domain.BarcodeScanResponse, error) {
+func (r *barcodeRepository) ScanBarcode(ctx context.Context, request types.BarcodeScanRequest) (*types.BarcodeScanResponse, error) {
 	// Validate barcode format
 	valid, err := r.ValidateBarcodeFormat(ctx, request.Barcode)
 	if err != nil {
 		return nil, err
 	}
 	if !valid {
-		return &domain.BarcodeScanResponse{
+		return &types.BarcodeScanResponse{
 			Success:   false,
 			Message:   "Invalid barcode format",
 			Timestamp: time.Now(),
@@ -78,7 +80,7 @@ func (r *barcodeRepository) ScanBarcode(ctx context.Context, request domain.Barc
 			return nil, err
 		}
 
-		return &domain.BarcodeScanResponse{
+		return &types.BarcodeScanResponse{
 			Success:   false,
 			Message:   "Barcode not found",
 			ScanID:    scanID,
@@ -106,11 +108,11 @@ func (r *barcodeRepository) ScanBarcode(ctx context.Context, request domain.Barc
 		return nil, err
 	}
 
-	return &domain.BarcodeScanResponse{
+	return &types.BarcodeScanResponse{
 		Success:   true,
 		Message:   "Scan successful",
 		ScanID:    scanID,
-		Entity: &domain.BarcodeEntity{
+		Entity: &types.BarcodeEntity{
 			EntityType:    entity.EntityType,
 			EntityID:      entity.EntityID,
 			EntityName:    entity.EntityName,
@@ -121,7 +123,7 @@ func (r *barcodeRepository) ScanBarcode(ctx context.Context, request domain.Barc
 }
 
 // GetScanByID retrieves a specific barcode scan
-func (r *barcodeRepository) GetScanByID(ctx context.Context, orgID uuid.UUID, scanID uuid.UUID) (*domain.BarcodeScan, error) {
+func (r *barcodeRepository) GetScanByID(ctx context.Context, orgID uuid.UUID, scanID uuid.UUID) (*types.BarcodeScan, error) {
 	query := `
 		SELECT
 			id, organization_id, user_id, scan_type, scanned_barcode,
@@ -131,7 +133,7 @@ func (r *barcodeRepository) GetScanByID(ctx context.Context, orgID uuid.UUID, sc
 		WHERE organization_id = $1 AND id = $2
 	`
 
-	var scan domain.BarcodeScan
+	var scan types.BarcodeScan
 	err := r.db.QueryRowContext(ctx, query, orgID, scanID).Scan(
 		&scan.ID, &scan.OrganizationID, &scan.UserID, &scan.ScanType, &scan.ScannedBarcode,
 		&scan.EntityID, &scan.EntityType, &scan.LocationID, &scan.Quantity, &scan.ScanTime,
@@ -149,7 +151,7 @@ func (r *barcodeRepository) GetScanByID(ctx context.Context, orgID uuid.UUID, sc
 }
 
 // ListScans retrieves barcode scans for an organization
-func (r *barcodeRepository) ListScans(ctx context.Context, orgID uuid.UUID, limit, offset int) ([]domain.BarcodeScan, error) {
+func (r *barcodeRepository) ListScans(ctx context.Context, orgID uuid.UUID, limit, offset int) ([]types.BarcodeScan, error) {
 	query := `
 		SELECT
 			id, organization_id, user_id, scan_type, scanned_barcode,
@@ -167,9 +169,9 @@ func (r *barcodeRepository) ListScans(ctx context.Context, orgID uuid.UUID, limi
 	}
 	defer rows.Close()
 
-	var scans []domain.BarcodeScan
+	var scans []types.BarcodeScan
 	for rows.Next() {
-		var scan domain.BarcodeScan
+		var scan types.BarcodeScan
 		err := rows.Scan(
 			&scan.ID, &scan.OrganizationID, &scan.UserID, &scan.ScanType, &scan.ScannedBarcode,
 			&scan.EntityID, &scan.EntityType, &scan.LocationID, &scan.Quantity, &scan.ScanTime,
@@ -185,7 +187,7 @@ func (r *barcodeRepository) ListScans(ctx context.Context, orgID uuid.UUID, limi
 }
 
 // CreateScanningSession creates a new mobile scanning session
-func (r *barcodeRepository) CreateScanningSession(ctx context.Context, request domain.CreateScanningSessionRequest) (*domain.MobileScanningSession, error) {
+func (r *barcodeRepository) CreateScanningSession(ctx context.Context, request types.CreateScanningSessionRequest) (*types.MobileScanningSession, error) {
 	query := `
 		INSERT INTO mobile_scanning_sessions (
 			id, organization_id, user_id, device_id, session_type,
@@ -197,7 +199,7 @@ func (r *barcodeRepository) CreateScanningSession(ctx context.Context, request d
 			status, start_time, end_time, location_id, reference, metadata, created_at, updated_at
 	`
 
-	var session domain.MobileScanningSession
+	var session types.MobileScanningSession
 	err := r.db.QueryRowContext(ctx, query,
 		request.OrganizationID, request.UserID, request.DeviceID, request.SessionType,
 		request.LocationID, request.Reference, request.Metadata,
@@ -214,7 +216,7 @@ func (r *barcodeRepository) CreateScanningSession(ctx context.Context, request d
 }
 
 // GetScanningSession retrieves a scanning session
-func (r *barcodeRepository) GetScanningSession(ctx context.Context, orgID, sessionID uuid.UUID) (*domain.MobileScanningSession, error) {
+func (r *barcodeRepository) GetScanningSession(ctx context.Context, orgID, sessionID uuid.UUID) (*types.MobileScanningSession, error) {
 	query := `
 		SELECT
 			id, organization_id, user_id, device_id, session_type,
@@ -223,7 +225,7 @@ func (r *barcodeRepository) GetScanningSession(ctx context.Context, orgID, sessi
 		WHERE organization_id = $1 AND id = $2
 	`
 
-	var session domain.MobileScanningSession
+	var session types.MobileScanningSession
 	err := r.db.QueryRowContext(ctx, query, orgID, sessionID).Scan(
 		&session.ID, &session.OrganizationID, &session.UserID, &session.DeviceID, &session.SessionType,
 		&session.Status, &session.StartTime, &session.EndTime, &session.LocationID, &session.Reference, &session.Metadata, &session.CreatedAt, &session.UpdatedAt,
@@ -240,7 +242,7 @@ func (r *barcodeRepository) GetScanningSession(ctx context.Context, orgID, sessi
 }
 
 // ListScanningSessions retrieves scanning sessions for an organization
-func (r *barcodeRepository) ListScanningSessions(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]domain.MobileScanningSession, error) {
+func (r *barcodeRepository) ListScanningSessions(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]types.MobileScanningSession, error) {
 	query := `
 		SELECT
 			id, organization_id, user_id, device_id, session_type,
@@ -266,9 +268,9 @@ func (r *barcodeRepository) ListScanningSessions(ctx context.Context, orgID uuid
 	}
 	defer rows.Close()
 
-	var sessions []domain.MobileScanningSession
+	var sessions []types.MobileScanningSession
 	for rows.Next() {
-		var session domain.MobileScanningSession
+		var session types.MobileScanningSession
 		err := rows.Scan(
 			&session.ID, &session.OrganizationID, &session.UserID, &session.DeviceID, &session.SessionType,
 			&session.Status, &session.StartTime, &session.EndTime, &session.LocationID, &session.Reference, &session.Metadata, &session.CreatedAt, &session.UpdatedAt,
@@ -283,9 +285,9 @@ func (r *barcodeRepository) ListScanningSessions(ctx context.Context, orgID uuid
 }
 
 // AddScanToSession adds a scan to an existing session
-func (r *barcodeRepository) AddScanToSession(ctx context.Context, request domain.AddScanToSessionRequest) (*domain.BarcodeScanResponse, error) {
+func (r *barcodeRepository) AddScanToSession(ctx context.Context, request types.AddScanToSessionRequest) (*types.BarcodeScanResponse, error) {
 	// First, perform the scan
-	scanRequest := domain.BarcodeScanRequest{
+	scanRequest := types.BarcodeScanRequest{
 		OrganizationID: request.OrganizationID,
 		UserID:        request.UserID,
 		Barcode:       request.Barcode,
@@ -328,7 +330,7 @@ func (r *barcodeRepository) AddScanToSession(ctx context.Context, request domain
 }
 
 // CompleteScanningSession marks a session as completed
-func (r *barcodeRepository) CompleteScanningSession(ctx context.Context, request domain.CompleteSessionRequest) (bool, error) {
+func (r *barcodeRepository) CompleteScanningSession(ctx context.Context, request types.CompleteSessionRequest) (bool, error) {
 	query := `
 		UPDATE mobile_scanning_sessions
 		SET status = 'completed', end_time = NOW(), updated_at = NOW()
@@ -345,7 +347,7 @@ func (r *barcodeRepository) CompleteScanningSession(ctx context.Context, request
 }
 
 // GetSessionLines retrieves all lines for a scanning session
-func (r *barcodeRepository) GetSessionLines(ctx context.Context, orgID, sessionID uuid.UUID) ([]domain.MobileScanningSessionLine, error) {
+func (r *barcodeRepository) GetSessionLines(ctx context.Context, orgID, sessionID uuid.UUID) ([]types.MobileScanningSessionLine, error) {
 	query := `
 		SELECT
 			id, session_id, organization_id, scan_id, product_id,
@@ -363,9 +365,9 @@ func (r *barcodeRepository) GetSessionLines(ctx context.Context, orgID, sessionI
 	}
 	defer rows.Close()
 
-	var lines []domain.MobileScanningSessionLine
+	var lines []types.MobileScanningSessionLine
 	for rows.Next() {
-		var line domain.MobileScanningSessionLine
+		var line types.MobileScanningSessionLine
 		err := rows.Scan(
 			&line.ID, &line.SessionID, &line.OrganizationID, &line.ScanID, &line.ProductID,
 			&line.ProductVariantID, &line.LocationID, &line.LotID, &line.PackageID,
@@ -382,7 +384,7 @@ func (r *barcodeRepository) GetSessionLines(ctx context.Context, orgID, sessionI
 }
 
 // GenerateBarcode generates a barcode for an entity
-func (r *barcodeRepository) GenerateBarcode(ctx context.Context, request domain.BarcodeGenerationRequest) (*domain.BarcodeGenerationResponse, error) {
+func (r *barcodeRepository) GenerateBarcode(ctx context.Context, request types.BarcodeGenerationRequest) (*types.BarcodeGenerationResponse, error) {
 	query := `SELECT generate_barcode($1, $2, $3)`
 
 	var barcode string
@@ -417,7 +419,7 @@ func (r *barcodeRepository) GenerateBarcode(ctx context.Context, request domain.
 		return nil, err
 	}
 
-	return &domain.BarcodeGenerationResponse{
+	return &types.BarcodeGenerationResponse{
 		Success:    true,
 		Barcode:    barcode,
 		EntityType: entityName,
@@ -430,7 +432,7 @@ func (r *barcodeRepository) GenerateBarcodesForProducts(ctx context.Context, org
 	barcodes := make(map[uuid.UUID]string)
 
 	for _, productID := range productIDs {
-		request := domain.BarcodeGenerationRequest{
+		request := types.BarcodeGenerationRequest{
 			OrganizationID: orgID,
 			EntityType:    "product",
 			EntityID:      productID,
@@ -449,7 +451,7 @@ func (r *barcodeRepository) GenerateBarcodesForProducts(ctx context.Context, org
 }
 
 // FindEntityByBarcode finds an entity by its barcode
-func (r *barcodeRepository) FindEntityByBarcode(ctx context.Context, orgID uuid.UUID, barcode string) (*domain.BarcodeEntity, error) {
+func (r *barcodeRepository) FindEntityByBarcode(ctx context.Context, orgID uuid.UUID, barcode string) (*types.BarcodeEntity, error) {
 	query := `
 		SELECT
 			entity_type, entity_id, entity_name, additional_info
@@ -457,7 +459,7 @@ func (r *barcodeRepository) FindEntityByBarcode(ctx context.Context, orgID uuid.
 		LIMIT 1
 	`
 
-	var entity domain.BarcodeEntity
+	var entity types.BarcodeEntity
 	var additionalInfo string
 	err := r.db.QueryRowContext(ctx, query, barcode, orgID).Scan(
 		&entity.EntityType, &entity.EntityID, &entity.EntityName, &additionalInfo,

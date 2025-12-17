@@ -16,14 +16,21 @@ import (
 
 // InventoryModule represents the Inventory module
 type InventoryModule struct {
-	inventoryHandler      *handler.InventoryHandler
-	analyticsHandler     *handler.AnalyticsHandler
-	barcodeHandler       *handler.BarcodeHandler
-	cycleCountHandler    *handler.CycleCountHandler
-	replenishmentHandler *handler.ReplenishmentHandler
-	batchOperationHandler *handler.BatchOperationHandler
-	qualityControlHandler *handler.QualityControlHandler
-	logger               *slog.Logger
+	inventoryHandler          *handler.InventoryHandler
+	analyticsHandler         *handler.AnalyticsHandler
+	barcodeHandler           *handler.BarcodeHandler
+	cycleCountHandler        *handler.CycleCountHandler
+	replenishmentHandler     *handler.ReplenishmentHandler
+	batchOperationHandler   *handler.BatchOperationHandler
+	qualityControlHandler   *handler.QualityControlHandler
+	stockPackageHandler     *handler.StockPackageHandler
+	stockLotHandler         *handler.StockLotHandler
+	procurementGroupHandler *handler.ProcurementGroupHandler
+	stockRuleHandler        *handler.StockRuleHandler
+	stockPickingTypeHandler *handler.StockPickingTypeHandler
+	stockPickingHandler     *handler.StockPickingHandler
+	stockMoveHandler        *handler.StockMoveHandler
+	logger                 *slog.Logger
 }
 
 // NewInventoryModule creates a new Inventory module
@@ -64,6 +71,15 @@ func (m *InventoryModule) Init(ctx context.Context, deps registry.Dependencies) 
 	qcInspectionItemRepo := repository.NewQualityControlInspectionItemRepository(deps.DB)
 	qcAlertRepo := repository.NewQualityControlAlertRepository(deps.DB)
 
+	// New Inventory Repositories
+	stockPackageRepo := repository.NewStockPackageRepository(deps.DB, m.logger)
+	stockLotRepo := repository.NewStockLotRepository(deps.DB, m.logger)
+	procurementGroupRepo := repository.NewProcurementGroupRepository(deps.DB, m.logger)
+	stockRuleRepo := repository.NewStockRuleRepository(deps.DB, m.logger)
+	stockPickingTypeRepo := repository.NewStockPickingTypeRepository(deps.DB, m.logger)
+	stockPickingRepo := repository.NewStockPickingRepository(deps.DB, m.logger)
+	stockMoveRepo := repository.NewStockMoveRepository(deps.DB, m.logger)
+
 	// Get products repository from dependencies
 	productsRepo, ok := deps.ProductRepo.(productsRepo.ProductRepo)
 	if !ok {
@@ -82,6 +98,15 @@ func (m *InventoryModule) Init(ctx context.Context, deps registry.Dependencies) 
 		qcInspectionRepo, qcChecklistRepo, qcChecklistItemRepo, qcInspectionItemRepo, qcAlertRepo, inventoryService,
 	)
 
+	// New Inventory Services
+	stockPackageService := service.NewStockPackageService(stockPackageRepo)
+	stockLotService := service.NewStockLotService(stockLotRepo)
+	procurementGroupService := service.NewProcurementGroupService(procurementGroupRepo)
+	stockRuleService := service.NewStockRuleService(stockRuleRepo)
+	stockPickingTypeService := service.NewStockPickingTypeService(stockPickingTypeRepo)
+	stockPickingService := service.NewStockPickingService(stockPickingRepo)
+	stockMoveService := service.NewStockMoveService(stockMoveRepo)
+
 	// Create handlers
 	m.inventoryHandler = handler.NewInventoryHandler(inventoryService)
 	m.analyticsHandler = handler.NewAnalyticsHandler(analyticsService)
@@ -90,6 +115,15 @@ func (m *InventoryModule) Init(ctx context.Context, deps registry.Dependencies) 
 	m.replenishmentHandler = handler.NewReplenishmentHandler(replenishmentService)
 	m.batchOperationHandler = handler.NewBatchOperationHandler(batchOperationService)
 	m.qualityControlHandler = handler.NewQualityControlHandler(qualityControlService, deps.AuthService)
+
+	// New Inventory Handlers
+	m.stockPackageHandler = handler.NewStockPackageHandler(stockPackageService)
+	m.stockLotHandler = handler.NewStockLotHandler(stockLotService)
+	m.procurementGroupHandler = handler.NewProcurementGroupHandler(procurementGroupService)
+	m.stockRuleHandler = handler.NewStockRuleHandler(stockRuleService)
+	m.stockPickingTypeHandler = handler.NewStockPickingTypeHandler(stockPickingTypeService)
+	m.stockPickingHandler = handler.NewStockPickingHandler(stockPickingService)
+	m.stockMoveHandler = handler.NewStockMoveHandler(stockMoveService)
 
 	m.logger.Info("Inventory module initialized successfully")
 	return nil
@@ -119,6 +153,27 @@ func (m *InventoryModule) RegisterRoutes(router interface{}) {
 			}
 			if m.qualityControlHandler != nil {
 				m.qualityControlHandler.RegisterRoutes(r)
+			}
+			if m.stockPackageHandler != nil {
+				m.stockPackageHandler.RegisterRoutes(r)
+			}
+			if m.stockLotHandler != nil {
+				m.stockLotHandler.RegisterRoutes(r)
+			}
+			if m.procurementGroupHandler != nil {
+				m.procurementGroupHandler.RegisterRoutes(r)
+			}
+			if m.stockRuleHandler != nil {
+				m.stockRuleHandler.RegisterRoutes(r)
+			}
+			if m.stockPickingTypeHandler != nil {
+				m.stockPickingTypeHandler.RegisterRoutes(r)
+			}
+			if m.stockPickingHandler != nil {
+				m.stockPickingHandler.RegisterRoutes(r)
+			}
+			if m.stockMoveHandler != nil {
+				m.stockMoveHandler.RegisterRoutes(r)
 			}
 		}
 	}

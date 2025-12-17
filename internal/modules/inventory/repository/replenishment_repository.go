@@ -9,21 +9,20 @@ import (
 	"alieze-erp/internal/modules/inventory/types"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 )
 
 // ReplenishmentRuleRepository interface
 type ReplenishmentRuleRepository interface {
-	Create(ctx context.Context, rule domain.ReplenishmentRule) (*domain.ReplenishmentRule, error)
-	FindByID(ctx context.Context, id uuid.UUID) (*domain.ReplenishmentRule, error)
-	FindAll(ctx context.Context, organizationID uuid.UUID) ([]domain.ReplenishmentRule, error)
-	FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]domain.ReplenishmentRule, error)
-	FindByCategory(ctx context.Context, organizationID, categoryID uuid.UUID) ([]domain.ReplenishmentRule, error)
-	FindByWarehouse(ctx context.Context, organizationID, warehouseID uuid.UUID) ([]domain.ReplenishmentRule, error)
-	FindByLocation(ctx context.Context, organizationID, locationID uuid.UUID) ([]domain.ReplenishmentRule, error)
-	Update(ctx context.Context, rule domain.ReplenishmentRule) (*domain.ReplenishmentRule, error)
+	Create(ctx context.Context, rule types.ReplenishmentRule) (*types.ReplenishmentRule, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*types.ReplenishmentRule, error)
+	FindAll(ctx context.Context, organizationID uuid.UUID) ([]types.ReplenishmentRule, error)
+	FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]types.ReplenishmentRule, error)
+	FindByCategory(ctx context.Context, organizationID, categoryID uuid.UUID) ([]types.ReplenishmentRule, error)
+	FindByWarehouse(ctx context.Context, organizationID, warehouseID uuid.UUID) ([]types.ReplenishmentRule, error)
+	FindByLocation(ctx context.Context, organizationID, locationID uuid.UUID) ([]types.ReplenishmentRule, error)
+	Update(ctx context.Context, rule types.ReplenishmentRule) (*types.ReplenishmentRule, error)
 	Delete(ctx context.Context, id uuid.UUID) error
-	CheckAndCreateReplenishmentOrders(ctx context.Context, organizationID uuid.UUID, limit int) ([]domain.ReplenishmentCheckResult, error)
+	CheckAndCreateReplenishmentOrders(ctx context.Context, organizationID uuid.UUID, limit int) ([]types.ReplenishmentCheckResult, error)
 	UpdateRuleCheckTimes(ctx context.Context, organizationID uuid.UUID) error
 }
 
@@ -35,7 +34,7 @@ func NewReplenishmentRuleRepository(db *sql.DB) ReplenishmentRuleRepository {
 	return &replenishmentRuleRepository{db: db}
 }
 
-func (r *replenishmentRuleRepository) Create(ctx context.Context, rule domain.ReplenishmentRule) (*domain.ReplenishmentRule, error) {
+func (r *replenishmentRuleRepository) Create(ctx context.Context, rule types.ReplenishmentRule) (*types.ReplenishmentRule, error) {
 	query := `
 		INSERT INTO replenishment_rules
 		(id, organization_id, company_id, name, description, product_id, product_category_id,
@@ -63,7 +62,7 @@ func (r *replenishmentRuleRepository) Create(ctx context.Context, rule domain.Re
 		rule.UpdatedAt = now
 	}
 
-	var created domain.ReplenishmentRule
+	var created types.ReplenishmentRule
 	err := r.db.QueryRowContext(ctx, query,
 		rule.ID, rule.OrganizationID, rule.CompanyID, rule.Name, rule.Description,
 		rule.ProductID, rule.ProductCategoryID, rule.WarehouseID, rule.LocationID,
@@ -87,7 +86,7 @@ func (r *replenishmentRuleRepository) Create(ctx context.Context, rule domain.Re
 	return &created, nil
 }
 
-func (r *replenishmentRuleRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.ReplenishmentRule, error) {
+func (r *replenishmentRuleRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.ReplenishmentRule, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, description, product_id, product_category_id,
 		 warehouse_id, location_id, trigger_type, min_quantity, max_quantity, reorder_point,
@@ -97,7 +96,7 @@ func (r *replenishmentRuleRepository) FindByID(ctx context.Context, id uuid.UUID
 		FROM replenishment_rules WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	var rule domain.ReplenishmentRule
+	var rule types.ReplenishmentRule
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&rule.ID, &rule.OrganizationID, &rule.CompanyID, &rule.Name, &rule.Description,
 		&rule.ProductID, &rule.ProductCategoryID, &rule.WarehouseID, &rule.LocationID,
@@ -116,7 +115,7 @@ func (r *replenishmentRuleRepository) FindByID(ctx context.Context, id uuid.UUID
 	return &rule, nil
 }
 
-func (r *replenishmentRuleRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]domain.ReplenishmentRule, error) {
+func (r *replenishmentRuleRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]types.ReplenishmentRule, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, description, product_id, product_category_id,
 		 warehouse_id, location_id, trigger_type, min_quantity, max_quantity, reorder_point,
@@ -133,9 +132,9 @@ func (r *replenishmentRuleRepository) FindAll(ctx context.Context, organizationI
 	}
 	defer rows.Close()
 
-	var rules []domain.ReplenishmentRule
+	var rules []types.ReplenishmentRule
 	for rows.Next() {
-		var rule domain.ReplenishmentRule
+		var rule types.ReplenishmentRule
 		err := rows.Scan(
 			&rule.ID, &rule.OrganizationID, &rule.CompanyID, &rule.Name, &rule.Description,
 			&rule.ProductID, &rule.ProductCategoryID, &rule.WarehouseID, &rule.LocationID,
@@ -153,7 +152,7 @@ func (r *replenishmentRuleRepository) FindAll(ctx context.Context, organizationI
 	return rules, nil
 }
 
-func (r *replenishmentRuleRepository) FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]domain.ReplenishmentRule, error) {
+func (r *replenishmentRuleRepository) FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]types.ReplenishmentRule, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, description, product_id, product_category_id,
 		 warehouse_id, location_id, trigger_type, min_quantity, max_quantity, reorder_point,
@@ -170,9 +169,9 @@ func (r *replenishmentRuleRepository) FindByProduct(ctx context.Context, organiz
 	}
 	defer rows.Close()
 
-	var rules []domain.ReplenishmentRule
+	var rules []types.ReplenishmentRule
 	for rows.Next() {
-		var rule domain.ReplenishmentRule
+		var rule types.ReplenishmentRule
 		err := rows.Scan(
 			&rule.ID, &rule.OrganizationID, &rule.CompanyID, &rule.Name, &rule.Description,
 			&rule.ProductID, &rule.ProductCategoryID, &rule.WarehouseID, &rule.LocationID,
@@ -190,7 +189,7 @@ func (r *replenishmentRuleRepository) FindByProduct(ctx context.Context, organiz
 	return rules, nil
 }
 
-func (r *replenishmentRuleRepository) FindByCategory(ctx context.Context, organizationID, categoryID uuid.UUID) ([]domain.ReplenishmentRule, error) {
+func (r *replenishmentRuleRepository) FindByCategory(ctx context.Context, organizationID, categoryID uuid.UUID) ([]types.ReplenishmentRule, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, description, product_id, product_category_id,
 		 warehouse_id, location_id, trigger_type, min_quantity, max_quantity, reorder_point,
@@ -207,9 +206,9 @@ func (r *replenishmentRuleRepository) FindByCategory(ctx context.Context, organi
 	}
 	defer rows.Close()
 
-	var rules []domain.ReplenishmentRule
+	var rules []types.ReplenishmentRule
 	for rows.Next() {
-		var rule domain.ReplenishmentRule
+		var rule types.ReplenishmentRule
 		err := rows.Scan(
 			&rule.ID, &rule.OrganizationID, &rule.CompanyID, &rule.Name, &rule.Description,
 			&rule.ProductID, &rule.ProductCategoryID, &rule.WarehouseID, &rule.LocationID,
@@ -227,7 +226,7 @@ func (r *replenishmentRuleRepository) FindByCategory(ctx context.Context, organi
 	return rules, nil
 }
 
-func (r *replenishmentRuleRepository) FindByWarehouse(ctx context.Context, organizationID, warehouseID uuid.UUID) ([]domain.ReplenishmentRule, error) {
+func (r *replenishmentRuleRepository) FindByWarehouse(ctx context.Context, organizationID, warehouseID uuid.UUID) ([]types.ReplenishmentRule, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, description, product_id, product_category_id,
 		 warehouse_id, location_id, trigger_type, min_quantity, max_quantity, reorder_point,
@@ -244,9 +243,9 @@ func (r *replenishmentRuleRepository) FindByWarehouse(ctx context.Context, organ
 	}
 	defer rows.Close()
 
-	var rules []domain.ReplenishmentRule
+	var rules []types.ReplenishmentRule
 	for rows.Next() {
-		var rule domain.ReplenishmentRule
+		var rule types.ReplenishmentRule
 		err := rows.Scan(
 			&rule.ID, &rule.OrganizationID, &rule.CompanyID, &rule.Name, &rule.Description,
 			&rule.ProductID, &rule.ProductCategoryID, &rule.WarehouseID, &rule.LocationID,
@@ -264,7 +263,7 @@ func (r *replenishmentRuleRepository) FindByWarehouse(ctx context.Context, organ
 	return rules, nil
 }
 
-func (r *replenishmentRuleRepository) FindByLocation(ctx context.Context, organizationID, locationID uuid.UUID) ([]domain.ReplenishmentRule, error) {
+func (r *replenishmentRuleRepository) FindByLocation(ctx context.Context, organizationID, locationID uuid.UUID) ([]types.ReplenishmentRule, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, description, product_id, product_category_id,
 		 warehouse_id, location_id, trigger_type, min_quantity, max_quantity, reorder_point,
@@ -281,9 +280,9 @@ func (r *replenishmentRuleRepository) FindByLocation(ctx context.Context, organi
 	}
 	defer rows.Close()
 
-	var rules []domain.ReplenishmentRule
+	var rules []types.ReplenishmentRule
 	for rows.Next() {
-		var rule domain.ReplenishmentRule
+		var rule types.ReplenishmentRule
 		err := rows.Scan(
 			&rule.ID, &rule.OrganizationID, &rule.CompanyID, &rule.Name, &rule.Description,
 			&rule.ProductID, &rule.ProductCategoryID, &rule.WarehouseID, &rule.LocationID,
@@ -301,7 +300,7 @@ func (r *replenishmentRuleRepository) FindByLocation(ctx context.Context, organi
 	return rules, nil
 }
 
-func (r *replenishmentRuleRepository) Update(ctx context.Context, rule domain.ReplenishmentRule) (*domain.ReplenishmentRule, error) {
+func (r *replenishmentRuleRepository) Update(ctx context.Context, rule types.ReplenishmentRule) (*types.ReplenishmentRule, error) {
 	query := `
 		UPDATE replenishment_rules
 		SET name = $2, description = $3, product_id = $4, product_category_id = $5,
@@ -319,7 +318,7 @@ func (r *replenishmentRuleRepository) Update(ctx context.Context, rule domain.Re
 	`
 
 	rule.UpdatedAt = time.Now()
-	var updated domain.ReplenishmentRule
+	var updated types.ReplenishmentRule
 	err := r.db.QueryRowContext(ctx, query,
 		rule.ID, rule.Name, rule.Description, rule.ProductID, rule.ProductCategoryID,
 		rule.WarehouseID, rule.LocationID, rule.TriggerType, rule.MinQuantity,
@@ -358,7 +357,7 @@ func (r *replenishmentRuleRepository) Delete(ctx context.Context, id uuid.UUID) 
 	return nil
 }
 
-func (r *replenishmentRuleRepository) CheckAndCreateReplenishmentOrders(ctx context.Context, organizationID uuid.UUID, limit int) ([]domain.ReplenishmentCheckResult, error) {
+func (r *replenishmentRuleRepository) CheckAndCreateReplenishmentOrders(ctx context.Context, organizationID uuid.UUID, limit int) ([]types.ReplenishmentCheckResult, error) {
 	query := `
 		SELECT
 			order_id, product_id, product_name, quantity, status, rule_name
@@ -371,9 +370,9 @@ func (r *replenishmentRuleRepository) CheckAndCreateReplenishmentOrders(ctx cont
 	}
 	defer rows.Close()
 
-	var results []domain.ReplenishmentCheckResult
+	var results []types.ReplenishmentCheckResult
 	for rows.Next() {
-		var result domain.ReplenishmentCheckResult
+		var result types.ReplenishmentCheckResult
 		var orderID, ruleName sql.NullString
 		var status sql.NullString
 

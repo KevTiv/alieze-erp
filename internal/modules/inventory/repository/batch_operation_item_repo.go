@@ -19,7 +19,7 @@ func NewBatchOperationItemRepository(db *sql.DB) BatchOperationItemRepository {
 	return &batchOperationItemRepository{db: db}
 }
 
-func (r *batchOperationItemRepository) Create(ctx context.Context, item domain.BatchOperationItem) (*domain.BatchOperationItem, error) {
+func (r *batchOperationItemRepository) Create(ctx context.Context, item types.BatchOperationItem) (*types.BatchOperationItem, error) {
 	query := `
 		INSERT INTO batch_operation_items
 		(id, batch_operation_id, sequence, product_id, product_name, lot_id, serial_number,
@@ -42,7 +42,7 @@ func (r *batchOperationItemRepository) Create(ctx context.Context, item domain.B
 		item.UpdatedAt = now
 	}
 
-	var created domain.BatchOperationItem
+	var created types.BatchOperationItem
 	err := r.db.QueryRowContext(ctx, query,
 		item.ID, item.BatchOperationID, item.Sequence, item.ProductID, item.ProductName, item.LotID, item.SerialNumber,
 		item.SourceLocationID, item.DestLocationID, item.CurrentQuantity, item.AdjustmentQuantity, item.NewQuantity,
@@ -58,7 +58,7 @@ func (r *batchOperationItemRepository) Create(ctx context.Context, item domain.B
 	return &created, nil
 }
 
-func (r *batchOperationItemRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.BatchOperationItem, error) {
+func (r *batchOperationItemRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.BatchOperationItem, error) {
 	query := `
 		SELECT id, batch_operation_id, sequence, product_id, product_name, lot_id, serial_number,
 		 source_location_id, dest_location_id, current_quantity, adjustment_quantity, new_quantity,
@@ -66,7 +66,7 @@ func (r *batchOperationItemRepository) FindByID(ctx context.Context, id uuid.UUI
 		FROM batch_operation_items WHERE id = $1
 	`
 
-	var item domain.BatchOperationItem
+	var item types.BatchOperationItem
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&item.ID, &item.BatchOperationID, &item.Sequence, &item.ProductID, &item.ProductName, &item.LotID, &item.SerialNumber,
 		&item.SourceLocationID, &item.DestLocationID, &item.CurrentQuantity, &item.AdjustmentQuantity, &item.NewQuantity,
@@ -81,7 +81,7 @@ func (r *batchOperationItemRepository) FindByID(ctx context.Context, id uuid.UUI
 	return &item, nil
 }
 
-func (r *batchOperationItemRepository) FindByBatchOperation(ctx context.Context, batchOperationID uuid.UUID) ([]domain.BatchOperationItem, error) {
+func (r *batchOperationItemRepository) FindByBatchOperation(ctx context.Context, batchOperationID uuid.UUID) ([]types.BatchOperationItem, error) {
 	query := `
 		SELECT id, batch_operation_id, sequence, product_id, product_name, lot_id, serial_number,
 		 source_location_id, dest_location_id, current_quantity, adjustment_quantity, new_quantity,
@@ -96,9 +96,9 @@ func (r *batchOperationItemRepository) FindByBatchOperation(ctx context.Context,
 	}
 	defer rows.Close()
 
-	var items []domain.BatchOperationItem
+	var items []types.BatchOperationItem
 	for rows.Next() {
-		var item domain.BatchOperationItem
+		var item types.BatchOperationItem
 		err := rows.Scan(
 			&item.ID, &item.BatchOperationID, &item.Sequence, &item.ProductID, &item.ProductName, &item.LotID, &item.SerialNumber,
 			&item.SourceLocationID, &item.DestLocationID, &item.CurrentQuantity, &item.AdjustmentQuantity, &item.NewQuantity,
@@ -112,7 +112,7 @@ func (r *batchOperationItemRepository) FindByBatchOperation(ctx context.Context,
 	return items, nil
 }
 
-func (r *batchOperationItemRepository) FindByStatus(ctx context.Context, batchOperationID uuid.UUID, status string) ([]domain.BatchOperationItem, error) {
+func (r *batchOperationItemRepository) FindByStatus(ctx context.Context, batchOperationID uuid.UUID, status string) ([]types.BatchOperationItem, error) {
 	query := `
 		SELECT id, batch_operation_id, sequence, product_id, product_name, lot_id, serial_number,
 		 source_location_id, dest_location_id, current_quantity, adjustment_quantity, new_quantity,
@@ -127,9 +127,9 @@ func (r *batchOperationItemRepository) FindByStatus(ctx context.Context, batchOp
 	}
 	defer rows.Close()
 
-	var items []domain.BatchOperationItem
+	var items []types.BatchOperationItem
 	for rows.Next() {
-		var item domain.BatchOperationItem
+		var item types.BatchOperationItem
 		err := rows.Scan(
 			&item.ID, &item.BatchOperationID, &item.Sequence, &item.ProductID, &item.ProductName, &item.LotID, &item.SerialNumber,
 			&item.SourceLocationID, &item.DestLocationID, &item.CurrentQuantity, &item.AdjustmentQuantity, &item.NewQuantity,
@@ -143,7 +143,7 @@ func (r *batchOperationItemRepository) FindByStatus(ctx context.Context, batchOp
 	return items, nil
 }
 
-func (r *batchOperationItemRepository) Update(ctx context.Context, item domain.BatchOperationItem) (*domain.BatchOperationItem, error) {
+func (r *batchOperationItemRepository) Update(ctx context.Context, item types.BatchOperationItem) (*types.BatchOperationItem, error) {
 	query := `
 		UPDATE batch_operation_items
 		SET sequence = $2, product_id = $3, product_name = $4, lot_id = $5, serial_number = $6,
@@ -156,7 +156,7 @@ func (r *batchOperationItemRepository) Update(ctx context.Context, item domain.B
 	`
 
 	item.UpdatedAt = time.Now()
-	var updated domain.BatchOperationItem
+	var updated types.BatchOperationItem
 	err := r.db.QueryRowContext(ctx, query,
 		item.ID, item.Sequence, item.ProductID, item.ProductName, item.LotID, item.SerialNumber,
 		item.SourceLocationID, item.DestLocationID, item.CurrentQuantity, item.AdjustmentQuantity, item.NewQuantity,

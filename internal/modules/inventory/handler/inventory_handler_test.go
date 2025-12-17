@@ -24,7 +24,7 @@ func TestCreateWarehouse(t *testing.T) {
 	handler := NewInventoryHandler(&service.InventoryService{})
 
 	// Create test warehouse
-	warehouse := domain.Warehouse{
+	warehouse := types.Warehouse{
 		ID:             uuid.New(),
 		OrganizationID: uuid.New(),
 		Name:           "Test Warehouse",
@@ -103,7 +103,7 @@ func TestCreateLocation(t *testing.T) {
 	handler := NewInventoryHandler(&service.InventoryService{})
 
 	// Create test location
-	location := domain.StockLocation{
+	location := types.StockLocation{
 		ID:         uuid.New(),
 		OrganizationID: uuid.New(),
 		Name:       "Test Location",
@@ -159,7 +159,7 @@ func TestCreateMove(t *testing.T) {
 	handler := NewInventoryHandler(&service.InventoryService{})
 
 	// Create test move
-	move := domain.StockMove{
+	move := types.StockMove{
 		ID:           uuid.New(),
 		OrganizationID: uuid.New(),
 		Name:         "Test Move",

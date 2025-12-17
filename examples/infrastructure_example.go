@@ -1,3 +1,6 @@
+//go:build infrastructure_example
+// +build infrastructure_example
+
 package main
 
 import (

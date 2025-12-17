@@ -24,7 +24,7 @@ type JWTService struct{}
 
 // GenerateAccessToken generates a new JWT access token
 func (s *JWTService) GenerateAccessToken(userID, orgID uuid.UUID, role string, isSuperAdmin bool) (string, error) {
-	claims := domain.TokenClaims{
+	claims := types.TokenClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessTokenExp)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -67,8 +67,8 @@ func (s *JWTService) GenerateRefreshToken(userID uuid.UUID) (string, error) {
 }
 
 // ValidateToken validates a JWT token and returns the claims
-func (s *JWTService) ValidateToken(tokenString string) (*domain.TokenClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &domain.TokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+func (s *JWTService) ValidateToken(tokenString string) (*types.TokenClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &types.TokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		// Validate signing method
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -85,7 +85,7 @@ func (s *JWTService) ValidateToken(tokenString string) (*domain.TokenClaims, err
 		return nil, errors.New("invalid token")
 	}
 
-	claims, ok := token.Claims.(*domain.TokenClaims)
+	claims, ok := token.Claims.(*types.TokenClaims)
 	if !ok {
 		return nil, errors.New("invalid token claims")
 	}
@@ -105,13 +105,13 @@ func (s *JWTService) ValidateToken(tokenString string) (*domain.TokenClaims, err
 
 // GetTokenClaims extracts claims from a token without full validation
 // Useful for checking token type before full validation
-func (s *JWTService) GetTokenClaims(tokenString string) (*domain.TokenClaims, error) {
-	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, &domain.TokenClaims{})
+func (s *JWTService) GetTokenClaims(tokenString string) (*types.TokenClaims, error) {
+	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, &types.TokenClaims{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
 
-	claims, ok := token.Claims.(*domain.TokenClaims)
+	claims, ok := token.Claims.(*types.TokenClaims)
 	if !ok {
 		return nil, errors.New("invalid token claims")
 	}

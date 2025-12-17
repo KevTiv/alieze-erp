@@ -12,20 +12,20 @@ import (
 )
 
 type InvoiceRepository interface {
-	Create(ctx context.Context, invoice domain.Invoice) (*domain.Invoice, error)
-	FindByID(ctx context.Context, id uuid.UUID) (*domain.Invoice, error)
-	FindAll(ctx context.Context, filters InvoiceFilter) ([]domain.Invoice, error)
-	Update(ctx context.Context, invoice domain.Invoice) (*domain.Invoice, error)
+	Create(ctx context.Context, invoice types.Invoice) (*types.Invoice, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*types.Invoice, error)
+	FindAll(ctx context.Context, filters InvoiceFilter) ([]types.Invoice, error)
+	Update(ctx context.Context, invoice types.Invoice) (*types.Invoice, error)
 	Delete(ctx context.Context, id uuid.UUID) error
-	FindByPartnerID(ctx context.Context, partnerID uuid.UUID) ([]domain.Invoice, error)
-	FindByStatus(ctx context.Context, status domain.InvoiceStatus) ([]domain.Invoice, error)
-	FindByType(ctx context.Context, invoiceType domain.InvoiceType) ([]domain.Invoice, error)
+	FindByPartnerID(ctx context.Context, partnerID uuid.UUID) ([]types.Invoice, error)
+	FindByStatus(ctx context.Context, status types.InvoiceStatus) ([]types.Invoice, error)
+	FindByType(ctx context.Context, invoiceType types.InvoiceType) ([]types.Invoice, error)
 }
 
 type InvoiceFilter struct {
 	PartnerID *uuid.UUID
-	Status    *domain.InvoiceStatus
-	Type      *domain.InvoiceType
+	Status    *types.InvoiceStatus
+	Type      *types.InvoiceType
 	DateFrom  *time.Time
 	DateTo    *time.Time
 	Limit     int
@@ -40,7 +40,7 @@ func NewInvoiceRepository(db *sql.DB) InvoiceRepository {
 	return &invoiceRepository{db: db}
 }
 
-func (r *invoiceRepository) Create(ctx context.Context, invoice domain.Invoice) (*domain.Invoice, error) {
+func (r *invoiceRepository) Create(ctx context.Context, invoice types.Invoice) (*types.Invoice, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -61,7 +61,7 @@ func (r *invoiceRepository) Create(ctx context.Context, invoice domain.Invoice) 
 		 created_at, updated_at, created_by, updated_by
 	`
 
-	var createdInvoice domain.Invoice
+	var createdInvoice types.Invoice
 	err = tx.QueryRowContext(ctx, query,
 		invoice.ID, invoice.OrganizationID, invoice.CompanyID, invoice.PartnerID,
 		invoice.Reference, invoice.Status, invoice.Type, invoice.InvoiceDate, invoice.DueDate,
@@ -95,7 +95,7 @@ func (r *invoiceRepository) Create(ctx context.Context, invoice domain.Invoice) 
 			 account_id, created_at, updated_at
 		`
 
-		var createdLine domain.InvoiceLine
+		var createdLine types.InvoiceLine
 		err = tx.QueryRowContext(ctx, lineQuery,
 			line.ID, createdInvoice.ID, line.ProductID, line.ProductName, line.Description,
 			line.Quantity, line.UomID, line.UnitPrice, line.Discount, line.TaxID,
@@ -121,7 +121,7 @@ func (r *invoiceRepository) Create(ctx context.Context, invoice domain.Invoice) 
 	return &createdInvoice, nil
 }
 
-func (r *invoiceRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Invoice, error) {
+func (r *invoiceRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Invoice, error) {
 	query := `
 		SELECT id, organization_id, company_id, partner_id, reference, status, type,
 		 invoice_date, due_date, payment_term_id, fiscal_position_id, currency_id,
@@ -131,7 +131,7 @@ func (r *invoiceRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain
 		WHERE id = $1
 	`
 
-	var invoice domain.Invoice
+	var invoice types.Invoice
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&invoice.ID, &invoice.OrganizationID, &invoice.CompanyID, &invoice.PartnerID,
 		&invoice.Reference, &invoice.Status, &invoice.Type, &invoice.InvoiceDate,
@@ -164,7 +164,7 @@ func (r *invoiceRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain
 	return &invoice, nil
 }
 
-func (r *invoiceRepository) findLinesByInvoiceID(ctx context.Context, invoiceID uuid.UUID) ([]domain.InvoiceLine, error) {
+func (r *invoiceRepository) findLinesByInvoiceID(ctx context.Context, invoiceID uuid.UUID) ([]types.InvoiceLine, error) {
 	query := `
 		SELECT id, invoice_id, product_id, product_name, description, quantity, uom_id,
 		 unit_price, discount, tax_id, price_subtotal, price_tax, price_total, sequence,
@@ -180,9 +180,9 @@ func (r *invoiceRepository) findLinesByInvoiceID(ctx context.Context, invoiceID 
 	}
 	defer rows.Close()
 
-	var lines []domain.InvoiceLine
+	var lines []types.InvoiceLine
 	for rows.Next() {
-		var line domain.InvoiceLine
+		var line types.InvoiceLine
 		err = rows.Scan(
 			&line.ID, &line.InvoiceID, &line.ProductID, &line.ProductName,
 			&line.Description, &line.Quantity, &line.UomID, &line.UnitPrice,
@@ -199,7 +199,7 @@ func (r *invoiceRepository) findLinesByInvoiceID(ctx context.Context, invoiceID 
 	return lines, nil
 }
 
-func (r *invoiceRepository) findPaymentsByInvoiceID(ctx context.Context, invoiceID uuid.UUID) ([]domain.Payment, error) {
+func (r *invoiceRepository) findPaymentsByInvoiceID(ctx context.Context, invoiceID uuid.UUID) ([]types.Payment, error) {
 	query := `
 		SELECT id, organization_id, company_id, invoice_id, partner_id, payment_date,
 		 amount, currency_id, journal_id, payment_method, reference, note,
@@ -215,9 +215,9 @@ func (r *invoiceRepository) findPaymentsByInvoiceID(ctx context.Context, invoice
 	}
 	defer rows.Close()
 
-	var payments []domain.Payment
+	var payments []types.Payment
 	for rows.Next() {
-		var payment domain.Payment
+		var payment types.Payment
 		err = rows.Scan(
 			&payment.ID, &payment.OrganizationID, &payment.CompanyID, &payment.InvoiceID,
 			&payment.PartnerID, &payment.PaymentDate, &payment.Amount, &payment.CurrencyID,
@@ -233,7 +233,7 @@ func (r *invoiceRepository) findPaymentsByInvoiceID(ctx context.Context, invoice
 	return payments, nil
 }
 
-func (r *invoiceRepository) FindAll(ctx context.Context, filters InvoiceFilter) ([]domain.Invoice, error) {
+func (r *invoiceRepository) FindAll(ctx context.Context, filters InvoiceFilter) ([]types.Invoice, error) {
 	query := `
 		SELECT id, organization_id, company_id, partner_id, reference, status, type,
 		 invoice_date, due_date, payment_term_id, fiscal_position_id, currency_id,
@@ -286,9 +286,9 @@ func (r *invoiceRepository) FindAll(ctx context.Context, filters InvoiceFilter) 
 	}
 	defer rows.Close()
 
-	var invoices []domain.Invoice
+	var invoices []types.Invoice
 	for rows.Next() {
-		var invoice domain.Invoice
+		var invoice types.Invoice
 		err = rows.Scan(
 			&invoice.ID, &invoice.OrganizationID, &invoice.CompanyID, &invoice.PartnerID,
 			&invoice.Reference, &invoice.Status, &invoice.Type, &invoice.InvoiceDate,
@@ -321,7 +321,7 @@ func (r *invoiceRepository) FindAll(ctx context.Context, filters InvoiceFilter) 
 	return invoices, nil
 }
 
-func (r *invoiceRepository) Update(ctx context.Context, invoice domain.Invoice) (*domain.Invoice, error) {
+func (r *invoiceRepository) Update(ctx context.Context, invoice types.Invoice) (*types.Invoice, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -343,7 +343,7 @@ func (r *invoiceRepository) Update(ctx context.Context, invoice domain.Invoice) 
 		 created_at, updated_at, created_by, updated_by
 	`
 
-	var updatedInvoice domain.Invoice
+	var updatedInvoice types.Invoice
 	err = tx.QueryRowContext(ctx, query,
 		invoice.PartnerID, invoice.Reference, invoice.Status, invoice.Type,
 		invoice.InvoiceDate, invoice.DueDate, invoice.PaymentTermID, invoice.FiscalPositionID,
@@ -383,7 +383,7 @@ func (r *invoiceRepository) Update(ctx context.Context, invoice domain.Invoice) 
 			 account_id, created_at, updated_at
 		`
 
-		var createdLine domain.InvoiceLine
+		var createdLine types.InvoiceLine
 		err = tx.QueryRowContext(ctx, lineQuery,
 			line.ID, updatedInvoice.ID, line.ProductID, line.ProductName, line.Description,
 			line.Quantity, line.UomID, line.UnitPrice, line.Discount, line.TaxID,
@@ -441,7 +441,7 @@ func (r *invoiceRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *invoiceRepository) FindByPartnerID(ctx context.Context, partnerID uuid.UUID) ([]domain.Invoice, error) {
+func (r *invoiceRepository) FindByPartnerID(ctx context.Context, partnerID uuid.UUID) ([]types.Invoice, error) {
 	query := `
 		SELECT id, organization_id, company_id, partner_id, reference, status, type,
 		 invoice_date, due_date, payment_term_id, fiscal_position_id, currency_id,
@@ -458,9 +458,9 @@ func (r *invoiceRepository) FindByPartnerID(ctx context.Context, partnerID uuid.
 	}
 	defer rows.Close()
 
-	var invoices []domain.Invoice
+	var invoices []types.Invoice
 	for rows.Next() {
-		var invoice domain.Invoice
+		var invoice types.Invoice
 		err = rows.Scan(
 			&invoice.ID, &invoice.OrganizationID, &invoice.CompanyID, &invoice.PartnerID,
 			&invoice.Reference, &invoice.Status, &invoice.Type, &invoice.InvoiceDate,
@@ -493,7 +493,7 @@ func (r *invoiceRepository) FindByPartnerID(ctx context.Context, partnerID uuid.
 	return invoices, nil
 }
 
-func (r *invoiceRepository) FindByStatus(ctx context.Context, status domain.InvoiceStatus) ([]domain.Invoice, error) {
+func (r *invoiceRepository) FindByStatus(ctx context.Context, status types.InvoiceStatus) ([]types.Invoice, error) {
 	query := `
 		SELECT id, organization_id, company_id, partner_id, reference, status, type,
 		 invoice_date, due_date, payment_term_id, fiscal_position_id, currency_id,
@@ -510,9 +510,9 @@ func (r *invoiceRepository) FindByStatus(ctx context.Context, status domain.Invo
 	}
 	defer rows.Close()
 
-	var invoices []domain.Invoice
+	var invoices []types.Invoice
 	for rows.Next() {
-		var invoice domain.Invoice
+		var invoice types.Invoice
 		err = rows.Scan(
 			&invoice.ID, &invoice.OrganizationID, &invoice.CompanyID, &invoice.PartnerID,
 			&invoice.Reference, &invoice.Status, &invoice.Type, &invoice.InvoiceDate,
@@ -545,7 +545,7 @@ func (r *invoiceRepository) FindByStatus(ctx context.Context, status domain.Invo
 	return invoices, nil
 }
 
-func (r *invoiceRepository) FindByType(ctx context.Context, invoiceType domain.InvoiceType) ([]domain.Invoice, error) {
+func (r *invoiceRepository) FindByType(ctx context.Context, invoiceType types.InvoiceType) ([]types.Invoice, error) {
 	query := `
 		SELECT id, organization_id, company_id, partner_id, reference, status, type,
 		 invoice_date, due_date, payment_term_id, fiscal_position_id, currency_id,
@@ -562,9 +562,9 @@ func (r *invoiceRepository) FindByType(ctx context.Context, invoiceType domain.I
 	}
 	defer rows.Close()
 
-	var invoices []domain.Invoice
+	var invoices []types.Invoice
 	for rows.Next() {
-		var invoice domain.Invoice
+		var invoice types.Invoice
 		err = rows.Scan(
 			&invoice.ID, &invoice.OrganizationID, &invoice.CompanyID, &invoice.PartnerID,
 			&invoice.Reference, &invoice.Status, &invoice.Type, &invoice.InvoiceDate,

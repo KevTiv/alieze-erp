@@ -12,31 +12,31 @@ import (
 // AnalyticsRepository interface for inventory analytics operations
 type AnalyticsRepository interface {
 	// Valuation operations
-	GetInventoryValuation(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryValuation, error)
-	GetValuationByProduct(ctx context.Context, orgID, productID uuid.UUID) (*domain.InventoryValuation, error)
-	GetValuationSummary(ctx context.Context, orgID uuid.UUID) (*domain.AnalyticsSummary, error)
+	GetInventoryValuation(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryValuation, error)
+	GetValuationByProduct(ctx context.Context, orgID, productID uuid.UUID) (*types.InventoryValuation, error)
+	GetValuationSummary(ctx context.Context, orgID uuid.UUID) (*types.AnalyticsSummary, error)
 
 	// Turnover operations
-	GetInventoryTurnover(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryTurnover, error)
-	GetTurnoverByProduct(ctx context.Context, orgID, productID uuid.UUID) (*domain.InventoryTurnover, error)
+	GetInventoryTurnover(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryTurnover, error)
+	GetTurnoverByProduct(ctx context.Context, orgID, productID uuid.UUID) (*types.InventoryTurnover, error)
 
 	// Aging operations
-	GetInventoryAging(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryAging, error)
+	GetInventoryAging(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryAging, error)
 	GetAgingSummary(ctx context.Context, orgID uuid.UUID) (map[string]float64, error)
 
 	// Dead stock operations
-	GetDeadStock(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryDeadStock, error)
-	GetDeadStockSummary(ctx context.Context, orgID uuid.UUID) (*domain.AnalyticsSummary, error)
+	GetDeadStock(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryDeadStock, error)
+	GetDeadStockSummary(ctx context.Context, orgID uuid.UUID) (*types.AnalyticsSummary, error)
 
 	// Movement summary operations
-	GetMovementSummary(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryMovementSummary, error)
+	GetMovementSummary(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryMovementSummary, error)
 
 	// Reorder analysis operations
-	GetReorderAnalysis(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryReorderAnalysis, error)
-	GetProductsNeedingReorder(ctx context.Context, orgID uuid.UUID) ([]domain.InventoryReorderAnalysis, error)
+	GetReorderAnalysis(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryReorderAnalysis, error)
+	GetProductsNeedingReorder(ctx context.Context, orgID uuid.UUID) ([]types.InventoryReorderAnalysis, error)
 
 	// Snapshot operations
-	GetInventorySnapshot(ctx context.Context, orgID uuid.UUID) ([]domain.InventorySnapshot, error)
+	GetInventorySnapshot(ctx context.Context, orgID uuid.UUID) ([]types.InventorySnapshot, error)
 
 	// Refresh operations
 	RefreshOrganizationAnalytics(ctx context.Context, orgID uuid.UUID) error
@@ -51,7 +51,7 @@ func NewAnalyticsRepository(db *sql.DB) AnalyticsRepository {
 }
 
 // GetInventoryValuation retrieves inventory valuation data for an organization
-func (r *analyticsRepository) GetInventoryValuation(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryValuation, error) {
+func (r *analyticsRepository) GetInventoryValuation(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryValuation, error) {
 	query := `
 		SELECT
 			organization_id, product_id, product_name, default_code, category_id,
@@ -93,9 +93,9 @@ func (r *analyticsRepository) GetInventoryValuation(ctx context.Context, orgID u
 	}
 	defer rows.Close()
 
-	var results []domain.InventoryValuation
+	var results []types.InventoryValuation
 	for rows.Next() {
-		var val domain.InventoryValuation
+		var val types.InventoryValuation
 		err := rows.Scan(
 			&val.OrganizationID, &val.ProductID, &val.ProductName,
 			&val.DefaultCode, &val.CategoryID, &val.ValuationMethod,
@@ -113,7 +113,7 @@ func (r *analyticsRepository) GetInventoryValuation(ctx context.Context, orgID u
 }
 
 // GetValuationByProduct retrieves valuation for a specific product
-func (r *analyticsRepository) GetValuationByProduct(ctx context.Context, orgID, productID uuid.UUID) (*domain.InventoryValuation, error) {
+func (r *analyticsRepository) GetValuationByProduct(ctx context.Context, orgID, productID uuid.UUID) (*types.InventoryValuation, error) {
 	query := `
 		SELECT
 			organization_id, product_id, product_name, default_code, category_id,
@@ -123,7 +123,7 @@ func (r *analyticsRepository) GetValuationByProduct(ctx context.Context, orgID, 
 		WHERE organization_id = $1 AND product_id = $2
 	`
 
-	var val domain.InventoryValuation
+	var val types.InventoryValuation
 	err := r.db.QueryRowContext(ctx, query, orgID, productID).Scan(
 		&val.OrganizationID, &val.ProductID, &val.ProductName,
 		&val.DefaultCode, &val.CategoryID, &val.ValuationMethod,
@@ -143,7 +143,7 @@ func (r *analyticsRepository) GetValuationByProduct(ctx context.Context, orgID, 
 }
 
 // GetValuationSummary retrieves summary valuation metrics
-func (r *analyticsRepository) GetValuationSummary(ctx context.Context, orgID uuid.UUID) (*domain.AnalyticsSummary, error) {
+func (r *analyticsRepository) GetValuationSummary(ctx context.Context, orgID uuid.UUID) (*types.AnalyticsSummary, error) {
 	query := `
 		SELECT
 			COUNT(DISTINCT product_id) as total_products,
@@ -153,7 +153,7 @@ func (r *analyticsRepository) GetValuationSummary(ctx context.Context, orgID uui
 		WHERE organization_id = $1
 	`
 
-	var summary domain.AnalyticsSummary
+	var summary types.AnalyticsSummary
 	summary.OrganizationID = orgID
 	err := r.db.QueryRowContext(ctx, query, orgID).Scan(
 		&summary.TotalProducts,
@@ -176,7 +176,7 @@ func (r *analyticsRepository) GetValuationSummary(ctx context.Context, orgID uui
 }
 
 // GetInventoryTurnover retrieves inventory turnover data
-func (r *analyticsRepository) GetInventoryTurnover(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryTurnover, error) {
+func (r *analyticsRepository) GetInventoryTurnover(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryTurnover, error) {
 	query := `
 		SELECT
 			organization_id, product_id, product_name, category_id,
@@ -217,9 +217,9 @@ func (r *analyticsRepository) GetInventoryTurnover(ctx context.Context, orgID uu
 	}
 	defer rows.Close()
 
-	var results []domain.InventoryTurnover
+	var results []types.InventoryTurnover
 	for rows.Next() {
-		var turnover domain.InventoryTurnover
+		var turnover types.InventoryTurnover
 		err := rows.Scan(
 			&turnover.OrganizationID, &turnover.ProductID, &turnover.ProductName,
 			&turnover.CategoryID, &turnover.AnnualCOGS, &turnover.AverageInventory,
@@ -235,7 +235,7 @@ func (r *analyticsRepository) GetInventoryTurnover(ctx context.Context, orgID uu
 }
 
 // GetTurnoverByProduct retrieves turnover for a specific product
-func (r *analyticsRepository) GetTurnoverByProduct(ctx context.Context, orgID, productID uuid.UUID) (*domain.InventoryTurnover, error) {
+func (r *analyticsRepository) GetTurnoverByProduct(ctx context.Context, orgID, productID uuid.UUID) (*types.InventoryTurnover, error) {
 	query := `
 		SELECT
 			organization_id, product_id, product_name, category_id,
@@ -244,7 +244,7 @@ func (r *analyticsRepository) GetTurnoverByProduct(ctx context.Context, orgID, p
 		WHERE organization_id = $1 AND product_id = $2
 	`
 
-	var turnover domain.InventoryTurnover
+	var turnover types.InventoryTurnover
 	err := r.db.QueryRowContext(ctx, query, orgID, productID).Scan(
 		&turnover.OrganizationID, &turnover.ProductID, &turnover.ProductName,
 		&turnover.CategoryID, &turnover.AnnualCOGS, &turnover.AverageInventory,
@@ -262,7 +262,7 @@ func (r *analyticsRepository) GetTurnoverByProduct(ctx context.Context, orgID, p
 }
 
 // GetInventoryAging retrieves stock aging data
-func (r *analyticsRepository) GetInventoryAging(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryAging, error) {
+func (r *analyticsRepository) GetInventoryAging(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryAging, error) {
 	query := `
 		SELECT
 			organization_id, product_id, product_name, category_id, default_code,
@@ -309,9 +309,9 @@ func (r *analyticsRepository) GetInventoryAging(ctx context.Context, orgID uuid.
 	}
 	defer rows.Close()
 
-	var results []domain.InventoryAging
+	var results []types.InventoryAging
 	for rows.Next() {
-		var aging domain.InventoryAging
+		var aging types.InventoryAging
 		err := rows.Scan(
 			&aging.OrganizationID, &aging.ProductID, &aging.ProductName,
 			&aging.CategoryID, &aging.DefaultCode, &aging.LocationID,
@@ -366,7 +366,7 @@ func (r *analyticsRepository) GetAgingSummary(ctx context.Context, orgID uuid.UU
 }
 
 // GetDeadStock retrieves dead stock analysis
-func (r *analyticsRepository) GetDeadStock(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryDeadStock, error) {
+func (r *analyticsRepository) GetDeadStock(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryDeadStock, error) {
 	query := `
 		SELECT
 			organization_id, product_id, product_name, default_code, category_id,
@@ -407,9 +407,9 @@ func (r *analyticsRepository) GetDeadStock(ctx context.Context, orgID uuid.UUID,
 	}
 	defer rows.Close()
 
-	var results []domain.InventoryDeadStock
+	var results []types.InventoryDeadStock
 	for rows.Next() {
-		var deadStock domain.InventoryDeadStock
+		var deadStock types.InventoryDeadStock
 		err := rows.Scan(
 			&deadStock.OrganizationID, &deadStock.ProductID, &deadStock.ProductName,
 			&deadStock.DefaultCode, &deadStock.CategoryID, &deadStock.LastMovementDate,
@@ -426,7 +426,7 @@ func (r *analyticsRepository) GetDeadStock(ctx context.Context, orgID uuid.UUID,
 }
 
 // GetDeadStockSummary retrieves dead stock summary metrics
-func (r *analyticsRepository) GetDeadStockSummary(ctx context.Context, orgID uuid.UUID) (*domain.AnalyticsSummary, error) {
+func (r *analyticsRepository) GetDeadStockSummary(ctx context.Context, orgID uuid.UUID) (*types.AnalyticsSummary, error) {
 	query := `
 		SELECT
 			COUNT(*) as total_products,
@@ -438,7 +438,7 @@ func (r *analyticsRepository) GetDeadStockSummary(ctx context.Context, orgID uui
 		WHERE organization_id = $1
 	`
 
-	var summary domain.AnalyticsSummary
+	var summary types.AnalyticsSummary
 	summary.OrganizationID = orgID
 	err := r.db.QueryRowContext(ctx, query, orgID).Scan(
 		&summary.TotalProducts,
@@ -462,7 +462,7 @@ func (r *analyticsRepository) GetDeadStockSummary(ctx context.Context, orgID uui
 }
 
 // GetMovementSummary retrieves inventory movement summary
-func (r *analyticsRepository) GetMovementSummary(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryMovementSummary, error) {
+func (r *analyticsRepository) GetMovementSummary(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryMovementSummary, error) {
 	query := `
 		SELECT
 			organization_id, month, product_id, product_name, category_id,
@@ -514,9 +514,9 @@ func (r *analyticsRepository) GetMovementSummary(ctx context.Context, orgID uuid
 	}
 	defer rows.Close()
 
-	var results []domain.InventoryMovementSummary
+	var results []types.InventoryMovementSummary
 	for rows.Next() {
-		var summary domain.InventoryMovementSummary
+		var summary types.InventoryMovementSummary
 		err := rows.Scan(
 			&summary.OrganizationID, &summary.Month, &summary.ProductID,
 			&summary.ProductName, &summary.CategoryID, &summary.LocationName,
@@ -533,7 +533,7 @@ func (r *analyticsRepository) GetMovementSummary(ctx context.Context, orgID uuid
 }
 
 // GetReorderAnalysis retrieves reorder analysis
-func (r *analyticsRepository) GetReorderAnalysis(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryReorderAnalysis, error) {
+func (r *analyticsRepository) GetReorderAnalysis(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryReorderAnalysis, error) {
 	query := `
 		SELECT
 			organization_id, product_id, product_name, default_code, category_id,
@@ -581,9 +581,9 @@ func (r *analyticsRepository) GetReorderAnalysis(ctx context.Context, orgID uuid
 	}
 	defer rows.Close()
 
-	var results []domain.InventoryReorderAnalysis
+	var results []types.InventoryReorderAnalysis
 	for rows.Next() {
-		var analysis domain.InventoryReorderAnalysis
+		var analysis types.InventoryReorderAnalysis
 		err := rows.Scan(
 			&analysis.OrganizationID, &analysis.ProductID, &analysis.ProductName,
 			&analysis.DefaultCode, &analysis.CategoryID, &analysis.CurrentStock,
@@ -601,7 +601,7 @@ func (r *analyticsRepository) GetReorderAnalysis(ctx context.Context, orgID uuid
 }
 
 // GetProductsNeedingReorder retrieves products that need reordering
-func (r *analyticsRepository) GetProductsNeedingReorder(ctx context.Context, orgID uuid.UUID) ([]domain.InventoryReorderAnalysis, error) {
+func (r *analyticsRepository) GetProductsNeedingReorder(ctx context.Context, orgID uuid.UUID) ([]types.InventoryReorderAnalysis, error) {
 	query := `
 		SELECT
 			organization_id, product_id, product_name, default_code, category_id,
@@ -623,9 +623,9 @@ func (r *analyticsRepository) GetProductsNeedingReorder(ctx context.Context, org
 	}
 	defer rows.Close()
 
-	var results []domain.InventoryReorderAnalysis
+	var results []types.InventoryReorderAnalysis
 	for rows.Next() {
-		var analysis domain.InventoryReorderAnalysis
+		var analysis types.InventoryReorderAnalysis
 		err := rows.Scan(
 			&analysis.OrganizationID, &analysis.ProductID, &analysis.ProductName,
 			&analysis.DefaultCode, &analysis.CategoryID, &analysis.CurrentStock,
@@ -643,7 +643,7 @@ func (r *analyticsRepository) GetProductsNeedingReorder(ctx context.Context, org
 }
 
 // GetInventorySnapshot retrieves a comprehensive inventory snapshot
-func (r *analyticsRepository) GetInventorySnapshot(ctx context.Context, orgID uuid.UUID) ([]domain.InventorySnapshot, error) {
+func (r *analyticsRepository) GetInventorySnapshot(ctx context.Context, orgID uuid.UUID) ([]types.InventorySnapshot, error) {
 	query := `
 		SELECT
 			product_id, product_name, category_id, current_stock,
@@ -659,9 +659,9 @@ func (r *analyticsRepository) GetInventorySnapshot(ctx context.Context, orgID uu
 	}
 	defer rows.Close()
 
-	var results []domain.InventorySnapshot
+	var results []types.InventorySnapshot
 	for rows.Next() {
-		var snapshot domain.InventorySnapshot
+		var snapshot types.InventorySnapshot
 		err := rows.Scan(
 			&snapshot.ProductID, &snapshot.ProductName, &snapshot.CategoryID,
 			&snapshot.CurrentStock, &snapshot.ReorderPoint, &snapshot.SafetyStock,

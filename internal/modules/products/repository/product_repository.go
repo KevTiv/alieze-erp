@@ -25,7 +25,7 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 
-func (r *ProductRepository) Create(ctx context.Context, product domain.Product) (*domain.Product, error) {
+func (r *ProductRepository) Create(ctx context.Context, product types.Product) (*types.Product, error) {
 	if product.ID == uuid.Nil {
 		product.ID = uuid.New()
 	}
@@ -73,7 +73,7 @@ func (r *ProductRepository) Create(ctx context.Context, product domain.Product) 
 		nil,
 	)
 
-	var created domain.Product
+	var created types.Product
 	err := result.Scan(
 		&created.ID,
 		&created.OrganizationID,
@@ -96,7 +96,7 @@ func (r *ProductRepository) Create(ctx context.Context, product domain.Product) 
 	return &created, nil
 }
 
-func (r *ProductRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
+func (r *ProductRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Product, error) {
 	if id == uuid.Nil {
 		return nil, errors.New("invalid product id")
 	}
@@ -108,7 +108,7 @@ func (r *ProductRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	var product domain.Product
+	var product types.Product
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&product.ID,
 		&product.OrganizationID,
@@ -134,7 +134,7 @@ func (r *ProductRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain
 	return &product, nil
 }
 
-func (r *ProductRepository) FindAll(ctx context.Context, filter domain.ProductFilter) ([]domain.Product, error) {
+func (r *ProductRepository) FindAll(ctx context.Context, filter types.ProductFilter) ([]types.Product, error) {
 	query := `SELECT id, organization_id, name, default_code, barcode, product_type,
 		category_id, list_price, active, created_at, updated_at, deleted_at
 		FROM products WHERE deleted_at IS NULL`
@@ -203,9 +203,9 @@ func (r *ProductRepository) FindAll(ctx context.Context, filter domain.ProductFi
 	}
 	defer rows.Close()
 
-	var products []domain.Product
+	var products []types.Product
 	for rows.Next() {
-		var product domain.Product
+		var product types.Product
 		err := rows.Scan(
 			&product.ID,
 			&product.OrganizationID,
@@ -233,7 +233,7 @@ func (r *ProductRepository) FindAll(ctx context.Context, filter domain.ProductFi
 	return products, nil
 }
 
-func (r *ProductRepository) Update(ctx context.Context, product domain.Product) (*domain.Product, error) {
+func (r *ProductRepository) Update(ctx context.Context, product types.Product) (*types.Product, error) {
 	if product.ID == uuid.Nil {
 		return nil, errors.New("product id is required")
 	}
@@ -277,7 +277,7 @@ func (r *ProductRepository) Update(ctx context.Context, product domain.Product) 
 		product.ID,
 	)
 
-	var updated domain.Product
+	var updated types.Product
 	err := result.Scan(
 		&updated.ID,
 		&updated.OrganizationID,
@@ -331,7 +331,7 @@ func (r *ProductRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *ProductRepository) Count(ctx context.Context, filter domain.ProductFilter) (int, error) {
+func (r *ProductRepository) Count(ctx context.Context, filter types.ProductFilter) (int, error) {
 	query := `SELECT COUNT(*) FROM products WHERE deleted_at IS NULL`
 
 	var conditions []string

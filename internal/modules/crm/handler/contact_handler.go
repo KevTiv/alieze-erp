@@ -33,7 +33,7 @@ func (h *ContactHandler) RegisterRoutes(router *httprouter.Router) {
 }
 
 func (h *ContactHandler) CreateContact(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var req domain.Contact
+	var req types.Contact
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -82,7 +82,7 @@ func (h *ContactHandler) ListContacts(w http.ResponseWriter, r *http.Request, _ 
 	limitStr := r.URL.Query().Get("limit")
 	offsetStr := r.URL.Query().Get("offset")
 
-	filters := domain.ContactFilter{
+	filters := types.ContactFilter{
 		Limit:  10,
 		Offset: 0,
 	}
@@ -153,7 +153,7 @@ func (h *ContactHandler) UpdateContact(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	var req domain.Contact
+	var req types.Contact
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -193,7 +193,7 @@ func (h *ContactHandler) GetContactsByCustomer(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	filters := domain.ContactFilter{
+	filters := types.ContactFilter{
 		IsCustomer: func() *bool { b := true; return &b }(),
 	}
 
@@ -215,7 +215,7 @@ func (h *ContactHandler) GetContactsByVendor(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	filters := domain.ContactFilter{
+	filters := types.ContactFilter{
 		IsVendor: func() *bool { b := true; return &b }(),
 	}
 

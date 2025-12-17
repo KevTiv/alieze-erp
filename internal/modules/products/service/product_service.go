@@ -35,7 +35,7 @@ func NewProductService(repo repository.ProductRepo, authService AuthService) *Pr
 	}
 }
 
-func (s *ProductService) CreateProduct(ctx context.Context, product domain.Product) (*domain.Product, error) {
+func (s *ProductService) CreateProduct(ctx context.Context, product types.Product) (*types.Product, error) {
 	// Validate required fields
 	if product.Name == "" {
 		return nil, errors.New("product name is required")
@@ -78,7 +78,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, product domain.Produ
 	return created, nil
 }
 
-func (s *ProductService) GetProduct(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
+func (s *ProductService) GetProduct(ctx context.Context, id uuid.UUID) (*types.Product, error) {
 	if id == uuid.Nil {
 		return nil, errors.New("invalid product id")
 	}
@@ -106,7 +106,7 @@ func (s *ProductService) GetProduct(ctx context.Context, id uuid.UUID) (*domain.
 	return product, nil
 }
 
-func (s *ProductService) ListProducts(ctx context.Context, filter domain.ProductFilter) ([]domain.Product, int, error) {
+func (s *ProductService) ListProducts(ctx context.Context, filter types.ProductFilter) ([]types.Product, int, error) {
 	// Set organization from context
 	orgID, err := s.authService.GetOrganizationID(ctx)
 	if err != nil {
@@ -137,7 +137,7 @@ func (s *ProductService) ListProducts(ctx context.Context, filter domain.Product
 	return products, count, nil
 }
 
-func (s *ProductService) UpdateProduct(ctx context.Context, product domain.Product) (*domain.Product, error) {
+func (s *ProductService) UpdateProduct(ctx context.Context, product types.Product) (*types.Product, error) {
 	if product.ID == uuid.Nil {
 		return nil, errors.New("product id is required")
 	}

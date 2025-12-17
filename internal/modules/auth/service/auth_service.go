@@ -32,7 +32,7 @@ func NewAuthService(repo repository.AuthRepository) *AuthService {
 	}
 }
 
-func (s *AuthService) RegisterUser(ctx context.Context, req domain.RegisterRequest) (*domain.UserProfile, error) {
+func (s *AuthService) RegisterUser(ctx context.Context, req types.RegisterRequest) (*types.UserProfile, error) {
 	// Validate email format
 	if !isValidEmail(req.Email) {
 		return nil, errors.New("invalid email format")
@@ -60,7 +60,7 @@ func (s *AuthService) RegisterUser(ctx context.Context, req domain.RegisterReque
 
 	// Create user
 	now := time.Now()
-	user := domain.User{
+	user := types.User{
 		ID:                uuid.New(),
 		Email:             req.Email,
 		EncryptedPassword: hashedPassword,
@@ -83,7 +83,7 @@ func (s *AuthService) RegisterUser(ctx context.Context, req domain.RegisterReque
 	}
 
 	// Create organization user (owner role)
-	orgUser := domain.OrganizationUser{
+	orgUser := types.OrganizationUser{
 		ID:             uuid.New(),
 		OrganizationID: *orgID,
 		UserID:         createdUser.ID,
@@ -101,14 +101,14 @@ func (s *AuthService) RegisterUser(ctx context.Context, req domain.RegisterReque
 
 	s.logger.Printf("User registered successfully: %s (organization: %s)", createdUser.ID, *orgID)
 
-	return &domain.UserProfile{
+	return &types.UserProfile{
 		ID:           createdUser.ID,
 		Email:        createdUser.Email,
 		IsSuperAdmin: createdUser.IsSuperAdmin,
 	}, nil
 }
 
-func (s *AuthService) LoginUser(ctx context.Context, req domain.LoginRequest) (*domain.LoginResponse, error) {
+func (s *AuthService) LoginUser(ctx context.Context, req types.LoginRequest) (*types.LoginResponse, error) {
 	// Find user by email
 	user, err := s.repo.FindUserByEmail(ctx, req.Email)
 	if err != nil {
@@ -162,12 +162,12 @@ func (s *AuthService) LoginUser(ctx context.Context, req domain.LoginRequest) (*
 
 	s.logger.Printf("User logged in successfully: %s (organization: %s)", user.ID, orgUser.OrganizationID)
 
-	return &domain.LoginResponse{
+	return &types.LoginResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresIn:    expiresIn,
 		TokenType:    "Bearer",
-		User: domain.UserProfile{
+		User: types.UserProfile{
 			ID:           user.ID,
 			Email:        user.Email,
 			IsSuperAdmin: user.IsSuperAdmin,
@@ -175,7 +175,7 @@ func (s *AuthService) LoginUser(ctx context.Context, req domain.LoginRequest) (*
 	}, nil
 }
 
-func (s *AuthService) GetUserProfile(ctx context.Context, userID uuid.UUID) (*domain.UserProfile, error) {
+func (s *AuthService) GetUserProfile(ctx context.Context, userID uuid.UUID) (*types.UserProfile, error) {
 	user, err := s.repo.FindUserByID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find user: %w", err)
@@ -184,7 +184,7 @@ func (s *AuthService) GetUserProfile(ctx context.Context, userID uuid.UUID) (*do
 		return nil, errors.New("user not found")
 	}
 
-	return &domain.UserProfile{
+	return &types.UserProfile{
 		ID:           user.ID,
 		Email:        user.Email,
 		IsSuperAdmin: user.IsSuperAdmin,

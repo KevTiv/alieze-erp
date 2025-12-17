@@ -19,7 +19,7 @@ func NewQualityControlInspectionItemRepository(db *sql.DB) QualityControlInspect
 	return &qualityControlInspectionItemRepository{db: db}
 }
 
-func (r *qualityControlInspectionItemRepository) Create(ctx context.Context, item domain.QualityControlInspectionItem) (*domain.QualityControlInspectionItem, error) {
+func (r *qualityControlInspectionItemRepository) Create(ctx context.Context, item types.QualityControlInspectionItem) (*types.QualityControlInspectionItem, error) {
 	query := `
 		INSERT INTO quality_control_inspection_items
 		(id, inspection_id, checklist_item_id, description, result, notes, created_at)
@@ -37,7 +37,7 @@ func (r *qualityControlInspectionItemRepository) Create(ctx context.Context, ite
 		item.Result = "pending"
 	}
 
-	var created domain.QualityControlInspectionItem
+	var created types.QualityControlInspectionItem
 	err := r.db.QueryRowContext(ctx, query,
 		item.ID, item.InspectionID, item.ChecklistItemID, item.Description, item.Result, item.Notes, item.CreatedAt,
 	).Scan(
@@ -50,13 +50,13 @@ func (r *qualityControlInspectionItemRepository) Create(ctx context.Context, ite
 	return &created, nil
 }
 
-func (r *qualityControlInspectionItemRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.QualityControlInspectionItem, error) {
+func (r *qualityControlInspectionItemRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.QualityControlInspectionItem, error) {
 	query := `
 		SELECT id, inspection_id, checklist_item_id, description, result, notes, created_at
 		FROM quality_control_inspection_items WHERE id = $1
 	`
 
-	var item domain.QualityControlInspectionItem
+	var item types.QualityControlInspectionItem
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&item.ID, &item.InspectionID, &item.ChecklistItemID, &item.Description, &item.Result, &item.Notes, &item.CreatedAt,
 	)
@@ -70,7 +70,7 @@ func (r *qualityControlInspectionItemRepository) FindByID(ctx context.Context, i
 	return &item, nil
 }
 
-func (r *qualityControlInspectionItemRepository) FindByInspection(ctx context.Context, inspectionID uuid.UUID) ([]domain.QualityControlInspectionItem, error) {
+func (r *qualityControlInspectionItemRepository) FindByInspection(ctx context.Context, inspectionID uuid.UUID) ([]types.QualityControlInspectionItem, error) {
 	query := `
 		SELECT id, inspection_id, checklist_item_id, description, result, notes, created_at
 		FROM quality_control_inspection_items WHERE inspection_id = $1
@@ -83,9 +83,9 @@ func (r *qualityControlInspectionItemRepository) FindByInspection(ctx context.Co
 	}
 	defer rows.Close()
 
-	var items []domain.QualityControlInspectionItem
+	var items []types.QualityControlInspectionItem
 	for rows.Next() {
-		var item domain.QualityControlInspectionItem
+		var item types.QualityControlInspectionItem
 		err := rows.Scan(
 			&item.ID, &item.InspectionID, &item.ChecklistItemID, &item.Description, &item.Result, &item.Notes, &item.CreatedAt,
 		)
@@ -99,7 +99,7 @@ func (r *qualityControlInspectionItemRepository) FindByInspection(ctx context.Co
 	return items, nil
 }
 
-func (r *qualityControlInspectionItemRepository) Update(ctx context.Context, item domain.QualityControlInspectionItem) (*domain.QualityControlInspectionItem, error) {
+func (r *qualityControlInspectionItemRepository) Update(ctx context.Context, item types.QualityControlInspectionItem) (*types.QualityControlInspectionItem, error) {
 	query := `
 		UPDATE quality_control_inspection_items
 		SET description = $2, result = $3, notes = $4
@@ -107,7 +107,7 @@ func (r *qualityControlInspectionItemRepository) Update(ctx context.Context, ite
 		RETURNING id, inspection_id, checklist_item_id, description, result, notes, created_at
 	`
 
-	var updated domain.QualityControlInspectionItem
+	var updated types.QualityControlInspectionItem
 	err := r.db.QueryRowContext(ctx, query,
 		item.ID, item.Description, item.Result, item.Notes,
 	).Scan(
@@ -126,11 +126,11 @@ func (r *qualityControlInspectionItemRepository) Update(ctx context.Context, ite
 func (r *qualityControlInspectionItemRepository) UpdateResult(ctx context.Context, itemID uuid.UUID, result, notes string) error {
 	query := `UPDATE quality_control_inspection_items SET result = $2, notes = $3 WHERE id = $1`
 
-	result, err := r.db.ExecContext(ctx, query, itemID, result, notes)
+	execResult, err := r.db.ExecContext(ctx, query, itemID, result, notes)
 	if err != nil {
 		return fmt.Errorf("failed to update quality control inspection item result: %w", err)
 	}
-	rows, _ := result.RowsAffected()
+	rows, _ := execResult.RowsAffected()
 	if rows == 0 {
 		return fmt.Errorf("quality control inspection item not found")
 	}

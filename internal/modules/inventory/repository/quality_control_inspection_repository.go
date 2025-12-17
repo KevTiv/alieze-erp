@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+
 	"time"
 
 	"alieze-erp/internal/modules/inventory/types"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 )
 
 type qualityControlInspectionRepository struct {
@@ -21,7 +21,7 @@ func NewQualityControlInspectionRepository(db *sql.DB) QualityControlInspectionR
 	return &qualityControlInspectionRepository{db: db}
 }
 
-func (r *qualityControlInspectionRepository) Create(ctx context.Context, inspection domain.QualityControlInspection) (*domain.QualityControlInspection, error) {
+func (r *qualityControlInspectionRepository) Create(ctx context.Context, inspection types.QualityControlInspection) (*types.QualityControlInspection, error) {
 	query := `
 		INSERT INTO quality_control_inspections
 		(id, organization_id, company_id, reference, inspection_type, source_document_id, source_type,
@@ -60,7 +60,7 @@ func (r *qualityControlInspectionRepository) Create(ctx context.Context, inspect
 		metadataBytes = []byte("{}")
 	}
 
-	var created domain.QualityControlInspection
+	var created types.QualityControlInspection
 	err = r.db.QueryRowContext(ctx, query,
 		inspection.ID, inspection.OrganizationID, inspection.CompanyID, inspection.Reference, inspection.InspectionType,
 		inspection.SourceDocumentID, inspection.SourceType, inspection.ProductID, inspection.ProductName,
@@ -90,7 +90,7 @@ func (r *qualityControlInspectionRepository) Create(ctx context.Context, inspect
 	return &created, nil
 }
 
-func (r *qualityControlInspectionRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.QualityControlInspection, error) {
+func (r *qualityControlInspectionRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.QualityControlInspection, error) {
 	query := `
 		SELECT id, organization_id, company_id, reference, inspection_type, source_document_id, source_type,
 		 product_id, product_name, lot_id, serial_number, quantity, uom_id, location_id, location_name,
@@ -100,7 +100,7 @@ func (r *qualityControlInspectionRepository) FindByID(ctx context.Context, id uu
 		FROM quality_control_inspections WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	var inspection domain.QualityControlInspection
+	var inspection types.QualityControlInspection
 	var metadataBytes []byte
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&inspection.ID, &inspection.OrganizationID, &inspection.CompanyID, &inspection.Reference, &inspection.InspectionType,
@@ -126,7 +126,7 @@ func (r *qualityControlInspectionRepository) FindByID(ctx context.Context, id uu
 	return &inspection, nil
 }
 
-func (r *qualityControlInspectionRepository) FindAll(ctx context.Context, organizationID uuid.UUID, limit int) ([]domain.QualityControlInspection, error) {
+func (r *qualityControlInspectionRepository) FindAll(ctx context.Context, organizationID uuid.UUID, limit int) ([]types.QualityControlInspection, error) {
 	query := `
 		SELECT id, organization_id, company_id, reference, inspection_type, source_document_id, source_type,
 		 product_id, product_name, lot_id, serial_number, quantity, uom_id, location_id, location_name,
@@ -148,9 +148,9 @@ func (r *qualityControlInspectionRepository) FindAll(ctx context.Context, organi
 	}
 	defer rows.Close()
 
-	var inspections []domain.QualityControlInspection
+	var inspections []types.QualityControlInspection
 	for rows.Next() {
-		var inspection domain.QualityControlInspection
+		var inspection types.QualityControlInspection
 		var metadataBytes []byte
 		err := rows.Scan(
 			&inspection.ID, &inspection.OrganizationID, &inspection.CompanyID, &inspection.Reference, &inspection.InspectionType,
@@ -176,7 +176,7 @@ func (r *qualityControlInspectionRepository) FindAll(ctx context.Context, organi
 	return inspections, nil
 }
 
-func (r *qualityControlInspectionRepository) FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]domain.QualityControlInspection, error) {
+func (r *qualityControlInspectionRepository) FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]types.QualityControlInspection, error) {
 	query := `
 		SELECT id, organization_id, company_id, reference, inspection_type, source_document_id, source_type,
 		 product_id, product_name, lot_id, serial_number, quantity, uom_id, location_id, location_name,
@@ -194,9 +194,9 @@ func (r *qualityControlInspectionRepository) FindByProduct(ctx context.Context, 
 	}
 	defer rows.Close()
 
-	var inspections []domain.QualityControlInspection
+	var inspections []types.QualityControlInspection
 	for rows.Next() {
-		var inspection domain.QualityControlInspection
+		var inspection types.QualityControlInspection
 		var metadataBytes []byte
 		err := rows.Scan(
 			&inspection.ID, &inspection.OrganizationID, &inspection.CompanyID, &inspection.Reference, &inspection.InspectionType,
@@ -222,7 +222,7 @@ func (r *qualityControlInspectionRepository) FindByProduct(ctx context.Context, 
 	return inspections, nil
 }
 
-func (r *qualityControlInspectionRepository) FindByLot(ctx context.Context, organizationID uuid.UUID, lotID uuid.UUID) ([]domain.QualityControlInspection, error) {
+func (r *qualityControlInspectionRepository) FindByLot(ctx context.Context, organizationID uuid.UUID, lotID uuid.UUID) ([]types.QualityControlInspection, error) {
 	query := `
 		SELECT id, organization_id, company_id, reference, inspection_type, source_document_id, source_type,
 		 product_id, product_name, lot_id, serial_number, quantity, uom_id, location_id, location_name,
@@ -240,9 +240,9 @@ func (r *qualityControlInspectionRepository) FindByLot(ctx context.Context, orga
 	}
 	defer rows.Close()
 
-	var inspections []domain.QualityControlInspection
+	var inspections []types.QualityControlInspection
 	for rows.Next() {
-		var inspection domain.QualityControlInspection
+		var inspection types.QualityControlInspection
 		var metadataBytes []byte
 		err := rows.Scan(
 			&inspection.ID, &inspection.OrganizationID, &inspection.CompanyID, &inspection.Reference, &inspection.InspectionType,
@@ -268,7 +268,7 @@ func (r *qualityControlInspectionRepository) FindByLot(ctx context.Context, orga
 	return inspections, nil
 }
 
-func (r *qualityControlInspectionRepository) FindByLocation(ctx context.Context, organizationID, locationID uuid.UUID) ([]domain.QualityControlInspection, error) {
+func (r *qualityControlInspectionRepository) FindByLocation(ctx context.Context, organizationID, locationID uuid.UUID) ([]types.QualityControlInspection, error) {
 	query := `
 		SELECT id, organization_id, company_id, reference, inspection_type, source_document_id, source_type,
 		 product_id, product_name, lot_id, serial_number, quantity, uom_id, location_id, location_name,
@@ -286,9 +286,9 @@ func (r *qualityControlInspectionRepository) FindByLocation(ctx context.Context,
 	}
 	defer rows.Close()
 
-	var inspections []domain.QualityControlInspection
+	var inspections []types.QualityControlInspection
 	for rows.Next() {
-		var inspection domain.QualityControlInspection
+		var inspection types.QualityControlInspection
 		var metadataBytes []byte
 		err := rows.Scan(
 			&inspection.ID, &inspection.OrganizationID, &inspection.CompanyID, &inspection.Reference, &inspection.InspectionType,
@@ -314,7 +314,7 @@ func (r *qualityControlInspectionRepository) FindByLocation(ctx context.Context,
 	return inspections, nil
 }
 
-func (r *qualityControlInspectionRepository) FindByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]domain.QualityControlInspection, error) {
+func (r *qualityControlInspectionRepository) FindByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]types.QualityControlInspection, error) {
 	query := `
 		SELECT id, organization_id, company_id, reference, inspection_type, source_document_id, source_type,
 		 product_id, product_name, lot_id, serial_number, quantity, uom_id, location_id, location_name,
@@ -332,9 +332,9 @@ func (r *qualityControlInspectionRepository) FindByStatus(ctx context.Context, o
 	}
 	defer rows.Close()
 
-	var inspections []domain.QualityControlInspection
+	var inspections []types.QualityControlInspection
 	for rows.Next() {
-		var inspection domain.QualityControlInspection
+		var inspection types.QualityControlInspection
 		var metadataBytes []byte
 		err := rows.Scan(
 			&inspection.ID, &inspection.OrganizationID, &inspection.CompanyID, &inspection.Reference, &inspection.InspectionType,
@@ -360,7 +360,7 @@ func (r *qualityControlInspectionRepository) FindByStatus(ctx context.Context, o
 	return inspections, nil
 }
 
-func (r *qualityControlInspectionRepository) FindByDateRange(ctx context.Context, organizationID uuid.UUID, fromTime, toTime time.Time) ([]domain.QualityControlInspection, error) {
+func (r *qualityControlInspectionRepository) FindByDateRange(ctx context.Context, organizationID uuid.UUID, fromTime, toTime time.Time) ([]types.QualityControlInspection, error) {
 	query := `
 		SELECT id, organization_id, company_id, reference, inspection_type, source_document_id, source_type,
 		 product_id, product_name, lot_id, serial_number, quantity, uom_id, location_id, location_name,
@@ -378,9 +378,9 @@ func (r *qualityControlInspectionRepository) FindByDateRange(ctx context.Context
 	}
 	defer rows.Close()
 
-	var inspections []domain.QualityControlInspection
+	var inspections []types.QualityControlInspection
 	for rows.Next() {
-		var inspection domain.QualityControlInspection
+		var inspection types.QualityControlInspection
 		var metadataBytes []byte
 		err := rows.Scan(
 			&inspection.ID, &inspection.OrganizationID, &inspection.CompanyID, &inspection.Reference, &inspection.InspectionType,
@@ -406,7 +406,7 @@ func (r *qualityControlInspectionRepository) FindByDateRange(ctx context.Context
 	return inspections, nil
 }
 
-func (r *qualityControlInspectionRepository) Update(ctx context.Context, inspection domain.QualityControlInspection) (*domain.QualityControlInspection, error) {
+func (r *qualityControlInspectionRepository) Update(ctx context.Context, inspection types.QualityControlInspection) (*types.QualityControlInspection, error) {
 	query := `
 		UPDATE quality_control_inspections
 		SET company_id = $2, reference = $3, inspection_type = $4, source_document_id = $5, source_type = $6,
@@ -429,7 +429,7 @@ func (r *qualityControlInspectionRepository) Update(ctx context.Context, inspect
 		metadataBytes = []byte("{}")
 	}
 
-	var updated domain.QualityControlInspection
+	var updated types.QualityControlInspection
 	err = r.db.QueryRowContext(ctx, query,
 		inspection.ID, inspection.CompanyID, inspection.Reference, inspection.InspectionType, inspection.SourceDocumentID,
 		inspection.SourceType, inspection.ProductName, inspection.SerialNumber, inspection.Quantity, inspection.UOMID,
@@ -474,7 +474,7 @@ func (r *qualityControlInspectionRepository) Delete(ctx context.Context, id uuid
 	return nil
 }
 
-func (r *qualityControlInspectionRepository) CreateFromStockMove(ctx context.Context, stockMoveID, inspectorID uuid.UUID, checklistID *uuid.UUID, inspectionMethod string, sampleSize *int) (*domain.QualityControlInspection, error) {
+func (r *qualityControlInspectionRepository) CreateFromStockMove(ctx context.Context, stockMoveID, inspectorID uuid.UUID, checklistID *uuid.UUID, inspectionMethod string, sampleSize *int) (*types.QualityControlInspection, error) {
 	query := `SELECT * FROM create_qc_inspection_from_stock_move($1, $2, $3, $4, $5)`
 
 	var inspectionID uuid.UUID
@@ -506,7 +506,7 @@ func (r *qualityControlInspectionRepository) UpdateStatus(ctx context.Context, i
 	return nil
 }
 
-func (r *qualityControlInspectionRepository) CompleteInspection(ctx context.Context, inspectionID uuid.UUID, status string, results []domain.QualityControlInspectionItem) error {
+func (r *qualityControlInspectionRepository) CompleteInspection(ctx context.Context, inspectionID uuid.UUID, status string, results []types.QualityControlInspectionItem) error {
 	// Convert results to JSON
 	resultsJSON, err := json.Marshal(results)
 	if err != nil {
@@ -523,18 +523,18 @@ func (r *qualityControlInspectionRepository) CompleteInspection(ctx context.Cont
 	return nil
 }
 
-func (r *qualityControlInspectionRepository) GetStatistics(ctx context.Context, organizationID uuid.UUID, fromTime, toTime *time.Time, productID *uuid.UUID) (domain.QualityControlStatistics, error) {
+func (r *qualityControlInspectionRepository) GetStatistics(ctx context.Context, organizationID uuid.UUID, fromTime, toTime *time.Time, productID *uuid.UUID) (types.QualityControlStatistics, error) {
 	query := `SELECT get_quality_control_statistics($1, $2, $3, $4)`
 
 	var statsJSON []byte
 	err := r.db.QueryRowContext(ctx, query, organizationID, fromTime, toTime, productID).Scan(&statsJSON)
 	if err != nil {
-		return domain.QualityControlStatistics{}, fmt.Errorf("failed to get quality control statistics: %w", err)
+		return types.QualityControlStatistics{}, fmt.Errorf("failed to get quality control statistics: %w", err)
 	}
 
-	var stats domain.QualityControlStatistics
+	var stats types.QualityControlStatistics
 	if err := json.Unmarshal(statsJSON, &stats); err != nil {
-		return domain.QualityControlStatistics{}, fmt.Errorf("failed to unmarshal quality control statistics: %w", err)
+		return types.QualityControlStatistics{}, fmt.Errorf("failed to unmarshal quality control statistics: %w", err)
 	}
 
 	return stats, nil

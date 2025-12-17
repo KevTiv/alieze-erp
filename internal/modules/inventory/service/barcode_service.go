@@ -21,7 +21,7 @@ func NewBarcodeService(barcodeRepo repository.BarcodeRepository) *BarcodeService
 }
 
 // ScanBarcode performs a barcode scan and returns the result
-func (s *BarcodeService) ScanBarcode(ctx context.Context, request domain.BarcodeScanRequest) (*domain.BarcodeScanResponse, error) {
+func (s *BarcodeService) ScanBarcode(ctx context.Context, request types.BarcodeScanRequest) (*types.BarcodeScanResponse, error) {
 	if request.OrganizationID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -36,7 +36,7 @@ func (s *BarcodeService) ScanBarcode(ctx context.Context, request domain.Barcode
 }
 
 // GetScanByID retrieves a specific barcode scan
-func (s *BarcodeService) GetScanByID(ctx context.Context, orgID uuid.UUID, scanID uuid.UUID) (*domain.BarcodeScan, error) {
+func (s *BarcodeService) GetScanByID(ctx context.Context, orgID uuid.UUID, scanID uuid.UUID) (*types.BarcodeScan, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -48,7 +48,7 @@ func (s *BarcodeService) GetScanByID(ctx context.Context, orgID uuid.UUID, scanI
 }
 
 // ListScans retrieves barcode scans for an organization
-func (s *BarcodeService) ListScans(ctx context.Context, orgID uuid.UUID, limit, offset int) ([]domain.BarcodeScan, error) {
+func (s *BarcodeService) ListScans(ctx context.Context, orgID uuid.UUID, limit, offset int) ([]types.BarcodeScan, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -57,7 +57,7 @@ func (s *BarcodeService) ListScans(ctx context.Context, orgID uuid.UUID, limit, 
 }
 
 // CreateScanningSession creates a new mobile scanning session
-func (s *BarcodeService) CreateScanningSession(ctx context.Context, request domain.CreateScanningSessionRequest) (*domain.MobileScanningSession, error) {
+func (s *BarcodeService) CreateScanningSession(ctx context.Context, request types.CreateScanningSessionRequest) (*types.MobileScanningSession, error) {
 	if request.OrganizationID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -72,7 +72,7 @@ func (s *BarcodeService) CreateScanningSession(ctx context.Context, request doma
 }
 
 // GetScanningSession retrieves a scanning session
-func (s *BarcodeService) GetScanningSession(ctx context.Context, orgID, sessionID uuid.UUID) (*domain.MobileScanningSession, error) {
+func (s *BarcodeService) GetScanningSession(ctx context.Context, orgID, sessionID uuid.UUID) (*types.MobileScanningSession, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -84,7 +84,7 @@ func (s *BarcodeService) GetScanningSession(ctx context.Context, orgID, sessionI
 }
 
 // ListScanningSessions retrieves scanning sessions for an organization
-func (s *BarcodeService) ListScanningSessions(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]domain.MobileScanningSession, error) {
+func (s *BarcodeService) ListScanningSessions(ctx context.Context, orgID uuid.UUID, status *string, limit, offset int) ([]types.MobileScanningSession, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -93,7 +93,7 @@ func (s *BarcodeService) ListScanningSessions(ctx context.Context, orgID uuid.UU
 }
 
 // AddScanToSession adds a scan to an existing session
-func (s *BarcodeService) AddScanToSession(ctx context.Context, request domain.AddScanToSessionRequest) (*domain.BarcodeScanResponse, error) {
+func (s *BarcodeService) AddScanToSession(ctx context.Context, request types.AddScanToSessionRequest) (*types.BarcodeScanResponse, error) {
 	if request.SessionID == uuid.Nil {
 		return nil, fmt.Errorf("session_id is required")
 	}
@@ -111,7 +111,7 @@ func (s *BarcodeService) AddScanToSession(ctx context.Context, request domain.Ad
 }
 
 // CompleteScanningSession marks a session as completed
-func (s *BarcodeService) CompleteScanningSession(ctx context.Context, request domain.CompleteSessionRequest) (bool, error) {
+func (s *BarcodeService) CompleteScanningSession(ctx context.Context, request types.CompleteSessionRequest) (bool, error) {
 	if request.SessionID == uuid.Nil {
 		return false, fmt.Errorf("session_id is required")
 	}
@@ -123,7 +123,7 @@ func (s *BarcodeService) CompleteScanningSession(ctx context.Context, request do
 }
 
 // GetSessionLines retrieves all lines for a scanning session
-func (s *BarcodeService) GetSessionLines(ctx context.Context, orgID, sessionID uuid.UUID) ([]domain.MobileScanningSessionLine, error) {
+func (s *BarcodeService) GetSessionLines(ctx context.Context, orgID, sessionID uuid.UUID) ([]types.MobileScanningSessionLine, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -135,7 +135,7 @@ func (s *BarcodeService) GetSessionLines(ctx context.Context, orgID, sessionID u
 }
 
 // GenerateBarcode generates a barcode for an entity
-func (s *BarcodeService) GenerateBarcode(ctx context.Context, request domain.BarcodeGenerationRequest) (*domain.BarcodeGenerationResponse, error) {
+func (s *BarcodeService) GenerateBarcode(ctx context.Context, request types.BarcodeGenerationRequest) (*types.BarcodeGenerationResponse, error) {
 	if request.OrganizationID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -162,7 +162,7 @@ func (s *BarcodeService) GenerateBarcodesForProducts(ctx context.Context, orgID 
 }
 
 // FindEntityByBarcode finds an entity by its barcode
-func (s *BarcodeService) FindEntityByBarcode(ctx context.Context, orgID uuid.UUID, barcode string) (*domain.BarcodeEntity, error) {
+func (s *BarcodeService) FindEntityByBarcode(ctx context.Context, orgID uuid.UUID, barcode string) (*types.BarcodeEntity, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}

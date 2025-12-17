@@ -20,7 +20,7 @@ func NewAccountService(repo repository.AccountRepository) *AccountService {
 	}
 }
 
-func (s *AccountService) CreateAccount(ctx context.Context, account domain.Account) (*domain.Account, error) {
+func (s *AccountService) CreateAccount(ctx context.Context, account types.Account) (*types.Account, error) {
 	// Validate the account
 	if err := s.validateAccount(account); err != nil {
 		return nil, fmt.Errorf("invalid account: %w", err)
@@ -44,7 +44,7 @@ func (s *AccountService) CreateAccount(ctx context.Context, account domain.Accou
 	return createdAccount, nil
 }
 
-func (s *AccountService) GetAccount(ctx context.Context, id uuid.UUID) (*domain.Account, error) {
+func (s *AccountService) GetAccount(ctx context.Context, id uuid.UUID) (*types.Account, error) {
 	account, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get account: %w", err)
@@ -56,7 +56,7 @@ func (s *AccountService) GetAccount(ctx context.Context, id uuid.UUID) (*domain.
 	return account, nil
 }
 
-func (s *AccountService) ListAccounts(ctx context.Context, filters repository.AccountFilter) ([]domain.Account, error) {
+func (s *AccountService) ListAccounts(ctx context.Context, filters repository.AccountFilter) ([]types.Account, error) {
 	accounts, err := s.repo.FindAll(ctx, filters)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list accounts: %w", err)
@@ -65,7 +65,7 @@ func (s *AccountService) ListAccounts(ctx context.Context, filters repository.Ac
 	return accounts, nil
 }
 
-func (s *AccountService) UpdateAccount(ctx context.Context, account domain.Account) (*domain.Account, error) {
+func (s *AccountService) UpdateAccount(ctx context.Context, account types.Account) (*types.Account, error) {
 	// Validate the account
 	if err := s.validateAccount(account); err != nil {
 		return nil, fmt.Errorf("invalid account: %w", err)
@@ -119,7 +119,7 @@ func (s *AccountService) DeleteAccount(ctx context.Context, id uuid.UUID) error 
 	return nil
 }
 
-func (s *AccountService) GetAccountsByType(ctx context.Context, organizationID uuid.UUID, accountType string) ([]domain.Account, error) {
+func (s *AccountService) GetAccountsByType(ctx context.Context, organizationID uuid.UUID, accountType string) ([]types.Account, error) {
 	accounts, err := s.repo.FindByType(ctx, organizationID, accountType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get accounts by type: %w", err)
@@ -128,7 +128,7 @@ func (s *AccountService) GetAccountsByType(ctx context.Context, organizationID u
 	return accounts, nil
 }
 
-func (s *AccountService) validateAccount(account domain.Account) error {
+func (s *AccountService) validateAccount(account types.Account) error {
 	if account.OrganizationID == uuid.Nil {
 		return fmt.Errorf("organization ID is required")
 	}

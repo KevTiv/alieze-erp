@@ -52,7 +52,7 @@ func NewContactServiceWithDependencies(repo repository.ContactRepo, authService 
 	return service
 }
 
-func (s *ContactService) CreateContact(ctx context.Context, contact domain.Contact) (*domain.Contact, error) {
+func (s *ContactService) CreateContact(ctx context.Context, contact types.Contact) (*types.Contact, error) {
 	// Use rule engine for validation if available
 	if s.ruleEngine != nil {
 		if ruleEngine, ok := s.ruleEngine.(interface{
@@ -102,7 +102,7 @@ func (s *ContactService) CreateContact(ctx context.Context, contact domain.Conta
 	return created, nil
 }
 
-func (s *ContactService) GetContact(ctx context.Context, id uuid.UUID) (*domain.Contact, error) {
+func (s *ContactService) GetContact(ctx context.Context, id uuid.UUID) (*types.Contact, error) {
 	if id == uuid.Nil {
 		return nil, errors.New("invalid contact id")
 	}
@@ -130,7 +130,7 @@ func (s *ContactService) GetContact(ctx context.Context, id uuid.UUID) (*domain.
 	return contact, nil
 }
 
-func (s *ContactService) ListContacts(ctx context.Context, filter domain.ContactFilter) ([]domain.Contact, int, error) {
+func (s *ContactService) ListContacts(ctx context.Context, filter types.ContactFilter) ([]types.Contact, int, error) {
 	// Set organization from context
 	orgID, err := s.authService.GetOrganizationID(ctx)
 	if err != nil {
@@ -161,7 +161,7 @@ func (s *ContactService) ListContacts(ctx context.Context, filter domain.Contact
 	return contacts, count, nil
 }
 
-func (s *ContactService) UpdateContact(ctx context.Context, contact domain.Contact) (*domain.Contact, error) {
+func (s *ContactService) UpdateContact(ctx context.Context, contact types.Contact) (*types.Contact, error) {
 	if contact.ID == uuid.Nil {
 		return nil, errors.New("contact id is required")
 	}

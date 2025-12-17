@@ -20,7 +20,7 @@ func NewTaxService(repo repository.TaxRepository) *TaxService {
 	}
 }
 
-func (s *TaxService) CreateTax(ctx context.Context, tax domain.Tax) (*domain.Tax, error) {
+func (s *TaxService) CreateTax(ctx context.Context, tax types.Tax) (*types.Tax, error) {
 	// Validate the tax
 	if err := s.validateTax(tax); err != nil {
 		return nil, fmt.Errorf("invalid tax: %w", err)
@@ -44,7 +44,7 @@ func (s *TaxService) CreateTax(ctx context.Context, tax domain.Tax) (*domain.Tax
 	return createdTax, nil
 }
 
-func (s *TaxService) GetTax(ctx context.Context, id uuid.UUID) (*domain.Tax, error) {
+func (s *TaxService) GetTax(ctx context.Context, id uuid.UUID) (*types.Tax, error) {
 	tax, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tax: %w", err)
@@ -56,7 +56,7 @@ func (s *TaxService) GetTax(ctx context.Context, id uuid.UUID) (*domain.Tax, err
 	return tax, nil
 }
 
-func (s *TaxService) ListTaxes(ctx context.Context, filters repository.TaxFilter) ([]domain.Tax, error) {
+func (s *TaxService) ListTaxes(ctx context.Context, filters repository.TaxFilter) ([]types.Tax, error) {
 	taxes, err := s.repo.FindAll(ctx, filters)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list taxes: %w", err)
@@ -65,7 +65,7 @@ func (s *TaxService) ListTaxes(ctx context.Context, filters repository.TaxFilter
 	return taxes, nil
 }
 
-func (s *TaxService) UpdateTax(ctx context.Context, tax domain.Tax) (*domain.Tax, error) {
+func (s *TaxService) UpdateTax(ctx context.Context, tax types.Tax) (*types.Tax, error) {
 	// Validate the tax
 	if err := s.validateTax(tax); err != nil {
 		return nil, fmt.Errorf("invalid tax: %w", err)
@@ -108,7 +108,7 @@ func (s *TaxService) DeleteTax(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (s *TaxService) GetTaxesByType(ctx context.Context, organizationID uuid.UUID, typeTaxUse string) ([]domain.Tax, error) {
+func (s *TaxService) GetTaxesByType(ctx context.Context, organizationID uuid.UUID, typeTaxUse string) ([]types.Tax, error) {
 	taxes, err := s.repo.FindByType(ctx, organizationID, typeTaxUse)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get taxes by type: %w", err)
@@ -117,7 +117,7 @@ func (s *TaxService) GetTaxesByType(ctx context.Context, organizationID uuid.UUI
 	return taxes, nil
 }
 
-func (s *TaxService) validateTax(tax domain.Tax) error {
+func (s *TaxService) validateTax(tax types.Tax) error {
 	if tax.OrganizationID == uuid.Nil {
 		return fmt.Errorf("organization ID is required")
 	}

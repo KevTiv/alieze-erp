@@ -1,4 +1,4 @@
-package domain
+package types
 
 import (
 	"time"
@@ -107,4 +107,5 @@ type ReplenishmentCheckResult struct {
 	RuleName        string `json:"rule_name"`
 	Priority        int `json:"priority"`
 	ProcureMethod   string `json:"procure_method"`
+	Status          string `json:"status"`
 }

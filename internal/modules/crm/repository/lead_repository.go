@@ -22,7 +22,7 @@ func NewLeadRepository(db *sql.DB) *LeadRepository {
 	return &LeadRepository{db: db}
 }
 
-func (r *LeadRepository) Create(ctx context.Context, lead domain.Lead) (*domain.Lead, error) {
+func (r *LeadRepository) Create(ctx context.Context, lead types.Lead) (*types.Lead, error) {
 	if lead.ID == uuid.Nil {
 		lead.ID = uuid.New()
 	}
@@ -69,7 +69,7 @@ func (r *LeadRepository) Create(ctx context.Context, lead domain.Lead) (*domain.
 		nil,
 	)
 
-	var created domain.Lead
+	var created types.Lead
 	err := result.Scan(
 		&created.ID,
 		&created.OrganizationID,
@@ -91,7 +91,7 @@ func (r *LeadRepository) Create(ctx context.Context, lead domain.Lead) (*domain.
 	return &created, nil
 }
 
-func (r *LeadRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Lead, error) {
+func (r *LeadRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Lead, error) {
 	if id == uuid.Nil {
 		return nil, errors.New("invalid lead id")
 	}
@@ -103,7 +103,7 @@ func (r *LeadRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Le
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	var lead domain.Lead
+	var lead types.Lead
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&lead.ID,
 		&lead.OrganizationID,
@@ -128,7 +128,7 @@ func (r *LeadRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Le
 	return &lead, nil
 }
 
-func (r *LeadRepository) FindAll(ctx context.Context, filter domain.LeadFilter) ([]domain.Lead, error) {
+func (r *LeadRepository) FindAll(ctx context.Context, filter types.LeadFilter) ([]types.Lead, error) {
 	query := `SELECT id, organization_id, name, email, phone, stage_id, status, active,
 		created_at, updated_at, deleted_at
 		FROM leads WHERE deleted_at IS NULL`
@@ -197,9 +197,9 @@ func (r *LeadRepository) FindAll(ctx context.Context, filter domain.LeadFilter) 
 	}
 	defer rows.Close()
 
-	var leads []domain.Lead
+	var leads []types.Lead
 	for rows.Next() {
-		var lead domain.Lead
+		var lead types.Lead
 		err := rows.Scan(
 			&lead.ID,
 			&lead.OrganizationID,
@@ -226,7 +226,7 @@ func (r *LeadRepository) FindAll(ctx context.Context, filter domain.LeadFilter) 
 	return leads, nil
 }
 
-func (r *LeadRepository) Update(ctx context.Context, lead domain.Lead) (*domain.Lead, error) {
+func (r *LeadRepository) Update(ctx context.Context, lead types.Lead) (*types.Lead, error) {
 	if lead.ID == uuid.Nil {
 		return nil, errors.New("lead id is required")
 	}
@@ -268,7 +268,7 @@ func (r *LeadRepository) Update(ctx context.Context, lead domain.Lead) (*domain.
 		lead.ID,
 	)
 
-	var updated domain.Lead
+	var updated types.Lead
 	err := result.Scan(
 		&updated.ID,
 		&updated.OrganizationID,
@@ -321,7 +321,7 @@ func (r *LeadRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *LeadRepository) Count(ctx context.Context, filter domain.LeadFilter) (int, error) {
+func (r *LeadRepository) Count(ctx context.Context, filter types.LeadFilter) (int, error) {
 	query := `SELECT COUNT(*) FROM leads WHERE deleted_at IS NULL`
 
 	var conditions []string

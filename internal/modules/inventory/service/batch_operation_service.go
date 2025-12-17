@@ -15,38 +15,38 @@ import (
 // BatchOperationService interface
 type BatchOperationService interface {
 	// CRUD Operations
-	CreateBatchOperation(ctx context.Context, operation domain.BatchOperation) (*domain.BatchOperation, error)
-	GetBatchOperation(ctx context.Context, id uuid.UUID) (*domain.BatchOperation, error)
-	ListBatchOperations(ctx context.Context, organizationID uuid.UUID, limit int) ([]domain.BatchOperation, error)
-	ListBatchOperationsByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]domain.BatchOperation, error)
-	ListBatchOperationsByType(ctx context.Context, organizationID uuid.UUID, operationType domain.BatchOperationType) ([]domain.BatchOperation, error)
-	ListBatchOperationsByDateRange(ctx context.Context, organizationID uuid.UUID, fromTime, toTime time.Time) ([]domain.BatchOperation, error)
-	ListBatchOperationsByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]domain.BatchOperation, error)
-	UpdateBatchOperation(ctx context.Context, operation domain.BatchOperation) (*domain.BatchOperation, error)
+	CreateBatchOperation(ctx context.Context, operation types.BatchOperation) (*types.BatchOperation, error)
+	GetBatchOperation(ctx context.Context, id uuid.UUID) (*types.BatchOperation, error)
+	ListBatchOperations(ctx context.Context, organizationID uuid.UUID, limit int) ([]types.BatchOperation, error)
+	ListBatchOperationsByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]types.BatchOperation, error)
+	ListBatchOperationsByType(ctx context.Context, organizationID uuid.UUID, operationType types.BatchOperationType) ([]types.BatchOperation, error)
+	ListBatchOperationsByDateRange(ctx context.Context, organizationID uuid.UUID, fromTime, toTime time.Time) ([]types.BatchOperation, error)
+	ListBatchOperationsByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]types.BatchOperation, error)
+	UpdateBatchOperation(ctx context.Context, operation types.BatchOperation) (*types.BatchOperation, error)
 	DeleteBatchOperation(ctx context.Context, id uuid.UUID) error
 
 	// Batch Operation Item Operations
-	CreateBatchOperationItem(ctx context.Context, item domain.BatchOperationItem) (*domain.BatchOperationItem, error)
-	GetBatchOperationItem(ctx context.Context, id uuid.UUID) (*domain.BatchOperationItem, error)
-	ListBatchOperationItems(ctx context.Context, batchOperationID uuid.UUID) ([]domain.BatchOperationItem, error)
-	ListBatchOperationItemsByStatus(ctx context.Context, batchOperationID uuid.UUID, status string) ([]domain.BatchOperationItem, error)
-	UpdateBatchOperationItem(ctx context.Context, item domain.BatchOperationItem) (*domain.BatchOperationItem, error)
+	CreateBatchOperationItem(ctx context.Context, item types.BatchOperationItem) (*types.BatchOperationItem, error)
+	GetBatchOperationItem(ctx context.Context, id uuid.UUID) (*types.BatchOperationItem, error)
+	ListBatchOperationItems(ctx context.Context, batchOperationID uuid.UUID) ([]types.BatchOperationItem, error)
+	ListBatchOperationItemsByStatus(ctx context.Context, batchOperationID uuid.UUID, status string) ([]types.BatchOperationItem, error)
+	UpdateBatchOperationItem(ctx context.Context, item types.BatchOperationItem) (*types.BatchOperationItem, error)
 	DeleteBatchOperationItem(ctx context.Context, id uuid.UUID) error
 
 	// Business Logic Operations
-	CreateStockAdjustmentBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, items []domain.BatchOperationItem) (*domain.BatchOperation, error)
-	CreateStockTransferBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, sourceLocationID, destLocationID uuid.UUID, items []domain.BatchOperationItem) (*domain.BatchOperation, error)
-	CreateStockCountBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, locationID uuid.UUID, items []domain.BatchOperationItem) (*domain.BatchOperation, error)
-	CreatePriceUpdateBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, currencyID uuid.UUID, items []domain.BatchOperationItem) (*domain.BatchOperation, error)
-	CreateLocationUpdateBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, newLocationID uuid.UUID, items []domain.BatchOperationItem) (*domain.BatchOperation, error)
-	CreateStatusUpdateBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, newStatus string, items []domain.BatchOperationItem) (*domain.BatchOperation, error)
+	CreateStockAdjustmentBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, items []types.BatchOperationItem) (*types.BatchOperation, error)
+	CreateStockTransferBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, sourceLocationID, destLocationID uuid.UUID, items []types.BatchOperationItem) (*types.BatchOperation, error)
+	CreateStockCountBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, locationID uuid.UUID, items []types.BatchOperationItem) (*types.BatchOperation, error)
+	CreatePriceUpdateBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, currencyID uuid.UUID, items []types.BatchOperationItem) (*types.BatchOperation, error)
+	CreateLocationUpdateBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, newLocationID uuid.UUID, items []types.BatchOperationItem) (*types.BatchOperation, error)
+	CreateStatusUpdateBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, newStatus string, items []types.BatchOperationItem) (*types.BatchOperation, error)
 
-	ProcessBatchOperation(ctx context.Context, operationID uuid.UUID, processedBy uuid.UUID) (*domain.BatchOperationResult, error)
-	GetBatchOperationStatistics(ctx context.Context, organizationID uuid.UUID, fromTime, toTime *time.Time, operationType *domain.BatchOperationType) (domain.BatchOperationStatistics, error)
+	ProcessBatchOperation(ctx context.Context, operationID uuid.UUID, processedBy uuid.UUID) (*types.BatchOperationResult, error)
+	GetBatchOperationStatistics(ctx context.Context, organizationID uuid.UUID, fromTime, toTime *time.Time, operationType *types.BatchOperationType) (types.BatchOperationStatistics, error)
 
 	// Validation and Utility Methods
-	ValidateBatchOperation(ctx context.Context, operation domain.BatchOperation) error
-	ValidateBatchOperationItem(ctx context.Context, item domain.BatchOperationItem) error
+	ValidateBatchOperation(ctx context.Context, operation types.BatchOperation) error
+	ValidateBatchOperationItem(ctx context.Context, item types.BatchOperationItem) error
 	CalculateBatchOperationTotals(ctx context.Context, batchOperationID uuid.UUID) (int, int, int, error)
 }
 
@@ -73,7 +73,7 @@ func NewBatchOperationService(
 
 // CRUD Operations
 
-func (s *batchOperationService) CreateBatchOperation(ctx context.Context, operation domain.BatchOperation) (*domain.BatchOperation, error) {
+func (s *batchOperationService) CreateBatchOperation(ctx context.Context, operation types.BatchOperation) (*types.BatchOperation, error) {
 	if err := s.ValidateBatchOperation(ctx, operation); err != nil {
 		return nil, fmt.Errorf("invalid batch operation: %w", err)
 	}
@@ -81,31 +81,31 @@ func (s *batchOperationService) CreateBatchOperation(ctx context.Context, operat
 	return s.batchOperationRepo.Create(ctx, operation)
 }
 
-func (s *batchOperationService) GetBatchOperation(ctx context.Context, id uuid.UUID) (*domain.BatchOperation, error) {
+func (s *batchOperationService) GetBatchOperation(ctx context.Context, id uuid.UUID) (*types.BatchOperation, error) {
 	return s.batchOperationRepo.FindByID(ctx, id)
 }
 
-func (s *batchOperationService) ListBatchOperations(ctx context.Context, organizationID uuid.UUID, limit int) ([]domain.BatchOperation, error) {
+func (s *batchOperationService) ListBatchOperations(ctx context.Context, organizationID uuid.UUID, limit int) ([]types.BatchOperation, error) {
 	return s.batchOperationRepo.FindAll(ctx, organizationID, limit)
 }
 
-func (s *batchOperationService) ListBatchOperationsByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]domain.BatchOperation, error) {
+func (s *batchOperationService) ListBatchOperationsByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]types.BatchOperation, error) {
 	return s.batchOperationRepo.FindByStatus(ctx, organizationID, status)
 }
 
-func (s *batchOperationService) ListBatchOperationsByType(ctx context.Context, organizationID uuid.UUID, operationType domain.BatchOperationType) ([]domain.BatchOperation, error) {
+func (s *batchOperationService) ListBatchOperationsByType(ctx context.Context, organizationID uuid.UUID, operationType types.BatchOperationType) ([]types.BatchOperation, error) {
 	return s.batchOperationRepo.FindByType(ctx, organizationID, operationType)
 }
 
-func (s *batchOperationService) ListBatchOperationsByDateRange(ctx context.Context, organizationID uuid.UUID, fromTime, toTime time.Time) ([]domain.BatchOperation, error) {
+func (s *batchOperationService) ListBatchOperationsByDateRange(ctx context.Context, organizationID uuid.UUID, fromTime, toTime time.Time) ([]types.BatchOperation, error) {
 	return s.batchOperationRepo.FindByDateRange(ctx, organizationID, fromTime, toTime)
 }
 
-func (s *batchOperationService) ListBatchOperationsByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]domain.BatchOperation, error) {
+func (s *batchOperationService) ListBatchOperationsByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]types.BatchOperation, error) {
 	return s.batchOperationRepo.FindByProduct(ctx, organizationID, productID)
 }
 
-func (s *batchOperationService) UpdateBatchOperation(ctx context.Context, operation domain.BatchOperation) (*domain.BatchOperation, error) {
+func (s *batchOperationService) UpdateBatchOperation(ctx context.Context, operation types.BatchOperation) (*types.BatchOperation, error) {
 	if err := s.ValidateBatchOperation(ctx, operation); err != nil {
 		return nil, fmt.Errorf("invalid batch operation: %w", err)
 	}
@@ -126,7 +126,7 @@ func (s *batchOperationService) DeleteBatchOperation(ctx context.Context, id uui
 
 // Batch Operation Item Operations
 
-func (s *batchOperationService) CreateBatchOperationItem(ctx context.Context, item domain.BatchOperationItem) (*domain.BatchOperationItem, error) {
+func (s *batchOperationService) CreateBatchOperationItem(ctx context.Context, item types.BatchOperationItem) (*types.BatchOperationItem, error) {
 	if err := s.ValidateBatchOperationItem(ctx, item); err != nil {
 		return nil, fmt.Errorf("invalid batch operation item: %w", err)
 	}
@@ -134,19 +134,19 @@ func (s *batchOperationService) CreateBatchOperationItem(ctx context.Context, it
 	return s.batchOperationItemRepo.Create(ctx, item)
 }
 
-func (s *batchOperationService) GetBatchOperationItem(ctx context.Context, id uuid.UUID) (*domain.BatchOperationItem, error) {
+func (s *batchOperationService) GetBatchOperationItem(ctx context.Context, id uuid.UUID) (*types.BatchOperationItem, error) {
 	return s.batchOperationItemRepo.FindByID(ctx, id)
 }
 
-func (s *batchOperationService) ListBatchOperationItems(ctx context.Context, batchOperationID uuid.UUID) ([]domain.BatchOperationItem, error) {
+func (s *batchOperationService) ListBatchOperationItems(ctx context.Context, batchOperationID uuid.UUID) ([]types.BatchOperationItem, error) {
 	return s.batchOperationItemRepo.FindByBatchOperation(ctx, batchOperationID)
 }
 
-func (s *batchOperationService) ListBatchOperationItemsByStatus(ctx context.Context, batchOperationID uuid.UUID, status string) ([]domain.BatchOperationItem, error) {
+func (s *batchOperationService) ListBatchOperationItemsByStatus(ctx context.Context, batchOperationID uuid.UUID, status string) ([]types.BatchOperationItem, error) {
 	return s.batchOperationItemRepo.FindByStatus(ctx, batchOperationID, status)
 }
 
-func (s *batchOperationService) UpdateBatchOperationItem(ctx context.Context, item domain.BatchOperationItem) (*domain.BatchOperationItem, error) {
+func (s *batchOperationService) UpdateBatchOperationItem(ctx context.Context, item types.BatchOperationItem) (*types.BatchOperationItem, error) {
 	if err := s.ValidateBatchOperationItem(ctx, item); err != nil {
 		return nil, fmt.Errorf("invalid batch operation item: %w", err)
 	}
@@ -160,7 +160,7 @@ func (s *batchOperationService) DeleteBatchOperationItem(ctx context.Context, id
 
 // Business Logic Operations
 
-func (s *batchOperationService) CreateStockAdjustmentBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, items []domain.BatchOperationItem) (*domain.BatchOperation, error) {
+func (s *batchOperationService) CreateStockAdjustmentBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, items []types.BatchOperationItem) (*types.BatchOperation, error) {
 	// Validate items
 	for _, item := range items {
 		if err := s.ValidateBatchOperationItem(ctx, item); err != nil {
@@ -169,12 +169,12 @@ func (s *batchOperationService) CreateStockAdjustmentBatch(ctx context.Context, 
 	}
 
 	// Create the batch operation
-	operation := domain.BatchOperation{
+	operation := types.BatchOperation{
 		ID:             uuid.New(),
 		OrganizationID: organizationID,
 		CompanyID:      &companyID,
-		OperationType:  domain.BatchOperationTypeStockAdjustment,
-		Status:         domain.BatchOperationStatusDraft,
+		OperationType:  types.BatchOperationTypeStockAdjustment,
+		Status:         types.BatchOperationStatusDraft,
 		Reference:      reference,
 		Description:    &description,
 		Priority:       1,
@@ -211,7 +211,7 @@ func (s *batchOperationService) CreateStockAdjustmentBatch(ctx context.Context, 
 	return createdOperation, nil
 }
 
-func (s *batchOperationService) CreateStockTransferBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, sourceLocationID, destLocationID uuid.UUID, items []domain.BatchOperationItem) (*domain.BatchOperation, error) {
+func (s *batchOperationService) CreateStockTransferBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, sourceLocationID, destLocationID uuid.UUID, items []types.BatchOperationItem) (*types.BatchOperation, error) {
 	// Validate items
 	for _, item := range items {
 		if err := s.ValidateBatchOperationItem(ctx, item); err != nil {
@@ -220,12 +220,12 @@ func (s *batchOperationService) CreateStockTransferBatch(ctx context.Context, or
 	}
 
 	// Create the batch operation
-	operation := domain.BatchOperation{
+	operation := types.BatchOperation{
 		ID:             uuid.New(),
 		OrganizationID: organizationID,
 		CompanyID:      &companyID,
-		OperationType:  domain.BatchOperationTypeStockTransfer,
-		Status:         domain.BatchOperationStatusDraft,
+		OperationType:  types.BatchOperationTypeStockTransfer,
+		Status:         types.BatchOperationStatusDraft,
 		Reference:      reference,
 		Description:    &description,
 		Priority:       1,
@@ -264,7 +264,7 @@ func (s *batchOperationService) CreateStockTransferBatch(ctx context.Context, or
 	return createdOperation, nil
 }
 
-func (s *batchOperationService) CreateStockCountBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, locationID uuid.UUID, items []domain.BatchOperationItem) (*domain.BatchOperation, error) {
+func (s *batchOperationService) CreateStockCountBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, locationID uuid.UUID, items []types.BatchOperationItem) (*types.BatchOperation, error) {
 	// Validate items
 	for _, item := range items {
 		if err := s.ValidateBatchOperationItem(ctx, item); err != nil {
@@ -273,12 +273,12 @@ func (s *batchOperationService) CreateStockCountBatch(ctx context.Context, organ
 	}
 
 	// Create the batch operation
-	operation := domain.BatchOperation{
+	operation := types.BatchOperation{
 		ID:             uuid.New(),
 		OrganizationID: organizationID,
 		CompanyID:      &companyID,
-		OperationType:  domain.BatchOperationTypeStockCount,
-		Status:         domain.BatchOperationStatusDraft,
+		OperationType:  types.BatchOperationTypeStockCount,
+		Status:         types.BatchOperationStatusDraft,
 		Reference:      reference,
 		Description:    &description,
 		Priority:       1,
@@ -315,7 +315,7 @@ func (s *batchOperationService) CreateStockCountBatch(ctx context.Context, organ
 	return createdOperation, nil
 }
 
-func (s *batchOperationService) CreatePriceUpdateBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, currencyID uuid.UUID, items []domain.BatchOperationItem) (*domain.BatchOperation, error) {
+func (s *batchOperationService) CreatePriceUpdateBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, currencyID uuid.UUID, items []types.BatchOperationItem) (*types.BatchOperation, error) {
 	// Validate items
 	for _, item := range items {
 		if err := s.ValidateBatchOperationItem(ctx, item); err != nil {
@@ -324,12 +324,12 @@ func (s *batchOperationService) CreatePriceUpdateBatch(ctx context.Context, orga
 	}
 
 	// Create the batch operation
-	operation := domain.BatchOperation{
+	operation := types.BatchOperation{
 		ID:             uuid.New(),
 		OrganizationID: organizationID,
 		CompanyID:      &companyID,
-		OperationType:  domain.BatchOperationTypePriceUpdate,
-		Status:         domain.BatchOperationStatusDraft,
+		OperationType:  types.BatchOperationTypePriceUpdate,
+		Status:         types.BatchOperationStatusDraft,
 		Reference:      reference,
 		Description:    &description,
 		Priority:       1,
@@ -366,7 +366,7 @@ func (s *batchOperationService) CreatePriceUpdateBatch(ctx context.Context, orga
 	return createdOperation, nil
 }
 
-func (s *batchOperationService) CreateLocationUpdateBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, newLocationID uuid.UUID, items []domain.BatchOperationItem) (*domain.BatchOperation, error) {
+func (s *batchOperationService) CreateLocationUpdateBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, newLocationID uuid.UUID, items []types.BatchOperationItem) (*types.BatchOperation, error) {
 	// Validate items
 	for _, item := range items {
 		if err := s.ValidateBatchOperationItem(ctx, item); err != nil {
@@ -375,12 +375,12 @@ func (s *batchOperationService) CreateLocationUpdateBatch(ctx context.Context, o
 	}
 
 	// Create the batch operation
-	operation := domain.BatchOperation{
+	operation := types.BatchOperation{
 		ID:             uuid.New(),
 		OrganizationID: organizationID,
 		CompanyID:      &companyID,
-		OperationType:  domain.BatchOperationTypeLocationUpdate,
-		Status:         domain.BatchOperationStatusDraft,
+		OperationType:  types.BatchOperationTypeLocationUpdate,
+		Status:         types.BatchOperationStatusDraft,
 		Reference:      reference,
 		Description:    &description,
 		Priority:       1,
@@ -418,7 +418,7 @@ func (s *batchOperationService) CreateLocationUpdateBatch(ctx context.Context, o
 	return createdOperation, nil
 }
 
-func (s *batchOperationService) CreateStatusUpdateBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, newStatus string, items []domain.BatchOperationItem) (*domain.BatchOperation, error) {
+func (s *batchOperationService) CreateStatusUpdateBatch(ctx context.Context, organizationID, companyID, createdBy uuid.UUID, reference, description string, newStatus string, items []types.BatchOperationItem) (*types.BatchOperation, error) {
 	// Validate items
 	for _, item := range items {
 		if err := s.ValidateBatchOperationItem(ctx, item); err != nil {
@@ -427,12 +427,12 @@ func (s *batchOperationService) CreateStatusUpdateBatch(ctx context.Context, org
 	}
 
 	// Create the batch operation
-	operation := domain.BatchOperation{
+	operation := types.BatchOperation{
 		ID:             uuid.New(),
 		OrganizationID: organizationID,
 		CompanyID:      &companyID,
-		OperationType:  domain.BatchOperationTypeStatusUpdate,
-		Status:         domain.BatchOperationStatusDraft,
+		OperationType:  types.BatchOperationTypeStatusUpdate,
+		Status:         types.BatchOperationStatusDraft,
 		Reference:      reference,
 		Description:    &description,
 		Priority:       1,
@@ -469,7 +469,7 @@ func (s *batchOperationService) CreateStatusUpdateBatch(ctx context.Context, org
 	return createdOperation, nil
 }
 
-func (s *batchOperationService) ProcessBatchOperation(ctx context.Context, operationID uuid.UUID, processedBy uuid.UUID) (*domain.BatchOperationResult, error) {
+func (s *batchOperationService) ProcessBatchOperation(ctx context.Context, operationID uuid.UUID, processedBy uuid.UUID) (*types.BatchOperationResult, error) {
 	// Get the operation to validate it exists and is in the right state
 	operation, err := s.batchOperationRepo.FindByID(ctx, operationID)
 	if err != nil {
@@ -480,7 +480,7 @@ func (s *batchOperationService) ProcessBatchOperation(ctx context.Context, opera
 	}
 
 	// Validate operation can be processed
-	if operation.Status != domain.BatchOperationStatusDraft && operation.Status != domain.BatchOperationStatusPending {
+	if operation.Status != types.BatchOperationStatusDraft && operation.Status != types.BatchOperationStatusPending {
 		return nil, fmt.Errorf("batch operation cannot be processed in status: %s", operation.Status)
 	}
 
@@ -493,13 +493,13 @@ func (s *batchOperationService) ProcessBatchOperation(ctx context.Context, opera
 	return result, nil
 }
 
-func (s *batchOperationService) GetBatchOperationStatistics(ctx context.Context, organizationID uuid.UUID, fromTime, toTime *time.Time, operationType *domain.BatchOperationType) (domain.BatchOperationStatistics, error) {
+func (s *batchOperationService) GetBatchOperationStatistics(ctx context.Context, organizationID uuid.UUID, fromTime, toTime *time.Time, operationType *types.BatchOperationType) (types.BatchOperationStatistics, error) {
 	return s.batchOperationRepo.GetStatistics(ctx, organizationID, fromTime, toTime, operationType)
 }
 
 // Validation and Utility Methods
 
-func (s *batchOperationService) ValidateBatchOperation(ctx context.Context, operation domain.BatchOperation) error {
+func (s *batchOperationService) ValidateBatchOperation(ctx context.Context, operation types.BatchOperation) error {
 	if operation.OrganizationID == uuid.Nil {
 		return fmt.Errorf("organization ID is required")
 	}
@@ -510,12 +510,12 @@ func (s *batchOperationService) ValidateBatchOperation(ctx context.Context, oper
 
 	// Validate operation type
 	switch operation.OperationType {
-	case domain.BatchOperationTypeStockAdjustment,
-		domain.BatchOperationTypeStockTransfer,
-		domain.BatchOperationTypeStockCount,
-		domain.BatchOperationTypePriceUpdate,
-		domain.BatchOperationTypeLocationUpdate,
-		domain.BatchOperationTypeStatusUpdate:
+	case types.BatchOperationTypeStockAdjustment,
+	types.BatchOperationTypeStockTransfer,
+	types.BatchOperationTypeStockCount,
+	types.BatchOperationTypePriceUpdate,
+	types.BatchOperationTypeLocationUpdate,
+	types.BatchOperationTypeStatusUpdate:
 		// Valid types
 	default:
 		return fmt.Errorf("invalid operation type: %s", operation.OperationType)
@@ -527,12 +527,12 @@ func (s *batchOperationService) ValidateBatchOperation(ctx context.Context, oper
 
 	// Validate status
 	switch operation.Status {
-	case domain.BatchOperationStatusDraft,
-		domain.BatchOperationStatusPending,
-		domain.BatchOperationStatusProcessing,
-		domain.BatchOperationStatusCompleted,
-		domain.BatchOperationStatusFailed,
-		domain.BatchOperationStatusCancelled:
+		case types.BatchOperationStatusDraft,
+		types.BatchOperationStatusPending,
+		types.BatchOperationStatusProcessing,
+		types.BatchOperationStatusCompleted,
+		types.BatchOperationStatusFailed,
+		types.BatchOperationStatusCancelled:
 		// Valid statuses
 	default:
 		return fmt.Errorf("invalid status: %s", operation.Status)
@@ -550,7 +550,7 @@ func (s *batchOperationService) ValidateBatchOperation(ctx context.Context, oper
 	return nil
 }
 
-func (s *batchOperationService) ValidateBatchOperationItem(ctx context.Context, item domain.BatchOperationItem) error {
+func (s *batchOperationService) ValidateBatchOperationItem(ctx context.Context, item types.BatchOperationItem) error {
 	if item.BatchOperationID == uuid.Nil {
 		return fmt.Errorf("batch operation ID is required")
 	}

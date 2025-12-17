@@ -13,15 +13,15 @@ import (
 
 // ReplenishmentOrderRepository interface
 type ReplenishmentOrderRepository interface {
-	Create(ctx context.Context, order domain.ReplenishmentOrder) (*domain.ReplenishmentOrder, error)
-	FindByID(ctx context.Context, id uuid.UUID) (*domain.ReplenishmentOrder, error)
-	FindAll(ctx context.Context, organizationID uuid.UUID) ([]domain.ReplenishmentOrder, error)
-	FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]domain.ReplenishmentOrder, error)
-	FindByRule(ctx context.Context, organizationID, ruleID uuid.UUID) ([]domain.ReplenishmentOrder, error)
-	FindByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]domain.ReplenishmentOrder, error)
-	Update(ctx context.Context, order domain.ReplenishmentOrder) (*domain.ReplenishmentOrder, error)
+	Create(ctx context.Context, order types.ReplenishmentOrder) (*types.ReplenishmentOrder, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*types.ReplenishmentOrder, error)
+	FindAll(ctx context.Context, organizationID uuid.UUID) ([]types.ReplenishmentOrder, error)
+	FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]types.ReplenishmentOrder, error)
+	FindByRule(ctx context.Context, organizationID, ruleID uuid.UUID) ([]types.ReplenishmentOrder, error)
+	FindByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]types.ReplenishmentOrder, error)
+	Update(ctx context.Context, order types.ReplenishmentOrder) (*types.ReplenishmentOrder, error)
 	Delete(ctx context.Context, id uuid.UUID) error
-	ProcessReplenishmentOrders(ctx context.Context, organizationID uuid.UUID, limit int) ([]domain.ReplenishmentOrder, error)
+	ProcessReplenishmentOrders(ctx context.Context, organizationID uuid.UUID, limit int) ([]types.ReplenishmentOrder, error)
 	RunReplenishmentCycle(ctx context.Context, organizationID uuid.UUID) (map[string]interface{}, error)
 }
 
@@ -33,7 +33,7 @@ func NewReplenishmentOrderRepository(db *sql.DB) ReplenishmentOrderRepository {
 	return &replenishmentOrderRepository{db: db}
 }
 
-func (r *replenishmentOrderRepository) Create(ctx context.Context, order domain.ReplenishmentOrder) (*domain.ReplenishmentOrder, error) {
+func (r *replenishmentOrderRepository) Create(ctx context.Context, order types.ReplenishmentOrder) (*types.ReplenishmentOrder, error) {
 	query := `
 		INSERT INTO replenishment_orders
 		(id, organization_id, company_id, rule_id, product_id, product_name, quantity, uom_id,
@@ -56,7 +56,7 @@ func (r *replenishmentOrderRepository) Create(ctx context.Context, order domain.
 		order.UpdatedAt = now
 	}
 
-	var created domain.ReplenishmentOrder
+	var created types.ReplenishmentOrder
 	err := r.db.QueryRowContext(ctx, query,
 		order.ID, order.OrganizationID, order.CompanyID, order.RuleID, order.ProductID,
 		order.ProductName, order.Quantity, order.UOMID, order.SourceLocationID, order.DestLocationID,
@@ -75,7 +75,7 @@ func (r *replenishmentOrderRepository) Create(ctx context.Context, order domain.
 	return &created, nil
 }
 
-func (r *replenishmentOrderRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.ReplenishmentOrder, error) {
+func (r *replenishmentOrderRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.ReplenishmentOrder, error) {
 	query := `
 		SELECT id, organization_id, company_id, rule_id, product_id, product_name, quantity, uom_id,
 		 source_location_id, dest_location_id, status, priority, scheduled_date, procure_method,
@@ -83,7 +83,7 @@ func (r *replenishmentOrderRepository) FindByID(ctx context.Context, id uuid.UUI
 		FROM replenishment_orders WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	var order domain.ReplenishmentOrder
+	var order types.ReplenishmentOrder
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&order.ID, &order.OrganizationID, &order.CompanyID, &order.RuleID, &order.ProductID,
 		&order.ProductName, &order.Quantity, &order.UOMID, &order.SourceLocationID, &order.DestLocationID,
@@ -100,7 +100,7 @@ func (r *replenishmentOrderRepository) FindByID(ctx context.Context, id uuid.UUI
 	return &order, nil
 }
 
-func (r *replenishmentOrderRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]domain.ReplenishmentOrder, error) {
+func (r *replenishmentOrderRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]types.ReplenishmentOrder, error) {
 	query := `
 		SELECT id, organization_id, company_id, rule_id, product_id, product_name, quantity, uom_id,
 		 source_location_id, dest_location_id, status, priority, scheduled_date, procure_method,
@@ -116,9 +116,9 @@ func (r *replenishmentOrderRepository) FindAll(ctx context.Context, organization
 	}
 	defer rows.Close()
 
-	var orders []domain.ReplenishmentOrder
+	var orders []types.ReplenishmentOrder
 	for rows.Next() {
-		var order domain.ReplenishmentOrder
+		var order types.ReplenishmentOrder
 		err := rows.Scan(
 			&order.ID, &order.OrganizationID, &order.CompanyID, &order.RuleID, &order.ProductID,
 			&order.ProductName, &order.Quantity, &order.UOMID, &order.SourceLocationID, &order.DestLocationID,
@@ -134,7 +134,7 @@ func (r *replenishmentOrderRepository) FindAll(ctx context.Context, organization
 	return orders, nil
 }
 
-func (r *replenishmentOrderRepository) FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]domain.ReplenishmentOrder, error) {
+func (r *replenishmentOrderRepository) FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]types.ReplenishmentOrder, error) {
 	query := `
 		SELECT id, organization_id, company_id, rule_id, product_id, product_name, quantity, uom_id,
 		 source_location_id, dest_location_id, status, priority, scheduled_date, procure_method,
@@ -150,9 +150,9 @@ func (r *replenishmentOrderRepository) FindByProduct(ctx context.Context, organi
 	}
 	defer rows.Close()
 
-	var orders []domain.ReplenishmentOrder
+	var orders []types.ReplenishmentOrder
 	for rows.Next() {
-		var order domain.ReplenishmentOrder
+		var order types.ReplenishmentOrder
 		err := rows.Scan(
 			&order.ID, &order.OrganizationID, &order.CompanyID, &order.RuleID, &order.ProductID,
 			&order.ProductName, &order.Quantity, &order.UOMID, &order.SourceLocationID, &order.DestLocationID,
@@ -168,7 +168,7 @@ func (r *replenishmentOrderRepository) FindByProduct(ctx context.Context, organi
 	return orders, nil
 }
 
-func (r *replenishmentOrderRepository) FindByRule(ctx context.Context, organizationID, ruleID uuid.UUID) ([]domain.ReplenishmentOrder, error) {
+func (r *replenishmentOrderRepository) FindByRule(ctx context.Context, organizationID, ruleID uuid.UUID) ([]types.ReplenishmentOrder, error) {
 	query := `
 		SELECT id, organization_id, company_id, rule_id, product_id, product_name, quantity, uom_id,
 		 source_location_id, dest_location_id, status, priority, scheduled_date, procure_method,
@@ -184,9 +184,9 @@ func (r *replenishmentOrderRepository) FindByRule(ctx context.Context, organizat
 	}
 	defer rows.Close()
 
-	var orders []domain.ReplenishmentOrder
+	var orders []types.ReplenishmentOrder
 	for rows.Next() {
-		var order domain.ReplenishmentOrder
+		var order types.ReplenishmentOrder
 		err := rows.Scan(
 			&order.ID, &order.OrganizationID, &order.CompanyID, &order.RuleID, &order.ProductID,
 			&order.ProductName, &order.Quantity, &order.UOMID, &order.SourceLocationID, &order.DestLocationID,
@@ -202,7 +202,7 @@ func (r *replenishmentOrderRepository) FindByRule(ctx context.Context, organizat
 	return orders, nil
 }
 
-func (r *replenishmentOrderRepository) FindByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]domain.ReplenishmentOrder, error) {
+func (r *replenishmentOrderRepository) FindByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]types.ReplenishmentOrder, error) {
 	query := `
 		SELECT id, organization_id, company_id, rule_id, product_id, product_name, quantity, uom_id,
 		 source_location_id, dest_location_id, status, priority, scheduled_date, procure_method,
@@ -218,9 +218,9 @@ func (r *replenishmentOrderRepository) FindByStatus(ctx context.Context, organiz
 	}
 	defer rows.Close()
 
-	var orders []domain.ReplenishmentOrder
+	var orders []types.ReplenishmentOrder
 	for rows.Next() {
-		var order domain.ReplenishmentOrder
+		var order types.ReplenishmentOrder
 		err := rows.Scan(
 			&order.ID, &order.OrganizationID, &order.CompanyID, &order.RuleID, &order.ProductID,
 			&order.ProductName, &order.Quantity, &order.UOMID, &order.SourceLocationID, &order.DestLocationID,
@@ -236,7 +236,7 @@ func (r *replenishmentOrderRepository) FindByStatus(ctx context.Context, organiz
 	return orders, nil
 }
 
-func (r *replenishmentOrderRepository) Update(ctx context.Context, order domain.ReplenishmentOrder) (*domain.ReplenishmentOrder, error) {
+func (r *replenishmentOrderRepository) Update(ctx context.Context, order types.ReplenishmentOrder) (*types.ReplenishmentOrder, error) {
 	query := `
 		UPDATE replenishment_orders
 		SET company_id = $2, rule_id = $3, product_name = $4, quantity = $5, uom_id = $6,
@@ -250,7 +250,7 @@ func (r *replenishmentOrderRepository) Update(ctx context.Context, order domain.
 	`
 
 	order.UpdatedAt = time.Now()
-	var updated domain.ReplenishmentOrder
+	var updated types.ReplenishmentOrder
 	err := r.db.QueryRowContext(ctx, query,
 		order.ID, order.CompanyID, order.RuleID, order.ProductName, order.Quantity, order.UOMID,
 		order.SourceLocationID, order.DestLocationID, order.Status, order.Priority,
@@ -285,7 +285,7 @@ func (r *replenishmentOrderRepository) Delete(ctx context.Context, id uuid.UUID)
 	return nil
 }
 
-func (r *replenishmentOrderRepository) ProcessReplenishmentOrders(ctx context.Context, organizationID uuid.UUID, limit int) ([]domain.ReplenishmentOrder, error) {
+func (r *replenishmentOrderRepository) ProcessReplenishmentOrders(ctx context.Context, organizationID uuid.UUID, limit int) ([]types.ReplenishmentOrder, error) {
 	query := `
 		SELECT order_id, product_id, product_name, quantity, status, procure_method
 		FROM process_replenishment_orders($1, $2)
@@ -297,9 +297,9 @@ func (r *replenishmentOrderRepository) ProcessReplenishmentOrders(ctx context.Co
 	}
 	defer rows.Close()
 
-	var orders []domain.ReplenishmentOrder
+	var orders []types.ReplenishmentOrder
 	for rows.Next() {
-		var order domain.ReplenishmentOrder
+		var order types.ReplenishmentOrder
 		var orderID, procureMethod sql.NullString
 		var status sql.NullString
 

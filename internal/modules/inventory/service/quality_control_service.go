@@ -42,7 +42,7 @@ func NewQualityControlService(
 
 // Inspection Management
 
-func (s *QualityControlService) CreateInspection(ctx context.Context, inspection domain.QualityControlInspection) (*domain.QualityControlInspection, error) {
+func (s *QualityControlService) CreateInspection(ctx context.Context, inspection types.QualityControlInspection) (*types.QualityControlInspection, error) {
 	if inspection.OrganizationID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -87,7 +87,7 @@ func (s *QualityControlService) CreateInspection(ctx context.Context, inspection
 	return s.inspectionRepo.Create(ctx, inspection)
 }
 
-func (s *QualityControlService) GetInspection(ctx context.Context, id uuid.UUID) (*domain.QualityControlInspection, error) {
+func (s *QualityControlService) GetInspection(ctx context.Context, id uuid.UUID) (*types.QualityControlInspection, error) {
 	inspection, err := s.inspectionRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -98,19 +98,19 @@ func (s *QualityControlService) GetInspection(ctx context.Context, id uuid.UUID)
 	return inspection, nil
 }
 
-func (s *QualityControlService) ListInspections(ctx context.Context, organizationID uuid.UUID, limit int) ([]domain.QualityControlInspection, error) {
+func (s *QualityControlService) ListInspections(ctx context.Context, organizationID uuid.UUID, limit int) ([]types.QualityControlInspection, error) {
 	return s.inspectionRepo.FindAll(ctx, organizationID, limit)
 }
 
-func (s *QualityControlService) ListInspectionsByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]domain.QualityControlInspection, error) {
+func (s *QualityControlService) ListInspectionsByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]types.QualityControlInspection, error) {
 	return s.inspectionRepo.FindByProduct(ctx, organizationID, productID)
 }
 
-func (s *QualityControlService) ListInspectionsByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]domain.QualityControlInspection, error) {
+func (s *QualityControlService) ListInspectionsByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]types.QualityControlInspection, error) {
 	return s.inspectionRepo.FindByStatus(ctx, organizationID, status)
 }
 
-func (s *QualityControlService) UpdateInspection(ctx context.Context, inspection domain.QualityControlInspection) (*domain.QualityControlInspection, error) {
+func (s *QualityControlService) UpdateInspection(ctx context.Context, inspection types.QualityControlInspection) (*types.QualityControlInspection, error) {
 	return s.inspectionRepo.Update(ctx, inspection)
 }
 
@@ -120,7 +120,7 @@ func (s *QualityControlService) DeleteInspection(ctx context.Context, id uuid.UU
 
 // Checklist Management
 
-func (s *QualityControlService) CreateChecklist(ctx context.Context, checklist domain.QualityControlChecklist) (*domain.QualityControlChecklist, error) {
+func (s *QualityControlService) CreateChecklist(ctx context.Context, checklist types.QualityControlChecklist) (*types.QualityControlChecklist, error) {
 	if checklist.OrganizationID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -137,7 +137,7 @@ func (s *QualityControlService) CreateChecklist(ctx context.Context, checklist d
 	return s.checklistRepo.Create(ctx, checklist)
 }
 
-func (s *QualityControlService) GetChecklist(ctx context.Context, id uuid.UUID) (*domain.QualityControlChecklist, error) {
+func (s *QualityControlService) GetChecklist(ctx context.Context, id uuid.UUID) (*types.QualityControlChecklist, error) {
 	checklist, err := s.checklistRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -148,15 +148,15 @@ func (s *QualityControlService) GetChecklist(ctx context.Context, id uuid.UUID) 
 	return checklist, nil
 }
 
-func (s *QualityControlService) ListChecklists(ctx context.Context, organizationID uuid.UUID) ([]domain.QualityControlChecklist, error) {
+func (s *QualityControlService) ListChecklists(ctx context.Context, organizationID uuid.UUID) ([]types.QualityControlChecklist, error) {
 	return s.checklistRepo.FindAll(ctx, organizationID)
 }
 
-func (s *QualityControlService) ListActiveChecklists(ctx context.Context, organizationID uuid.UUID) ([]domain.QualityControlChecklist, error) {
+func (s *QualityControlService) ListActiveChecklists(ctx context.Context, organizationID uuid.UUID) ([]types.QualityControlChecklist, error) {
 	return s.checklistRepo.FindActive(ctx, organizationID)
 }
 
-func (s *QualityControlService) UpdateChecklist(ctx context.Context, checklist domain.QualityControlChecklist) (*domain.QualityControlChecklist, error) {
+func (s *QualityControlService) UpdateChecklist(ctx context.Context, checklist types.QualityControlChecklist) (*types.QualityControlChecklist, error) {
 	return s.checklistRepo.Update(ctx, checklist)
 }
 
@@ -166,7 +166,7 @@ func (s *QualityControlService) DeleteChecklist(ctx context.Context, id uuid.UUI
 
 // Checklist Item Management
 
-func (s *QualityControlService) CreateChecklistItem(ctx context.Context, item domain.QualityChecklistItem) (*domain.QualityChecklistItem, error) {
+func (s *QualityControlService) CreateChecklistItem(ctx context.Context, item types.QualityChecklistItem) (*types.QualityChecklistItem, error) {
 	if item.ChecklistID == uuid.Nil {
 		return nil, fmt.Errorf("checklist_id is required")
 	}
@@ -180,7 +180,7 @@ func (s *QualityControlService) CreateChecklistItem(ctx context.Context, item do
 	return s.checklistItemRepo.Create(ctx, item)
 }
 
-func (s *QualityControlService) GetChecklistItem(ctx context.Context, id uuid.UUID) (*domain.QualityChecklistItem, error) {
+func (s *QualityControlService) GetChecklistItem(ctx context.Context, id uuid.UUID) (*types.QualityChecklistItem, error) {
 	item, err := s.checklistItemRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -191,15 +191,15 @@ func (s *QualityControlService) GetChecklistItem(ctx context.Context, id uuid.UU
 	return item, nil
 }
 
-func (s *QualityControlService) ListChecklistItems(ctx context.Context, checklistID uuid.UUID) ([]domain.QualityChecklistItem, error) {
+func (s *QualityControlService) ListChecklistItems(ctx context.Context, checklistID uuid.UUID) ([]types.QualityChecklistItem, error) {
 	return s.checklistItemRepo.FindByChecklist(ctx, checklistID)
 }
 
-func (s *QualityControlService) ListActiveChecklistItems(ctx context.Context, checklistID uuid.UUID) ([]domain.QualityChecklistItem, error) {
+func (s *QualityControlService) ListActiveChecklistItems(ctx context.Context, checklistID uuid.UUID) ([]types.QualityChecklistItem, error) {
 	return s.checklistItemRepo.FindActiveByChecklist(ctx, checklistID)
 }
 
-func (s *QualityControlService) UpdateChecklistItem(ctx context.Context, item domain.QualityChecklistItem) (*domain.QualityChecklistItem, error) {
+func (s *QualityControlService) UpdateChecklistItem(ctx context.Context, item types.QualityChecklistItem) (*types.QualityChecklistItem, error) {
 	return s.checklistItemRepo.Update(ctx, item)
 }
 
@@ -209,7 +209,7 @@ func (s *QualityControlService) DeleteChecklistItem(ctx context.Context, id uuid
 
 // Inspection Item Management
 
-func (s *QualityControlService) CreateInspectionItem(ctx context.Context, item domain.QualityControlInspectionItem) (*domain.QualityControlInspectionItem, error) {
+func (s *QualityControlService) CreateInspectionItem(ctx context.Context, item types.QualityControlInspectionItem) (*types.QualityControlInspectionItem, error) {
 	if item.InspectionID == uuid.Nil {
 		return nil, fmt.Errorf("inspection_id is required")
 	}
@@ -223,7 +223,7 @@ func (s *QualityControlService) CreateInspectionItem(ctx context.Context, item d
 	return s.inspectionItemRepo.Create(ctx, item)
 }
 
-func (s *QualityControlService) GetInspectionItem(ctx context.Context, id uuid.UUID) (*domain.QualityControlInspectionItem, error) {
+func (s *QualityControlService) GetInspectionItem(ctx context.Context, id uuid.UUID) (*types.QualityControlInspectionItem, error) {
 	item, err := s.inspectionItemRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -234,11 +234,11 @@ func (s *QualityControlService) GetInspectionItem(ctx context.Context, id uuid.U
 	return item, nil
 }
 
-func (s *QualityControlService) ListInspectionItems(ctx context.Context, inspectionID uuid.UUID) ([]domain.QualityControlInspectionItem, error) {
+func (s *QualityControlService) ListInspectionItems(ctx context.Context, inspectionID uuid.UUID) ([]types.QualityControlInspectionItem, error) {
 	return s.inspectionItemRepo.FindByInspection(ctx, inspectionID)
 }
 
-func (s *QualityControlService) UpdateInspectionItem(ctx context.Context, item domain.QualityControlInspectionItem) (*domain.QualityControlInspectionItem, error) {
+func (s *QualityControlService) UpdateInspectionItem(ctx context.Context, item types.QualityControlInspectionItem) (*types.QualityControlInspectionItem, error) {
 	return s.inspectionItemRepo.Update(ctx, item)
 }
 
@@ -252,7 +252,7 @@ func (s *QualityControlService) DeleteInspectionItem(ctx context.Context, id uui
 
 // Alert Management
 
-func (s *QualityControlService) CreateAlert(ctx context.Context, alert domain.QualityControlAlert) (*domain.QualityControlAlert, error) {
+func (s *QualityControlService) CreateAlert(ctx context.Context, alert types.QualityControlAlert) (*types.QualityControlAlert, error) {
 	if alert.OrganizationID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -272,7 +272,7 @@ func (s *QualityControlService) CreateAlert(ctx context.Context, alert domain.Qu
 	return s.alertRepo.Create(ctx, alert)
 }
 
-func (s *QualityControlService) GetAlert(ctx context.Context, id uuid.UUID) (*domain.QualityControlAlert, error) {
+func (s *QualityControlService) GetAlert(ctx context.Context, id uuid.UUID) (*types.QualityControlAlert, error) {
 	alert, err := s.alertRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -283,15 +283,15 @@ func (s *QualityControlService) GetAlert(ctx context.Context, id uuid.UUID) (*do
 	return alert, nil
 }
 
-func (s *QualityControlService) ListAlerts(ctx context.Context, organizationID uuid.UUID) ([]domain.QualityControlAlert, error) {
+func (s *QualityControlService) ListAlerts(ctx context.Context, organizationID uuid.UUID) ([]types.QualityControlAlert, error) {
 	return s.alertRepo.FindAll(ctx, organizationID)
 }
 
-func (s *QualityControlService) ListOpenAlerts(ctx context.Context, organizationID uuid.UUID) ([]domain.QualityControlAlert, error) {
+func (s *QualityControlService) ListOpenAlerts(ctx context.Context, organizationID uuid.UUID) ([]types.QualityControlAlert, error) {
 	return s.alertRepo.FindOpen(ctx, organizationID)
 }
 
-func (s *QualityControlService) UpdateAlert(ctx context.Context, alert domain.QualityControlAlert) (*domain.QualityControlAlert, error) {
+func (s *QualityControlService) UpdateAlert(ctx context.Context, alert types.QualityControlAlert) (*types.QualityControlAlert, error) {
 	return s.alertRepo.Update(ctx, alert)
 }
 
@@ -305,7 +305,7 @@ func (s *QualityControlService) DeleteAlert(ctx context.Context, id uuid.UUID) e
 
 // Business Logic Methods
 
-func (s *QualityControlService) CreateInspectionFromStockMove(ctx context.Context, stockMoveID, inspectorID uuid.UUID, checklistID *uuid.UUID, inspectionMethod string, sampleSize *int) (*domain.QualityControlInspection, error) {
+func (s *QualityControlService) CreateInspectionFromStockMove(ctx context.Context, stockMoveID, inspectorID uuid.UUID, checklistID *uuid.UUID, inspectionMethod string, sampleSize *int) (*types.QualityControlInspection, error) {
 	// Validate stock move exists
 	stockMove, err := s.inventoryRepo.GetMove(ctx, stockMoveID)
 	if err != nil {
@@ -353,7 +353,7 @@ func (s *QualityControlService) UpdateInspectionStatus(ctx context.Context, insp
 	return s.inspectionRepo.UpdateStatus(ctx, inspectionID, status, defectType, defectDescription, defectQuantity, qualityRating, complianceNotes, disposition)
 }
 
-func (s *QualityControlService) CompleteInspection(ctx context.Context, inspectionID uuid.UUID, status string, results []domain.QualityControlInspectionItem) error {
+func (s *QualityControlService) CompleteInspection(ctx context.Context, inspectionID uuid.UUID, status string, results []types.QualityControlInspectionItem) error {
 	// Validate inspection exists
 	inspection, err := s.GetInspection(ctx, inspectionID)
 	if err != nil {
@@ -394,11 +394,11 @@ func (s *QualityControlService) CompleteInspection(ctx context.Context, inspecti
 	return nil
 }
 
-func (s *QualityControlService) GetQualityControlStatistics(ctx context.Context, organizationID uuid.UUID, fromTime, toTime *time.Time, productID *uuid.UUID) (domain.QualityControlStatistics, error) {
+func (s *QualityControlService) GetQualityControlStatistics(ctx context.Context, organizationID uuid.UUID, fromTime, toTime *time.Time, productID *uuid.UUID) (types.QualityControlStatistics, error) {
 	return s.inspectionRepo.GetStatistics(ctx, organizationID, fromTime, toTime, productID)
 }
 
-func (s *QualityControlService) CreateAlertFromInspection(ctx context.Context, inspectionID uuid.UUID, alertType, severity, title, message string) (*domain.QualityControlAlert, error) {
+func (s *QualityControlService) CreateAlertFromInspection(ctx context.Context, inspectionID uuid.UUID, alertType, severity, title, message string) (*types.QualityControlAlert, error) {
 	// Validate inspection exists
 	_, err := s.GetInspection(ctx, inspectionID)
 	if err != nil {
@@ -410,7 +410,7 @@ func (s *QualityControlService) CreateAlertFromInspection(ctx context.Context, i
 
 // Quality Control Workflow Methods
 
-func (s *QualityControlService) StartQualityControlWorkflow(ctx context.Context, stockMoveID, inspectorID uuid.UUID) (*domain.QualityControlInspection, error) {
+func (s *QualityControlService) StartQualityControlWorkflow(ctx context.Context, stockMoveID, inspectorID uuid.UUID) (*types.QualityControlInspection, error) {
 	// 1. Get stock move details
 	stockMove, err := s.inventoryRepo.GetMove(ctx, stockMoveID)
 	if err != nil {
@@ -439,7 +439,7 @@ func (s *QualityControlService) StartQualityControlWorkflow(ctx context.Context,
 	return s.CreateInspectionFromStockMove(ctx, stockMoveID, inspectorID, checklistID, "visual", nil)
 }
 
-func (s *QualityControlService) ProcessQualityControlResult(ctx context.Context, inspectionID uuid.UUID, results []domain.QualityControlInspectionItem) (*domain.QualityControlInspection, error) {
+func (s *QualityControlService) ProcessQualityControlResult(ctx context.Context, inspectionID uuid.UUID, results []types.QualityControlInspectionItem) (*types.QualityControlInspection, error) {
 	// 1. Update all inspection items with results
 	for _, result := range results {
 		err := s.inspectionItemRepo.UpdateResult(ctx, result.ID, result.Result, result.Notes)
@@ -475,7 +475,7 @@ func (s *QualityControlService) ProcessQualityControlResult(ctx context.Context,
 	return s.GetInspection(ctx, inspectionID)
 }
 
-func (s *QualityControlService) HandleQualityControlDisposition(ctx context.Context, inspectionID uuid.UUID, disposition string) (*domain.QualityControlInspection, error) {
+func (s *QualityControlService) HandleQualityControlDisposition(ctx context.Context, inspectionID uuid.UUID, disposition string) (*types.QualityControlInspection, error) {
 	// Validate disposition
 	switch disposition {
 	case "accept", "reject", "rework", "scrap", "return":
@@ -515,7 +515,7 @@ func (s *QualityControlService) HandleQualityControlDisposition(ctx context.Cont
 	return s.GetInspection(ctx, inspectionID)
 }
 
-func (s *QualityControlService) handleStockDisposition(ctx context.Context, inspection *domain.QualityControlInspection, disposition string) error {
+func (s *QualityControlService) handleStockDisposition(ctx context.Context, inspection *types.QualityControlInspection, disposition string) error {
 	// This would handle actual stock movements based on QC results
 	// For now, we'll just log the action
 	fmt.Printf("Quality control disposition handled: Inspection %s -> %s\n", inspection.ID, disposition)

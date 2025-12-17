@@ -65,7 +65,7 @@ func (h *CycleCountHandler) CreateCycleCountPlan(w http.ResponseWriter, r *http.
 	}
 
 	// Parse request
-	var request domain.CreateCycleCountPlanRequest
+	var request types.CreateCycleCountPlanRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -219,7 +219,7 @@ func (h *CycleCountHandler) CreateCycleCountSession(w http.ResponseWriter, r *ht
 	}
 
 	// Parse request
-	var request domain.CreateCycleCountSessionRequest
+	var request types.CreateCycleCountSessionRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -371,7 +371,7 @@ func (h *CycleCountHandler) AddCycleCountLine(w http.ResponseWriter, r *http.Req
 	}
 
 	// Parse request
-	var request domain.AddCycleCountLineRequest
+	var request types.AddCycleCountLineRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -474,7 +474,7 @@ func (h *CycleCountHandler) VerifyCycleCountLine(w http.ResponseWriter, r *http.
 	}
 
 	// Parse request
-	var request domain.VerifyCycleCountLineRequest
+	var request types.VerifyCycleCountLineRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -525,7 +525,7 @@ func (h *CycleCountHandler) CreateAdjustmentFromVariance(w http.ResponseWriter, 
 	}
 
 	// Parse request
-	var request domain.CreateAdjustmentRequest
+	var request types.CreateAdjustmentRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -638,7 +638,7 @@ func (h *CycleCountHandler) ApproveCycleCountAdjustment(w http.ResponseWriter, r
 	}
 
 	// Parse request
-	var request domain.ApproveAdjustmentRequest
+	var request types.ApproveAdjustmentRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -682,7 +682,7 @@ func (h *CycleCountHandler) GetCycleCountAccuracyMetrics(w http.ResponseWriter, 
 	}
 
 	// Parse request
-	var request domain.GetAccuracyMetricsRequest
+	var request types.GetAccuracyMetricsRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -714,7 +714,7 @@ func (h *CycleCountHandler) GetProductsNeedingCycleCount(w http.ResponseWriter, 
 	}
 
 	// Parse request
-	var request domain.GetProductsNeedingCountRequest
+	var request types.GetProductsNeedingCountRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

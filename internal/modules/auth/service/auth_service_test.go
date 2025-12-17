@@ -19,7 +19,7 @@ func TestAuthService_RegisterUser(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Successful registration", func(t *testing.T) {
-		req := domain.RegisterRequest{
+		req := types.RegisterRequest{
 			Email:            "newuser@example.com",
 			Password:         "password123",
 			OrganizationName: "Test Org",
@@ -50,7 +50,7 @@ func TestAuthService_RegisterUser(t *testing.T) {
 	})
 
 	t.Run("Invalid email format", func(t *testing.T) {
-		req := domain.RegisterRequest{
+		req := types.RegisterRequest{
 			Email:            "invalid-email",
 			Password:         "password123",
 			OrganizationName: "Test Org",
@@ -68,7 +68,7 @@ func TestAuthService_RegisterUser(t *testing.T) {
 		existingUser.Email = "existing@example.com"
 		mockRepo.AddUser(existingUser)
 
-		req := domain.RegisterRequest{
+		req := types.RegisterRequest{
 			Email:            "existing@example.com",
 			Password:         "password123",
 			OrganizationName: "Test Org",
@@ -82,7 +82,7 @@ func TestAuthService_RegisterUser(t *testing.T) {
 	})
 
 	t.Run("Weak password", func(t *testing.T) {
-		req := domain.RegisterRequest{
+		req := types.RegisterRequest{
 			Email:            "test@example.com",
 			Password:         "short",
 			OrganizationName: "Test Org",
@@ -116,7 +116,7 @@ func TestAuthService_LoginUser(t *testing.T) {
 		orgUser := repository.CreateTestOrganizationUser(user.ID, orgID)
 		mockRepo.AddOrganizationUser(orgUser)
 
-		req := domain.LoginRequest{
+		req := types.LoginRequest{
 			Email:    user.Email,
 			Password: password,
 		}
@@ -135,7 +135,7 @@ func TestAuthService_LoginUser(t *testing.T) {
 		user.Email = "wrong-pass@example.com"
 		mockRepo.AddUser(user)
 
-		req := domain.LoginRequest{
+		req := types.LoginRequest{
 			Email:    user.Email,
 			Password: "wrongpassword",
 		}
@@ -146,7 +146,7 @@ func TestAuthService_LoginUser(t *testing.T) {
 	})
 
 	t.Run("Invalid credentials - user not found", func(t *testing.T) {
-		req := domain.LoginRequest{
+		req := types.LoginRequest{
 			Email:    "nonexistent@example.com",
 			Password: "password123",
 		}
@@ -164,7 +164,7 @@ func TestAuthService_LoginUser(t *testing.T) {
 		user.EncryptedPassword = string(hashedPassword)
 		mockRepo.AddUser(user)
 
-		req := domain.LoginRequest{
+		req := types.LoginRequest{
 			Email:    user.Email,
 			Password: password,
 		}

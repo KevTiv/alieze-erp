@@ -22,7 +22,7 @@ func NewAnalyticsService(analyticsRepo repository.AnalyticsRepository) *Analytic
 
 // Valuation Services
 
-func (s *AnalyticsService) GetInventoryValuation(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryValuation, error) {
+func (s *AnalyticsService) GetInventoryValuation(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryValuation, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -30,7 +30,7 @@ func (s *AnalyticsService) GetInventoryValuation(ctx context.Context, orgID uuid
 	return s.analyticsRepo.GetInventoryValuation(ctx, orgID, request)
 }
 
-func (s *AnalyticsService) GetValuationByProduct(ctx context.Context, orgID, productID uuid.UUID) (*domain.InventoryValuation, error) {
+func (s *AnalyticsService) GetValuationByProduct(ctx context.Context, orgID, productID uuid.UUID) (*types.InventoryValuation, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -41,7 +41,7 @@ func (s *AnalyticsService) GetValuationByProduct(ctx context.Context, orgID, pro
 	return s.analyticsRepo.GetValuationByProduct(ctx, orgID, productID)
 }
 
-func (s *AnalyticsService) GetValuationSummary(ctx context.Context, orgID uuid.UUID) (*domain.AnalyticsSummary, error) {
+func (s *AnalyticsService) GetValuationSummary(ctx context.Context, orgID uuid.UUID) (*types.AnalyticsSummary, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -51,7 +51,7 @@ func (s *AnalyticsService) GetValuationSummary(ctx context.Context, orgID uuid.U
 
 // Turnover Services
 
-func (s *AnalyticsService) GetInventoryTurnover(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryTurnover, error) {
+func (s *AnalyticsService) GetInventoryTurnover(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryTurnover, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -59,7 +59,7 @@ func (s *AnalyticsService) GetInventoryTurnover(ctx context.Context, orgID uuid.
 	return s.analyticsRepo.GetInventoryTurnover(ctx, orgID, request)
 }
 
-func (s *AnalyticsService) GetTurnoverByProduct(ctx context.Context, orgID, productID uuid.UUID) (*domain.InventoryTurnover, error) {
+func (s *AnalyticsService) GetTurnoverByProduct(ctx context.Context, orgID, productID uuid.UUID) (*types.InventoryTurnover, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -72,7 +72,7 @@ func (s *AnalyticsService) GetTurnoverByProduct(ctx context.Context, orgID, prod
 
 // Aging Services
 
-func (s *AnalyticsService) GetInventoryAging(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryAging, error) {
+func (s *AnalyticsService) GetInventoryAging(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryAging, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -90,7 +90,7 @@ func (s *AnalyticsService) GetAgingSummary(ctx context.Context, orgID uuid.UUID)
 
 // Dead Stock Services
 
-func (s *AnalyticsService) GetDeadStock(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryDeadStock, error) {
+func (s *AnalyticsService) GetDeadStock(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryDeadStock, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -98,7 +98,7 @@ func (s *AnalyticsService) GetDeadStock(ctx context.Context, orgID uuid.UUID, re
 	return s.analyticsRepo.GetDeadStock(ctx, orgID, request)
 }
 
-func (s *AnalyticsService) GetDeadStockSummary(ctx context.Context, orgID uuid.UUID) (*domain.AnalyticsSummary, error) {
+func (s *AnalyticsService) GetDeadStockSummary(ctx context.Context, orgID uuid.UUID) (*types.AnalyticsSummary, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -108,7 +108,7 @@ func (s *AnalyticsService) GetDeadStockSummary(ctx context.Context, orgID uuid.U
 
 // Movement Summary Services
 
-func (s *AnalyticsService) GetMovementSummary(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryMovementSummary, error) {
+func (s *AnalyticsService) GetMovementSummary(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryMovementSummary, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -118,7 +118,7 @@ func (s *AnalyticsService) GetMovementSummary(ctx context.Context, orgID uuid.UU
 
 // Reorder Analysis Services
 
-func (s *AnalyticsService) GetReorderAnalysis(ctx context.Context, orgID uuid.UUID, request domain.AnalyticsRequest) ([]domain.InventoryReorderAnalysis, error) {
+func (s *AnalyticsService) GetReorderAnalysis(ctx context.Context, orgID uuid.UUID, request types.AnalyticsRequest) ([]types.InventoryReorderAnalysis, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -126,7 +126,7 @@ func (s *AnalyticsService) GetReorderAnalysis(ctx context.Context, orgID uuid.UU
 	return s.analyticsRepo.GetReorderAnalysis(ctx, orgID, request)
 }
 
-func (s *AnalyticsService) GetProductsNeedingReorder(ctx context.Context, orgID uuid.UUID) ([]domain.InventoryReorderAnalysis, error) {
+func (s *AnalyticsService) GetProductsNeedingReorder(ctx context.Context, orgID uuid.UUID) ([]types.InventoryReorderAnalysis, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -136,7 +136,7 @@ func (s *AnalyticsService) GetProductsNeedingReorder(ctx context.Context, orgID 
 
 // Snapshot Services
 
-func (s *AnalyticsService) GetInventorySnapshot(ctx context.Context, orgID uuid.UUID) ([]domain.InventorySnapshot, error) {
+func (s *AnalyticsService) GetInventorySnapshot(ctx context.Context, orgID uuid.UUID) ([]types.InventorySnapshot, error) {
 	if orgID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -171,7 +171,7 @@ func (s *AnalyticsService) GetInventoryDashboard(ctx context.Context, orgID uuid
 	dashboard["summary"] = summary
 
 	// Get top products by value
-	valuationRequest := domain.AnalyticsRequest{
+	valuationRequest := types.AnalyticsRequest{
 		Limit: func() *int { i := 10; return &i }(),
 	}
 	valuations, err := s.GetInventoryValuation(ctx, orgID, valuationRequest)

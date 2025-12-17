@@ -33,7 +33,7 @@ func (h *AccountHandler) RegisterRoutes(router *httprouter.Router) {
 }
 
 func (h *AccountHandler) CreateAccount(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var req domain.Account
+	var req types.Account
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -148,7 +148,7 @@ func (h *AccountHandler) UpdateAccount(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	var req domain.Account
+	var req types.Account
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

@@ -33,7 +33,7 @@ func (h *TaxHandler) RegisterRoutes(router *httprouter.Router) {
 }
 
 func (h *TaxHandler) CreateTax(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var req domain.Tax
+	var req types.Tax
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -147,7 +147,7 @@ func (h *TaxHandler) UpdateTax(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
-	var req domain.Tax
+	var req types.Tax
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

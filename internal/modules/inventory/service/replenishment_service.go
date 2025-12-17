@@ -35,7 +35,7 @@ func NewReplenishmentService(
 
 // Replenishment Rule Operations
 
-func (s *ReplenishmentService) CreateReplenishmentRule(ctx context.Context, rule domain.ReplenishmentRule) (*domain.ReplenishmentRule, error) {
+func (s *ReplenishmentService) CreateReplenishmentRule(ctx context.Context, rule types.ReplenishmentRule) (*types.ReplenishmentRule, error) {
 	if rule.OrganizationID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -61,7 +61,7 @@ func (s *ReplenishmentService) CreateReplenishmentRule(ctx context.Context, rule
 	return s.replenishmentRuleRepo.Create(ctx, rule)
 }
 
-func (s *ReplenishmentService) GetReplenishmentRule(ctx context.Context, id uuid.UUID) (*domain.ReplenishmentRule, error) {
+func (s *ReplenishmentService) GetReplenishmentRule(ctx context.Context, id uuid.UUID) (*types.ReplenishmentRule, error) {
 	rule, err := s.replenishmentRuleRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -72,11 +72,11 @@ func (s *ReplenishmentService) GetReplenishmentRule(ctx context.Context, id uuid
 	return rule, nil
 }
 
-func (s *ReplenishmentService) ListReplenishmentRules(ctx context.Context, organizationID uuid.UUID) ([]domain.ReplenishmentRule, error) {
+func (s *ReplenishmentService) ListReplenishmentRules(ctx context.Context, organizationID uuid.UUID) ([]types.ReplenishmentRule, error) {
 	return s.replenishmentRuleRepo.FindAll(ctx, organizationID)
 }
 
-func (s *ReplenishmentService) UpdateReplenishmentRule(ctx context.Context, rule domain.ReplenishmentRule) (*domain.ReplenishmentRule, error) {
+func (s *ReplenishmentService) UpdateReplenishmentRule(ctx context.Context, rule types.ReplenishmentRule) (*types.ReplenishmentRule, error) {
 	return s.replenishmentRuleRepo.Update(ctx, rule)
 }
 
@@ -86,7 +86,7 @@ func (s *ReplenishmentService) DeleteReplenishmentRule(ctx context.Context, id u
 
 // Replenishment Order Operations
 
-func (s *ReplenishmentService) CreateReplenishmentOrder(ctx context.Context, order domain.ReplenishmentOrder) (*domain.ReplenishmentOrder, error) {
+func (s *ReplenishmentService) CreateReplenishmentOrder(ctx context.Context, order types.ReplenishmentOrder) (*types.ReplenishmentOrder, error) {
 	if order.OrganizationID == uuid.Nil {
 		return nil, fmt.Errorf("organization_id is required")
 	}
@@ -115,7 +115,7 @@ func (s *ReplenishmentService) CreateReplenishmentOrder(ctx context.Context, ord
 	return s.replenishmentOrderRepo.Create(ctx, order)
 }
 
-func (s *ReplenishmentService) GetReplenishmentOrder(ctx context.Context, id uuid.UUID) (*domain.ReplenishmentOrder, error) {
+func (s *ReplenishmentService) GetReplenishmentOrder(ctx context.Context, id uuid.UUID) (*types.ReplenishmentOrder, error) {
 	order, err := s.replenishmentOrderRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -126,15 +126,15 @@ func (s *ReplenishmentService) GetReplenishmentOrder(ctx context.Context, id uui
 	return order, nil
 }
 
-func (s *ReplenishmentService) ListReplenishmentOrders(ctx context.Context, organizationID uuid.UUID) ([]domain.ReplenishmentOrder, error) {
+func (s *ReplenishmentService) ListReplenishmentOrders(ctx context.Context, organizationID uuid.UUID) ([]types.ReplenishmentOrder, error) {
 	return s.replenishmentOrderRepo.FindAll(ctx, organizationID)
 }
 
-func (s *ReplenishmentService) ListReplenishmentOrdersByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]domain.ReplenishmentOrder, error) {
+func (s *ReplenishmentService) ListReplenishmentOrdersByStatus(ctx context.Context, organizationID uuid.UUID, status string) ([]types.ReplenishmentOrder, error) {
 	return s.replenishmentOrderRepo.FindByStatus(ctx, organizationID, status)
 }
 
-func (s *ReplenishmentService) UpdateReplenishmentOrder(ctx context.Context, order domain.ReplenishmentOrder) (*domain.ReplenishmentOrder, error) {
+func (s *ReplenishmentService) UpdateReplenishmentOrder(ctx context.Context, order types.ReplenishmentOrder) (*types.ReplenishmentOrder, error) {
 	return s.replenishmentOrderRepo.Update(ctx, order)
 }
 
@@ -144,7 +144,7 @@ func (s *ReplenishmentService) DeleteReplenishmentOrder(ctx context.Context, id 
 
 // Replenishment Processing Operations
 
-func (s *ReplenishmentService) CheckAndCreateReplenishmentOrders(ctx context.Context, organizationID uuid.UUID, limit int) ([]domain.ReplenishmentCheckResult, error) {
+func (s *ReplenishmentService) CheckAndCreateReplenishmentOrders(ctx context.Context, organizationID uuid.UUID, limit int) ([]types.ReplenishmentCheckResult, error) {
 	if limit <= 0 {
 		limit = 100
 	}
@@ -152,7 +152,7 @@ func (s *ReplenishmentService) CheckAndCreateReplenishmentOrders(ctx context.Con
 	return s.replenishmentRuleRepo.CheckAndCreateReplenishmentOrders(ctx, organizationID, limit)
 }
 
-func (s *ReplenishmentService) ProcessReplenishmentOrders(ctx context.Context, organizationID uuid.UUID, limit int) ([]domain.ReplenishmentOrder, error) {
+func (s *ReplenishmentService) ProcessReplenishmentOrders(ctx context.Context, organizationID uuid.UUID, limit int) ([]types.ReplenishmentOrder, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -166,7 +166,7 @@ func (s *ReplenishmentService) RunReplenishmentCycle(ctx context.Context, organi
 
 // Manual Replenishment Check
 
-func (s *ReplenishmentService) CheckReplenishmentNeeds(ctx context.Context, organizationID uuid.UUID) ([]domain.ReplenishmentCheckResult, error) {
+func (s *ReplenishmentService) CheckReplenishmentNeeds(ctx context.Context, organizationID uuid.UUID) ([]types.ReplenishmentCheckResult, error) {
 	// This is a simplified version that checks basic reorder points
 	// For a more comprehensive check, use CheckAndCreateReplenishmentOrders
 
@@ -176,7 +176,7 @@ func (s *ReplenishmentService) CheckReplenishmentNeeds(ctx context.Context, orga
 		return nil, fmt.Errorf("failed to get replenishment rules: %w", err)
 	}
 
-	var results []domain.ReplenishmentCheckResult
+	var results []types.ReplenishmentCheckResult
 
 	for _, rule := range rules {
 		if !rule.Active {
@@ -234,7 +234,7 @@ func (s *ReplenishmentService) CheckReplenishmentNeeds(ctx context.Context, orga
 					}
 				}
 
-				results = append(results, domain.ReplenishmentCheckResult{
+				results = append(results, types.ReplenishmentCheckResult{
 					ProductID:           *rule.ProductID,
 					ProductName:         productName,
 					CurrentQuantity:      currentQty,

@@ -12,12 +12,12 @@ import (
 )
 
 type TaxRepository interface {
-	Create(ctx context.Context, tax domain.Tax) (*domain.Tax, error)
-	FindByID(ctx context.Context, id uuid.UUID) (*domain.Tax, error)
-	FindAll(ctx context.Context, filters TaxFilter) ([]domain.Tax, error)
-	Update(ctx context.Context, tax domain.Tax) (*domain.Tax, error)
+	Create(ctx context.Context, tax types.Tax) (*types.Tax, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*types.Tax, error)
+	FindAll(ctx context.Context, filters TaxFilter) ([]types.Tax, error)
+	Update(ctx context.Context, tax types.Tax) (*types.Tax, error)
 	Delete(ctx context.Context, id uuid.UUID) error
-	FindByType(ctx context.Context, organizationID uuid.UUID, typeTaxUse string) ([]domain.Tax, error)
+	FindByType(ctx context.Context, organizationID uuid.UUID, typeTaxUse string) ([]types.Tax, error)
 }
 
 type TaxFilter struct {
@@ -39,7 +39,7 @@ func NewTaxRepository(db *sql.DB) TaxRepository {
 	return &taxRepository{db: db}
 }
 
-func (r *taxRepository) Create(ctx context.Context, tax domain.Tax) (*domain.Tax, error) {
+func (r *taxRepository) Create(ctx context.Context, tax types.Tax) (*types.Tax, error) {
 	query := `
 		INSERT INTO account_taxes
 		(id, organization_id, company_id, name, type_tax_use, amount_type,
@@ -62,7 +62,7 @@ func (r *taxRepository) Create(ctx context.Context, tax domain.Tax) (*domain.Tax
 		tax.UpdatedAt = now
 	}
 
-	var createdTax domain.Tax
+	var createdTax types.Tax
 	err := r.db.QueryRowContext(ctx, query,
 		tax.ID, tax.OrganizationID, tax.CompanyID, tax.Name,
 		tax.TypeTaxUse, tax.AmountType, tax.Amount, tax.PriceInclude,
@@ -82,7 +82,7 @@ func (r *taxRepository) Create(ctx context.Context, tax domain.Tax) (*domain.Tax
 	return &createdTax, nil
 }
 
-func (r *taxRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Tax, error) {
+func (r *taxRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Tax, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, type_tax_use, amount_type,
 		 amount, price_include, include_base_amount, is_base_affected,
@@ -91,7 +91,7 @@ func (r *taxRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Tax
 		WHERE id = $1
 	`
 
-	var tax domain.Tax
+	var tax types.Tax
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&tax.ID, &tax.OrganizationID, &tax.CompanyID,
 		&tax.Name, &tax.TypeTaxUse, &tax.AmountType,
@@ -109,7 +109,7 @@ func (r *taxRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Tax
 	return &tax, nil
 }
 
-func (r *taxRepository) FindAll(ctx context.Context, filters TaxFilter) ([]domain.Tax, error) {
+func (r *taxRepository) FindAll(ctx context.Context, filters TaxFilter) ([]types.Tax, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, type_tax_use, amount_type,
 		 amount, price_include, include_base_amount, is_base_affected,
@@ -171,9 +171,9 @@ func (r *taxRepository) FindAll(ctx context.Context, filters TaxFilter) ([]domai
 	}
 	defer rows.Close()
 
-	var taxes []domain.Tax
+	var taxes []types.Tax
 	for rows.Next() {
-		var tax domain.Tax
+		var tax types.Tax
 		err := rows.Scan(
 			&tax.ID, &tax.OrganizationID, &tax.CompanyID,
 			&tax.Name, &tax.TypeTaxUse, &tax.AmountType,
@@ -190,7 +190,7 @@ func (r *taxRepository) FindAll(ctx context.Context, filters TaxFilter) ([]domai
 	return taxes, nil
 }
 
-func (r *taxRepository) Update(ctx context.Context, tax domain.Tax) (*domain.Tax, error) {
+func (r *taxRepository) Update(ctx context.Context, tax types.Tax) (*types.Tax, error) {
 	query := `
 		UPDATE account_taxes
 		SET name = $2, type_tax_use = $3, amount_type = $4, amount = $5,
@@ -205,7 +205,7 @@ func (r *taxRepository) Update(ctx context.Context, tax domain.Tax) (*domain.Tax
 
 	tax.UpdatedAt = time.Now()
 
-	var updatedTax domain.Tax
+	var updatedTax types.Tax
 	err := r.db.QueryRowContext(ctx, query,
 		tax.ID, tax.Name, tax.TypeTaxUse, tax.AmountType, tax.Amount,
 		tax.PriceInclude, tax.IncludeBaseAmount, tax.IsBaseAffected,
@@ -252,7 +252,7 @@ func (r *taxRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *taxRepository) FindByType(ctx context.Context, organizationID uuid.UUID, typeTaxUse string) ([]domain.Tax, error) {
+func (r *taxRepository) FindByType(ctx context.Context, organizationID uuid.UUID, typeTaxUse string) ([]types.Tax, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, type_tax_use, amount_type,
 		 amount, price_include, include_base_amount, is_base_affected,
@@ -268,9 +268,9 @@ func (r *taxRepository) FindByType(ctx context.Context, organizationID uuid.UUID
 	}
 	defer rows.Close()
 
-	var taxes []domain.Tax
+	var taxes []types.Tax
 	for rows.Next() {
-		var tax domain.Tax
+		var tax types.Tax
 		err := rows.Scan(
 			&tax.ID, &tax.OrganizationID, &tax.CompanyID,
 			&tax.Name, &tax.TypeTaxUse, &tax.AmountType,

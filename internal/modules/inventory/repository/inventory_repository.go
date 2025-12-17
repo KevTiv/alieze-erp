@@ -9,16 +9,15 @@ import (
 	"alieze-erp/internal/modules/inventory/types"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 )
 
 // Warehouse Repository
 
 type WarehouseRepository interface {
-	Create(ctx context.Context, warehouse domain.Warehouse) (*domain.Warehouse, error)
-	FindByID(ctx context.Context, id uuid.UUID) (*domain.Warehouse, error)
-	FindAll(ctx context.Context, organizationID uuid.UUID) ([]domain.Warehouse, error)
-	Update(ctx context.Context, warehouse domain.Warehouse) (*domain.Warehouse, error)
+	Create(ctx context.Context, warehouse types.Warehouse) (*types.Warehouse, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*types.Warehouse, error)
+	FindAll(ctx context.Context, organizationID uuid.UUID) ([]types.Warehouse, error)
+	Update(ctx context.Context, warehouse types.Warehouse) (*types.Warehouse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -30,7 +29,7 @@ func NewWarehouseRepository(db *sql.DB) WarehouseRepository {
 	return &warehouseRepository{db: db}
 }
 
-func (r *warehouseRepository) Create(ctx context.Context, wh domain.Warehouse) (*domain.Warehouse, error) {
+func (r *warehouseRepository) Create(ctx context.Context, wh types.Warehouse) (*types.Warehouse, error) {
 	query := `
 		INSERT INTO warehouses
 		(id, organization_id, company_id, name, code, partner_id, reception_steps,
@@ -51,7 +50,7 @@ func (r *warehouseRepository) Create(ctx context.Context, wh domain.Warehouse) (
 		wh.UpdatedAt = now
 	}
 
-	var created domain.Warehouse
+	var created types.Warehouse
 	err := r.db.QueryRowContext(ctx, query,
 		wh.ID, wh.OrganizationID, wh.CompanyID, wh.Name, wh.Code, wh.PartnerID,
 		wh.ReceptionSteps, wh.DeliverySteps, wh.Active, wh.Sequence, wh.CreatedAt, wh.UpdatedAt,
@@ -66,14 +65,14 @@ func (r *warehouseRepository) Create(ctx context.Context, wh domain.Warehouse) (
 	return &created, nil
 }
 
-func (r *warehouseRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Warehouse, error) {
+func (r *warehouseRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Warehouse, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, code, partner_id,
 		 reception_steps, delivery_steps, active, sequence, created_at, updated_at
 		FROM warehouses WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	var wh domain.Warehouse
+	var wh types.Warehouse
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&wh.ID, &wh.OrganizationID, &wh.CompanyID, &wh.Name, &wh.Code, &wh.PartnerID,
 		&wh.ReceptionSteps, &wh.DeliverySteps, &wh.Active, &wh.Sequence, &wh.CreatedAt, &wh.UpdatedAt,
@@ -87,7 +86,7 @@ func (r *warehouseRepository) FindByID(ctx context.Context, id uuid.UUID) (*doma
 	return &wh, nil
 }
 
-func (r *warehouseRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]domain.Warehouse, error) {
+func (r *warehouseRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]types.Warehouse, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, code, partner_id,
 		 reception_steps, delivery_steps, active, sequence, created_at, updated_at
@@ -101,9 +100,9 @@ func (r *warehouseRepository) FindAll(ctx context.Context, organizationID uuid.U
 	}
 	defer rows.Close()
 
-	var warehouses []domain.Warehouse
+	var warehouses []types.Warehouse
 	for rows.Next() {
-		var wh domain.Warehouse
+		var wh types.Warehouse
 		err := rows.Scan(
 			&wh.ID, &wh.OrganizationID, &wh.CompanyID, &wh.Name, &wh.Code, &wh.PartnerID,
 			&wh.ReceptionSteps, &wh.DeliverySteps, &wh.Active, &wh.Sequence, &wh.CreatedAt, &wh.UpdatedAt,
@@ -116,7 +115,7 @@ func (r *warehouseRepository) FindAll(ctx context.Context, organizationID uuid.U
 	return warehouses, nil
 }
 
-func (r *warehouseRepository) Update(ctx context.Context, wh domain.Warehouse) (*domain.Warehouse, error) {
+func (r *warehouseRepository) Update(ctx context.Context, wh types.Warehouse) (*types.Warehouse, error) {
 	query := `
 		UPDATE warehouses
 		SET name = $2, code = $3, partner_id = $4, reception_steps = $5,
@@ -127,7 +126,7 @@ func (r *warehouseRepository) Update(ctx context.Context, wh domain.Warehouse) (
 	`
 
 	wh.UpdatedAt = time.Now()
-	var updated domain.Warehouse
+	var updated types.Warehouse
 	err := r.db.QueryRowContext(ctx, query,
 		wh.ID, wh.Name, wh.Code, wh.PartnerID, wh.ReceptionSteps, wh.DeliverySteps,
 		wh.Active, wh.Sequence, wh.UpdatedAt,
@@ -161,10 +160,10 @@ func (r *warehouseRepository) Delete(ctx context.Context, id uuid.UUID) error {
 // Stock Location Repository
 
 type StockLocationRepository interface {
-	Create(ctx context.Context, location domain.StockLocation) (*domain.StockLocation, error)
-	FindByID(ctx context.Context, id uuid.UUID) (*domain.StockLocation, error)
-	FindAll(ctx context.Context, organizationID uuid.UUID) ([]domain.StockLocation, error)
-	Update(ctx context.Context, location domain.StockLocation) (*domain.StockLocation, error)
+	Create(ctx context.Context, location types.StockLocation) (*types.StockLocation, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*types.StockLocation, error)
+	FindAll(ctx context.Context, organizationID uuid.UUID) ([]types.StockLocation, error)
+	Update(ctx context.Context, location types.StockLocation) (*types.StockLocation, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -176,7 +175,7 @@ func NewStockLocationRepository(db *sql.DB) StockLocationRepository {
 	return &stockLocationRepository{db: db}
 }
 
-func (r *stockLocationRepository) Create(ctx context.Context, loc domain.StockLocation) (*domain.StockLocation, error) {
+func (r *stockLocationRepository) Create(ctx context.Context, loc types.StockLocation) (*types.StockLocation, error) {
 	query := `
 		INSERT INTO stock_locations
 		(id, organization_id, company_id, name, location_id, usage, removal_strategy,
@@ -197,7 +196,7 @@ func (r *stockLocationRepository) Create(ctx context.Context, loc domain.StockLo
 		loc.UpdatedAt = now
 	}
 
-	var created domain.StockLocation
+	var created types.StockLocation
 	err := r.db.QueryRowContext(ctx, query,
 		loc.ID, loc.OrganizationID, loc.CompanyID, loc.Name, loc.LocationID, loc.Usage,
 		loc.RemovalStrategy, loc.Active, loc.ScrapLocation, loc.ReturnLocation,
@@ -213,14 +212,14 @@ func (r *stockLocationRepository) Create(ctx context.Context, loc domain.StockLo
 	return &created, nil
 }
 
-func (r *stockLocationRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.StockLocation, error) {
+func (r *stockLocationRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.StockLocation, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, location_id, usage, removal_strategy,
 		 active, scrap_location, return_location, created_at, updated_at
 		FROM stock_locations WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	var loc domain.StockLocation
+	var loc types.StockLocation
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&loc.ID, &loc.OrganizationID, &loc.CompanyID, &loc.Name, &loc.LocationID, &loc.Usage,
 		&loc.RemovalStrategy, &loc.Active, &loc.ScrapLocation, &loc.ReturnLocation,
@@ -235,7 +234,7 @@ func (r *stockLocationRepository) FindByID(ctx context.Context, id uuid.UUID) (*
 	return &loc, nil
 }
 
-func (r *stockLocationRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]domain.StockLocation, error) {
+func (r *stockLocationRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]types.StockLocation, error) {
 	query := `
 		SELECT id, organization_id, company_id, name, location_id, usage, removal_strategy,
 		 active, scrap_location, return_location, created_at, updated_at
@@ -249,9 +248,9 @@ func (r *stockLocationRepository) FindAll(ctx context.Context, organizationID uu
 	}
 	defer rows.Close()
 
-	var locations []domain.StockLocation
+	var locations []types.StockLocation
 	for rows.Next() {
-		var loc domain.StockLocation
+		var loc types.StockLocation
 		err := rows.Scan(
 			&loc.ID, &loc.OrganizationID, &loc.CompanyID, &loc.Name, &loc.LocationID, &loc.Usage,
 			&loc.RemovalStrategy, &loc.Active, &loc.ScrapLocation, &loc.ReturnLocation,
@@ -265,7 +264,7 @@ func (r *stockLocationRepository) FindAll(ctx context.Context, organizationID uu
 	return locations, nil
 }
 
-func (r *stockLocationRepository) Update(ctx context.Context, loc domain.StockLocation) (*domain.StockLocation, error) {
+func (r *stockLocationRepository) Update(ctx context.Context, loc types.StockLocation) (*types.StockLocation, error) {
 	query := `
 		UPDATE stock_locations
 		SET name = $2, location_id = $3, usage = $4, removal_strategy = $5,
@@ -276,7 +275,7 @@ func (r *stockLocationRepository) Update(ctx context.Context, loc domain.StockLo
 	`
 
 	loc.UpdatedAt = time.Now()
-	var updated domain.StockLocation
+	var updated types.StockLocation
 	err := r.db.QueryRowContext(ctx, query,
 		loc.ID, loc.Name, loc.LocationID, loc.Usage, loc.RemovalStrategy,
 		loc.Active, loc.ScrapLocation, loc.ReturnLocation, loc.UpdatedAt,
@@ -310,10 +309,11 @@ func (r *stockLocationRepository) Delete(ctx context.Context, id uuid.UUID) erro
 // Stock Quant Repository
 
 type StockQuantRepository interface {
-	FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]domain.StockQuant, error)
-	FindByLocation(ctx context.Context, organizationID, locationID uuid.UUID) ([]domain.StockQuant, error)
+	FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]types.StockQuant, error)
+	FindByLocation(ctx context.Context, organizationID, locationID uuid.UUID) ([]types.StockQuant, error)
 	FindAvailable(ctx context.Context, organizationID, productID, locationID uuid.UUID) (float64, error)
 	UpdateQuantity(ctx context.Context, organizationID, productID, locationID uuid.UUID, deltaQty float64) error
+	UpdateQuantityWithTx(ctx context.Context, tx *sql.Tx, organizationID, productID, locationID uuid.UUID, deltaQty float64) error
 }
 
 type stockQuantRepository struct {
@@ -324,7 +324,7 @@ func NewStockQuantRepository(db *sql.DB) StockQuantRepository {
 	return &stockQuantRepository{db: db}
 }
 
-func (r *stockQuantRepository) FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]domain.StockQuant, error) {
+func (r *stockQuantRepository) FindByProduct(ctx context.Context, organizationID, productID uuid.UUID) ([]types.StockQuant, error) {
 	query := `
 		SELECT id, organization_id, company_id, product_id, location_id, lot_id, package_id,
 		 owner_id, quantity, reserved_quantity, in_date, created_at, updated_at
@@ -339,9 +339,9 @@ func (r *stockQuantRepository) FindByProduct(ctx context.Context, organizationID
 	}
 	defer rows.Close()
 
-	var quants []domain.StockQuant
+	var quants []types.StockQuant
 	for rows.Next() {
-		var q domain.StockQuant
+		var q types.StockQuant
 		err := rows.Scan(
 			&q.ID, &q.OrganizationID, &q.CompanyID, &q.ProductID, &q.LocationID, &q.LotID,
 			&q.PackageID, &q.OwnerID, &q.Quantity, &q.ReservedQuantity, &q.InDate,
@@ -355,7 +355,7 @@ func (r *stockQuantRepository) FindByProduct(ctx context.Context, organizationID
 	return quants, nil
 }
 
-func (r *stockQuantRepository) FindByLocation(ctx context.Context, organizationID, locationID uuid.UUID) ([]domain.StockQuant, error) {
+func (r *stockQuantRepository) FindByLocation(ctx context.Context, organizationID, locationID uuid.UUID) ([]types.StockQuant, error) {
 	query := `
 		SELECT id, organization_id, company_id, product_id, location_id, lot_id, package_id,
 		 owner_id, quantity, reserved_quantity, in_date, created_at, updated_at
@@ -370,9 +370,9 @@ func (r *stockQuantRepository) FindByLocation(ctx context.Context, organizationI
 	}
 	defer rows.Close()
 
-	var quants []domain.StockQuant
+	var quants []types.StockQuant
 	for rows.Next() {
-		var q domain.StockQuant
+		var q types.StockQuant
 		err := rows.Scan(
 			&q.ID, &q.OrganizationID, &q.CompanyID, &q.ProductID, &q.LocationID, &q.LotID,
 			&q.PackageID, &q.OwnerID, &q.Quantity, &q.ReservedQuantity, &q.InDate,
@@ -402,6 +402,10 @@ func (r *stockQuantRepository) FindAvailable(ctx context.Context, organizationID
 }
 
 func (r *stockQuantRepository) UpdateQuantity(ctx context.Context, organizationID, productID, locationID uuid.UUID, deltaQty float64) error {
+	return r.UpdateQuantityWithTx(ctx, nil, organizationID, productID, locationID, deltaQty)
+}
+
+func (r *stockQuantRepository) UpdateQuantityWithTx(ctx context.Context, tx *sql.Tx, organizationID, productID, locationID uuid.UUID, deltaQty float64) error {
 	// Simplified: Try to update existing quant, or insert new one
 	query := `
 		INSERT INTO stock_quants (id, organization_id, product_id, location_id, quantity, reserved_quantity, created_at, updated_at)
@@ -412,140 +416,14 @@ func (r *stockQuantRepository) UpdateQuantity(ctx context.Context, organizationI
 		DO UPDATE SET quantity = stock_quants.quantity + $4, updated_at = now()
 	`
 
-	_, err := r.db.ExecContext(ctx, query, organizationID, productID, locationID, deltaQty)
+	var err error
+	if tx != nil {
+		_, err = tx.ExecContext(ctx, query, organizationID, productID, locationID, deltaQty)
+	} else {
+		_, err = r.db.ExecContext(ctx, query, organizationID, productID, locationID, deltaQty)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to update quantity: %w", err)
-	}
-	return nil
-}
-
-// Stock Move Repository
-
-type StockMoveRepository interface {
-	Create(ctx context.Context, move domain.StockMove) (*domain.StockMove, error)
-	FindByID(ctx context.Context, id uuid.UUID) (*domain.StockMove, error)
-	FindAll(ctx context.Context, organizationID uuid.UUID) ([]domain.StockMove, error)
-	UpdateState(ctx context.Context, id uuid.UUID, state string) error
-}
-
-type stockMoveRepository struct {
-	db *sql.DB
-}
-
-func NewStockMoveRepository(db *sql.DB) StockMoveRepository {
-	return &stockMoveRepository{db: db}
-}
-
-func (r *stockMoveRepository) Create(ctx context.Context, move domain.StockMove) (*domain.StockMove, error) {
-	query := `
-		INSERT INTO stock_moves
-		(id, organization_id, company_id, name, sequence, priority, date, product_id,
-		 product_uom_qty, location_id, location_dest_id, partner_id, state, procure_method,
-		 origin, lot_ids, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-		RETURNING id, organization_id, company_id, name, sequence, priority, date, product_id,
-		 product_uom_qty, location_id, location_dest_id, partner_id, state, procure_method,
-		 origin, lot_ids, created_at, updated_at
-	`
-
-	if move.ID == uuid.Nil {
-		move.ID = uuid.New()
-	}
-	now := time.Now()
-	if move.CreatedAt.IsZero() {
-		move.CreatedAt = now
-	}
-	if move.UpdatedAt.IsZero() {
-		move.UpdatedAt = now
-	}
-	if move.Date.IsZero() {
-		move.Date = now
-	}
-
-	var created domain.StockMove
-	err := r.db.QueryRowContext(ctx, query,
-		move.ID, move.OrganizationID, move.CompanyID, move.Name, move.Sequence, move.Priority,
-		move.Date, move.ProductID, move.ProductUOMQty, move.LocationID, move.LocationDestID,
-		move.PartnerID, move.State, move.ProcureMethod, move.Origin, pq.Array(move.LotIDs),
-		move.CreatedAt, move.UpdatedAt,
-	).Scan(
-		&created.ID, &created.OrganizationID, &created.CompanyID, &created.Name, &created.Sequence,
-		&created.Priority, &created.Date, &created.ProductID, &created.ProductUOMQty, &created.LocationID,
-		&created.LocationDestID, &created.PartnerID, &created.State, &created.ProcureMethod,
-		&created.Origin, pq.Array(&created.LotIDs), &created.CreatedAt, &created.UpdatedAt,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create stock move: %w", err)
-	}
-	return &created, nil
-}
-
-func (r *stockMoveRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.StockMove, error) {
-	query := `
-		SELECT id, organization_id, company_id, name, sequence, priority, date, product_id,
-		 product_uom_qty, location_id, location_dest_id, partner_id, state, procure_method,
-		 origin, lot_ids, created_at, updated_at
-		FROM stock_moves WHERE id = $1 AND deleted_at IS NULL
-	`
-
-	var move domain.StockMove
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&move.ID, &move.OrganizationID, &move.CompanyID, &move.Name, &move.Sequence, &move.Priority,
-		&move.Date, &move.ProductID, &move.ProductUOMQty, &move.LocationID, &move.LocationDestID,
-		&move.PartnerID, &move.State, &move.ProcureMethod, &move.Origin, pq.Array(&move.LotIDs),
-		&move.CreatedAt, &move.UpdatedAt,
-	)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to find stock move: %w", err)
-	}
-	return &move, nil
-}
-
-func (r *stockMoveRepository) FindAll(ctx context.Context, organizationID uuid.UUID) ([]domain.StockMove, error) {
-	query := `
-		SELECT id, organization_id, company_id, name, sequence, priority, date, product_id,
-		 product_uom_qty, location_id, location_dest_id, partner_id, state, procure_method,
-		 origin, lot_ids, created_at, updated_at
-		FROM stock_moves WHERE organization_id = $1 AND deleted_at IS NULL
-		ORDER BY date DESC, sequence ASC
-		LIMIT 100
-	`
-
-	rows, err := r.db.QueryContext(ctx, query, organizationID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find stock moves: %w", err)
-	}
-	defer rows.Close()
-
-	var moves []domain.StockMove
-	for rows.Next() {
-		var move domain.StockMove
-		err := rows.Scan(
-			&move.ID, &move.OrganizationID, &move.CompanyID, &move.Name, &move.Sequence, &move.Priority,
-			&move.Date, &move.ProductID, &move.ProductUOMQty, &move.LocationID, &move.LocationDestID,
-			&move.PartnerID, &move.State, &move.ProcureMethod, &move.Origin, pq.Array(&move.LotIDs),
-			&move.CreatedAt, &move.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan stock move: %w", err)
-		}
-		moves = append(moves, move)
-	}
-	return moves, nil
-}
-
-func (r *stockMoveRepository) UpdateState(ctx context.Context, id uuid.UUID, state string) error {
-	query := `UPDATE stock_moves SET state = $2, updated_at = $3 WHERE id = $1 AND deleted_at IS NULL`
-	result, err := r.db.ExecContext(ctx, query, id, state, time.Now())
-	if err != nil {
-		return fmt.Errorf("failed to update stock move state: %w", err)
-	}
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return fmt.Errorf("stock move not found")
 	}
 	return nil
 }
