@@ -30,6 +30,12 @@ func (h *ContactHandler) RegisterRoutes(router *httprouter.Router) {
 	router.DELETE("/api/crm/contacts/:id", h.DeleteContact)
 	router.GET("/api/crm/customers/:customer_id/contacts", h.GetContactsByCustomer)
 	router.GET("/api/crm/vendors/:vendor_id/contacts", h.GetContactsByVendor)
+
+	// ContactRelationship routes
+	router.POST("/api/crm/contacts/:contactId/relationships", h.CreateContactRelationship)
+	router.GET("/api/crm/contacts/:contactId/relationships", h.ListContactRelationships)
+	router.POST("/api/crm/contacts/:contactId/segments", h.AddContactToSegments)
+	router.GET("/api/crm/contacts/:contactId/score", h.GetContactScore)
 }
 
 func (h *ContactHandler) CreateContact(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -144,6 +150,134 @@ func (h *ContactHandler) ListContacts(w http.ResponseWriter, r *http.Request, _ 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(contacts)
+}
+
+// ContactRelationship handlers
+
+func (h *ContactHandler) CreateContactRelationship(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	// Get organization ID from context (set by auth middleware)
+	orgID, ok := r.Context().Value("organizationID").(uuid.UUID)
+	if !ok {
+		http.Error(w, "Organization ID not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	contactID, err := uuid.Parse(ps.ByName("contactId"))
+	if err != nil {
+		http.Error(w, "Invalid contact ID", http.StatusBadRequest)
+		return
+	}
+
+	var req types.ContactRelationshipCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Create the relationship
+	relationship, err := h.service.CreateRelationship(r.Context(), orgID, contactID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(relationship)
+}
+
+func (h *ContactHandler) ListContactRelationships(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	// Get organization ID from context (set by auth middleware)
+	orgID, ok := r.Context().Value("organizationID").(uuid.UUID)
+	if !ok {
+		http.Error(w, "Organization ID not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	contactID, err := uuid.Parse(ps.ByName("contactId"))
+	if err != nil {
+		http.Error(w, "Invalid contact ID", http.StatusBadRequest)
+		return
+	}
+
+	// Parse query parameters
+	relationshipType := r.URL.Query().Get("type")
+	limit := 50
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if val, err := strconv.Atoi(l); err == nil && val > 0 && val <= 100 {
+			limit = val
+		}
+	}
+
+	// Get relationships
+	relationships, err := h.service.ListRelationships(r.Context(), orgID, contactID, relationshipType, limit)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(relationships)
+}
+
+func (h *ContactHandler) AddContactToSegments(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	// Get organization ID from context (set by auth middleware)
+	orgID, ok := r.Context().Value("organizationID").(uuid.UUID)
+	if !ok {
+		http.Error(w, "Organization ID not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	contactID, err := uuid.Parse(ps.ByName("contactId"))
+	if err != nil {
+		http.Error(w, "Invalid contact ID", http.StatusBadRequest)
+		return
+	}
+
+	var req types.ContactSegmentationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Add to segments/tags
+	err = h.service.AddToSegments(r.Context(), orgID, contactID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Contact added to segments successfully",
+	})
+}
+
+func (h *ContactHandler) GetContactScore(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	// Get organization ID from context (set by auth middleware)
+	orgID, ok := r.Context().Value("organizationID").(uuid.UUID)
+	if !ok {
+		http.Error(w, "Organization ID not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	contactID, err := uuid.Parse(ps.ByName("contactId"))
+	if err != nil {
+		http.Error(w, "Invalid contact ID", http.StatusBadRequest)
+		return
+	}
+
+	// Get contact score
+	score, err := h.service.CalculateContactScore(r.Context(), orgID, contactID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(score)
 }
 
 func (h *ContactHandler) UpdateContact(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

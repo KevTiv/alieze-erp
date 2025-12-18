@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"alieze-erp/internal/modules/crm/types"
 	"alieze-erp/internal/modules/crm/repository"
@@ -273,4 +274,158 @@ func (s *ContactService) publishEvent(ctx context.Context, eventType string, pay
 			}
 		}
 	}
+}
+
+// ContactRelationship methods
+
+func (s *ContactService) CreateRelationship(
+	ctx context.Context,
+	orgID uuid.UUID,
+	contactID uuid.UUID,
+	req types.ContactRelationshipCreateRequest,
+) (*types.ContactRelationship, error) {
+	// Validate the contact exists and belongs to the organization
+	exists, err := s.repo.ContactExists(ctx, orgID, contactID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check contact existence: %w", err)
+	}
+	if !exists {
+		return nil, fmt.Errorf("contact not found")
+	}
+
+	// Validate the related contact exists and belongs to the same organization
+	relatedExists, err := s.repo.ContactExists(ctx, orgID, req.RelatedContactID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check related contact existence: %w", err)
+	}
+	if !relatedExists {
+		return nil, fmt.Errorf("related contact not found")
+	}
+
+	// Create the relationship
+	relationship := &types.ContactRelationship{
+		ID:              uuid.New(),
+		OrganizationID:  orgID,
+		ContactID:       contactID,
+		RelatedContactID: req.RelatedContactID,
+		Type:            req.Type,
+		Notes:           req.Notes,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+	}
+
+	// Use repository to create the relationship
+	err = s.repo.CreateRelationship(ctx, relationship)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create relationship: %w", err)
+	}
+
+	return relationship, nil
+}
+
+func (s *ContactService) ListRelationships(
+	ctx context.Context,
+	orgID uuid.UUID,
+	contactID uuid.UUID,
+	relationshipType string,
+	limit int,
+) ([]*types.ContactRelationship, error) {
+	// Validate the contact exists and belongs to the organization
+	exists, err := s.repo.ContactExists(ctx, orgID, contactID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check contact existence: %w", err)
+	}
+	if !exists {
+		return nil, fmt.Errorf("contact not found")
+	}
+
+	// Get relationships from repository
+	relationships, err := s.repo.FindRelationships(ctx, orgID, contactID, relationshipType, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get relationships: %w", err)
+	}
+
+	return relationships, nil
+}
+
+func (s *ContactService) AddToSegments(
+	ctx context.Context,
+	orgID uuid.UUID,
+	contactID uuid.UUID,
+	req types.ContactSegmentationRequest,
+) error {
+	// Validate the contact exists and belongs to the organization
+	exists, err := s.repo.ContactExists(ctx, orgID, contactID)
+	if err != nil {
+		return fmt.Errorf("failed to check contact existence: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("contact not found")
+	}
+
+	// Add to predefined segments
+	if len(req.SegmentIDs) > 0 {
+		err = s.repo.AddContactToSegments(ctx, orgID, contactID, req.SegmentIDs)
+		if err != nil {
+			return fmt.Errorf("failed to add to segments: %w", err)
+		}
+	}
+
+	// Add custom tags
+	if len(req.CustomTags) > 0 {
+		err = s.repo.AddContactTags(ctx, orgID, contactID, req.CustomTags)
+		if err != nil {
+			return fmt.Errorf("failed to add tags: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (s *ContactService) CalculateContactScore(
+	ctx context.Context,
+	orgID uuid.UUID,
+	contactID uuid.UUID,
+) (*types.ContactScore, error) {
+	// Validate the contact exists and belongs to the organization
+	exists, err := s.repo.ContactExists(ctx, orgID, contactID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check contact existence: %w", err)
+	}
+	if !exists {
+		return nil, fmt.Errorf("contact not found")
+	}
+
+	// For now, return a basic score structure
+	// In a full implementation, this would calculate actual engagement and lead scores
+	return &types.ContactScore{
+		EngagementScore: 75,
+		LeadScore:       65,
+		EngagementFactors: map[string]interface{}{
+			"activityFrequency": map[string]interface{}{
+				"count": 8,
+				"score": 30,
+			},
+			"recency": map[string]interface{}{
+				"daysSinceLastActivity": 5,
+				"score": 25,
+			},
+			"responseRate": map[string]interface{}{
+				"rate": 0.8,
+				"score": 20,
+			},
+		},
+		LeadFactors: map[string]interface{}{
+			"fit": map[string]interface{}{
+				"score": 30,
+			},
+			"interest": map[string]interface{}{
+				"score": 25,
+			},
+			"budget": map[string]interface{}{
+				"score": 10,
+			},
+		},
+		LastUpdated: time.Now(),
+	}, nil
 }

@@ -9,15 +9,25 @@ import (
 	"alieze-erp/internal/modules/crm/handler"
 	"alieze-erp/internal/modules/crm/repository"
 	"alieze-erp/internal/modules/crm/service"
+	"alieze-erp/pkg/events"
 	"alieze-erp/pkg/registry"
+	"alieze-erp/pkg/rules"
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 )
 
 // CRMModule represents the CRM module
 type CRMModule struct {
-	contactHandler *handler.ContactHandler
-	logger         *slog.Logger
+	contactHandler    *handler.ContactHandler
+	contactTagHandler *handler.ContactTagHandler
+	salesTeamHandler  *handler.SalesTeamHandler
+	activityHandler   *handler.ActivityHandler
+	leadStageHandler  *handler.LeadStageHandler
+	leadSourceHandler *handler.LeadSourceHandler
+	lostReasonHandler *handler.LostReasonHandler
+	leadHandler       *handler.LeadHandler
+	assignmentRuleHandler *handler.AssignmentRuleHandler
+	logger            *slog.Logger
 }
 
 // NewCRMModule creates a new CRM module
@@ -38,6 +48,14 @@ func (m *CRMModule) Init(ctx context.Context, deps registry.Dependencies) error 
 
 	// Create repositories
 	contactRepo := repository.NewContactRepository(deps.DB)
+	contactTagRepo := repository.NewContactTagRepository(deps.DB)
+	salesTeamRepo := repository.NewSalesTeamRepository(deps.DB)
+	activityRepo := repository.NewActivityRepository(deps.DB)
+	leadStageRepo := repository.NewLeadStageRepository(deps.DB)
+	leadSourceRepo := repository.NewLeadSourceRepository(deps.DB)
+	lostReasonRepo := repository.NewLostReasonRepository(deps.DB)
+	leadRepo := repository.NewLeadRepository(deps.DB)
+	assignmentRuleRepo := repository.NewAssignmentRuleRepository(deps.DB)
 
 	// Create services - using nil for auth service for now
 	// TODO: Integrate with new auth/permission system
@@ -47,8 +65,35 @@ func (m *CRMModule) Init(ctx context.Context, deps registry.Dependencies) error 
 	// Create services using the new auth service, rule engine, and event bus
 	contactService := service.NewContactServiceWithDependencies(contactRepo, authService, deps.RuleEngine, deps.EventBus)
 
+	// Cast event bus to concrete type for ContactTagService
+	eventBus, ok := deps.EventBus.(*events.Bus)
+	if !ok {
+		m.logger.Error("Failed to cast event bus to *events.Bus")
+		return fmt.Errorf("invalid event bus type")
+	}
+	contactTagService := service.NewContactTagService(contactTagRepo, authService, eventBus)
+	salesTeamService := service.NewSalesTeamService(salesTeamRepo, authService, eventBus)
+	activityService := service.NewActivityService(activityRepo, authService, eventBus)
+	leadStageService := service.NewLeadStageService(leadStageRepo, authService, eventBus)
+	leadSourceService := service.NewLeadSourceService(leadSourceRepo, authService, eventBus)
+	lostReasonService := service.NewLostReasonService(lostReasonRepo, authService, eventBus)
+	leadService := service.NewLeadService(service.NewLeadServiceOptions{
+		LeadRepository: leadRepo,
+		RuleEngine:     deps.RuleEngine.(*rules.RuleEngine),
+		Logger:         m.logger,
+	})
+	assignmentRuleService := service.NewAssignmentRuleService(assignmentRuleRepo, authService)
+
 	// Create handlers
 	m.contactHandler = handler.NewContactHandler(contactService)
+	m.contactTagHandler = handler.NewContactTagHandler(contactTagService)
+	m.salesTeamHandler = handler.NewSalesTeamHandler(salesTeamService)
+	m.activityHandler = handler.NewActivityHandler(activityService)
+	m.leadStageHandler = handler.NewLeadStageHandler(leadStageService)
+	m.leadSourceHandler = handler.NewLeadSourceHandler(leadSourceService)
+	m.lostReasonHandler = handler.NewLostReasonHandler(lostReasonService)
+	m.leadHandler = handler.NewLeadHandler(leadService)
+	m.assignmentRuleHandler = handler.NewAssignmentRuleHandler(assignmentRuleService, authService)
 
 	m.logger.Info("CRM module initialized successfully")
 	return nil
@@ -56,9 +101,37 @@ func (m *CRMModule) Init(ctx context.Context, deps registry.Dependencies) error 
 
 // RegisterRoutes registers CRM module routes
 func (m *CRMModule) RegisterRoutes(router interface{}) {
-	if m.contactHandler != nil && router != nil {
-		if r, ok := router.(*httprouter.Router); ok {
+	if router == nil {
+		return
+	}
+
+	if r, ok := router.(*httprouter.Router); ok {
+		if m.contactHandler != nil {
 			m.contactHandler.RegisterRoutes(r)
+		}
+		if m.contactTagHandler != nil {
+			m.contactTagHandler.RegisterRoutes(r)
+		}
+		if m.salesTeamHandler != nil {
+			m.salesTeamHandler.RegisterRoutes(r)
+		}
+		if m.activityHandler != nil {
+			m.activityHandler.RegisterRoutes(r)
+		}
+		if m.leadStageHandler != nil {
+			m.leadStageHandler.RegisterRoutes(r)
+		}
+		if m.leadSourceHandler != nil {
+			m.leadSourceHandler.RegisterRoutes(r)
+		}
+		if m.lostReasonHandler != nil {
+			m.lostReasonHandler.RegisterRoutes(r)
+		}
+		if m.leadHandler != nil {
+			m.leadHandler.RegisterRoutes(r)
+		}
+		if m.assignmentRuleHandler != nil {
+			m.assignmentRuleHandler.RegisterRoutes(r)
 		}
 	}
 }

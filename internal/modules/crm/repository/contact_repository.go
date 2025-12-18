@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -323,6 +324,261 @@ func (r *ContactRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 	if rowsAffected == 0 {
 		return fmt.Errorf("contact not found or already deleted")
+	}
+
+	return nil
+}
+
+// ContactRelationship methods
+
+func (r *ContactRepository) CreateRelationship(ctx context.Context, relationship *types.ContactRelationship) error {
+	if relationship.ID == uuid.Nil {
+		relationship.ID = uuid.New()
+	}
+
+	if relationship.OrganizationID == uuid.Nil {
+		return errors.New("organization_id is required")
+	}
+
+	if relationship.ContactID == uuid.Nil {
+		return errors.New("contact_id is required")
+	}
+
+	if relationship.RelatedContactID == uuid.Nil {
+		return errors.New("related_contact_id is required")
+	}
+
+	if !types.IsValidRelationshipType(relationship.Type) {
+		return errors.New("invalid relationship type")
+	}
+
+	if relationship.CreatedAt.IsZero() {
+		relationship.CreatedAt = time.Now()
+	}
+
+	if relationship.UpdatedAt.IsZero() {
+		relationship.UpdatedAt = time.Now()
+	}
+
+	query := `
+		INSERT INTO contact_relationships
+		(id, organization_id, contact_id, related_contact_id, type, notes, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`
+
+	_, err := r.db.ExecContext(
+		ctx,
+		query,
+		relationship.ID,
+		relationship.OrganizationID,
+		relationship.ContactID,
+		relationship.RelatedContactID,
+		relationship.Type,
+		relationship.Notes,
+		relationship.CreatedAt,
+		relationship.UpdatedAt,
+	)
+
+	return err
+}
+
+func (r *ContactRepository) FindRelationships(
+	ctx context.Context,
+	orgID uuid.UUID,
+	contactID uuid.UUID,
+	relationshipType string,
+	limit int,
+) ([]*types.ContactRelationship, error) {
+	if orgID == uuid.Nil {
+		return nil, errors.New("organization_id is required")
+	}
+
+	if contactID == uuid.Nil {
+		return nil, errors.New("contact_id is required")
+	}
+
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+
+	query := `
+		SELECT
+			id, organization_id, contact_id, related_contact_id, type, notes, created_at, updated_at
+		FROM contact_relationships
+		WHERE organization_id = $1 AND contact_id = $2
+	`
+
+	params := []interface{}{orgID, contactID}
+
+	if relationshipType != "" {
+		if !types.IsValidRelationshipType(types.ContactRelationshipType(relationshipType)) {
+			return nil, errors.New("invalid relationship type")
+		}
+		query += " AND type = $3"
+		params = append(params, relationshipType)
+	}
+
+	query += " ORDER BY created_at DESC LIMIT $" + strconv.Itoa(len(params)+1)
+	params = append(params, limit)
+
+	rows, err := r.db.QueryContext(ctx, query, params...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query relationships: %w", err)
+	}
+	defer rows.Close()
+
+	var relationships []*types.ContactRelationship
+	for rows.Next() {
+		var rel types.ContactRelationship
+		err := rows.Scan(
+			&rel.ID,
+			&rel.OrganizationID,
+			&rel.ContactID,
+			&rel.RelatedContactID,
+			&rel.Type,
+			&rel.Notes,
+			&rel.CreatedAt,
+			&rel.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan relationship: %w", err)
+		}
+		relationships = append(relationships, &rel)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("row iteration error: %w", err)
+	}
+
+	return relationships, nil
+}
+
+func (r *ContactRepository) ContactExists(ctx context.Context, orgID uuid.UUID, contactID uuid.UUID) (bool, error) {
+	if orgID == uuid.Nil {
+		return false, errors.New("organization_id is required")
+	}
+
+	if contactID == uuid.Nil {
+		return false, errors.New("contact_id is required")
+	}
+
+	query := `SELECT 1 FROM contacts WHERE organization_id = $1 AND id = $2 AND deleted_at IS NULL`
+
+	var exists bool
+	err := r.db.QueryRowContext(ctx, query, orgID, contactID).Scan(&exists)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to check contact existence: %w", err)
+	}
+
+	return exists, nil
+}
+
+func (r *ContactRepository) AddContactToSegments(
+	ctx context.Context,
+	orgID uuid.UUID,
+	contactID uuid.UUID,
+	segmentIDs []string,
+) error {
+	if orgID == uuid.Nil {
+		return errors.New("organization_id is required")
+	}
+
+	if contactID == uuid.Nil {
+		return errors.New("contact_id is required")
+	}
+
+	if len(segmentIDs) == 0 {
+		return nil
+	}
+
+	// Use transaction for multiple segment assignments
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	for _, segmentID := range segmentIDs {
+		// Validate segment ID format
+		if _, err := uuid.Parse(segmentID); err != nil {
+			return fmt.Errorf("invalid segment ID format: %s", segmentID)
+		}
+
+		query := `
+			INSERT INTO contact_segments (organization_id, contact_id, segment_id)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (organization_id, contact_id, segment_id) DO NOTHING
+		`
+
+		_, err := tx.ExecContext(ctx, query, orgID, contactID, segmentID)
+		if err != nil {
+			return fmt.Errorf("failed to add to segment %s: %w", segmentID, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (r *ContactRepository) AddContactTags(
+	ctx context.Context,
+	orgID uuid.UUID,
+	contactID uuid.UUID,
+	tags []string,
+) error {
+	if orgID == uuid.Nil {
+		return errors.New("organization_id is required")
+	}
+
+	if contactID == uuid.Nil {
+		return errors.New("contact_id is required")
+	}
+
+	if len(tags) == 0 {
+		return nil
+	}
+
+	// Normalize and deduplicate tags
+	tagMap := make(map[string]bool)
+	for _, tag := range tags {
+		normalized := strings.TrimSpace(strings.ToLower(tag))
+		if normalized != "" {
+			tagMap[normalized] = true
+		}
+	}
+
+	if len(tagMap) == 0 {
+		return nil
+	}
+
+	// Use transaction for multiple tag assignments
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	for tag := range tagMap {
+		query := `
+			INSERT INTO contact_tags (organization_id, contact_id, tag)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (organization_id, contact_id, tag) DO NOTHING
+		`
+
+		_, err := tx.ExecContext(ctx, query, orgID, contactID, tag)
+		if err != nil {
+			return fmt.Errorf("failed to add tag %s: %w", tag, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil
