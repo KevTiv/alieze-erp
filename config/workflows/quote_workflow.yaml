@@ -1,0 +1,456 @@
+# Quote Workflow Configuration
+# This workflow manages the lifecycle of quotes from creation to acceptance/expiry
+
+workflow_id: sales.quote_lifecycle
+name: Quote Lifecycle Workflow
+description: Manages the complete lifecycle of sales quotes including creation, sending, viewing, and acceptance
+version: "1.0"
+enabled: true
+
+# Workflow states
+states:
+  - id: draft
+    name: Draft
+    description: Quote is being prepared
+    is_initial: true
+    color: "#94a3b8"
+
+  - id: sent
+    name: Sent
+    description: Quote has been sent to customer
+    color: "#3b82f6"
+
+  - id: viewed
+    name: Viewed
+    description: Customer has viewed the quote
+    color: "#8b5cf6"
+
+  - id: accepted
+    name: Accepted
+    description: Quote has been accepted and converted to order
+    is_final: true
+    color: "#10b981"
+
+  - id: expired
+    name: Expired
+    description: Quote validity period has passed
+    is_final: true
+    color: "#ef4444"
+
+  - id: cancelled
+    name: Cancelled
+    description: Quote has been cancelled
+    is_final: true
+    color: "#6b7280"
+
+# State transitions
+transitions:
+  - from: draft
+    to: sent
+    event: quote.sent
+    name: Send Quote
+    description: Send quote to customer via email
+    requires_approval: false
+    conditions:
+      - field: recipient_email
+        operator: is_not_empty
+    callbacks:
+      before:
+        - validate_quote_completeness
+        - generate_access_token
+      after:
+        - send_email_notification
+        - schedule_follow_up
+        - track_sent_timestamp
+
+  - from: sent
+    to: viewed
+    event: quote.viewed
+    name: Quote Viewed
+    description: Customer has opened and viewed the quote
+    automatic: true
+    callbacks:
+      after:
+        - track_view_timestamp
+        - notify_sales_team
+        - update_analytics
+
+  - from: [draft, sent, viewed]
+    to: accepted
+    event: quote.accepted
+    name: Accept Quote
+    description: Customer accepts the quote
+    conditions:
+      - field: validity_date
+        operator: greater_than
+        value: now
+    callbacks:
+      before:
+        - validate_not_expired
+        - check_inventory_availability
+      after:
+        - convert_to_order
+        - send_confirmation_email
+        - create_invoice_task
+        - notify_fulfillment_team
+        - update_forecast
+
+  - from: [draft, sent, viewed]
+    to: cancelled
+    event: quote.cancelled
+    name: Cancel Quote
+    description: Quote is cancelled by user
+    callbacks:
+      after:
+        - send_cancellation_notification
+        - release_reserved_inventory
+        - update_analytics
+
+  - from: [sent, viewed]
+    to: expired
+    event: quote.expired
+    name: Quote Expired
+    description: Quote validity period has passed
+    automatic: true
+    conditions:
+      - field: validity_date
+        operator: less_than
+        value: now
+    callbacks:
+      after:
+        - send_expiry_notification
+        - suggest_renewal
+        - update_analytics
+
+# Automated tasks and scheduled actions
+scheduled_tasks:
+  - id: check_expiring_quotes
+    name: Check Expiring Quotes
+    description: Check for quotes nearing expiration and send reminders
+    schedule: "0 9 * * *" # Daily at 9 AM
+    action: check_expiring_quotes
+    config:
+      warning_days: 3
+      send_reminder: true
+
+  - id: expire_old_quotes
+    name: Expire Old Quotes
+    description: Automatically expire quotes past their validity date
+    schedule: "0 0 * * *" # Daily at midnight
+    action: expire_quotes
+    config:
+      grace_period_hours: 24
+
+  - id: follow_up_unsent_quotes
+    name: Follow Up Unsent Quotes
+    description: Remind sales team about draft quotes not sent
+    schedule: "0 10 * * 1" # Mondays at 10 AM
+    action: follow_up_draft_quotes
+    config:
+      age_days: 7
+      notify_manager: true
+
+# Event handlers
+event_handlers:
+  - event: quote.created
+    handlers:
+      - type: notification
+        config:
+          notify_user: created_by
+          message: "Quote {{quote_number}} has been created"
+          channel: in_app
+
+      - type: activity
+        config:
+          activity_type: task
+          title: "Review and send quote {{quote_number}}"
+          due_in: "24 hours"
+          assigned_to: created_by
+
+  - event: quote.sent
+    handlers:
+      - type: notification
+        config:
+          notify_user: created_by
+          message: "Quote {{quote_number}} sent to {{customer_email}}"
+          channel: email
+
+      - type: activity
+        config:
+          activity_type: reminder
+          title: "Follow up on quote {{quote_number}}"
+          due_in: "3 days"
+          assigned_to: created_by
+
+      - type: analytics
+        config:
+          metric: quotes_sent
+          increment: 1
+
+  - event: quote.viewed
+    handlers:
+      - type: notification
+        config:
+          notify_user: created_by
+          message: "{{customer_name}} viewed quote {{quote_number}}"
+          channel: [email, in_app]
+          priority: high
+
+      - type: analytics
+        config:
+          metric: quotes_viewed
+          increment: 1
+
+      - type: lead_scoring
+        config:
+          score_increase: 10
+          reason: "Viewed quote"
+
+  - event: quote.accepted
+    handlers:
+      - type: notification
+        config:
+          notify_user: [created_by, sales_team]
+          message: "🎉 Quote {{quote_number}} accepted! Order value: {{amount}}"
+          channel: [email, in_app, slack]
+          priority: high
+
+      - type: analytics
+        config:
+          metric: quotes_accepted
+          increment: 1
+
+      - type: webhook
+        config:
+          url: "${WEBHOOK_QUOTE_ACCEPTED_URL}"
+          method: POST
+          payload:
+            quote_id: "{{quote_id}}"
+            amount: "{{amount}}"
+            customer_id: "{{customer_id}}"
+
+  - event: quote.expired
+    handlers:
+      - type: notification
+        config:
+          notify_user: created_by
+          message: "Quote {{quote_number}} has expired"
+          channel: in_app
+
+      - type: activity
+        config:
+          activity_type: task
+          title: "Follow up on expired quote {{quote_number}}"
+          description: "Consider sending a renewed quote to {{customer_name}}"
+          assigned_to: created_by
+
+# Validation rules
+validations:
+  quote_completeness:
+    - field: customer_id
+      rule: required
+      message: "Customer is required"
+
+    - field: lines
+      rule: min_length
+      value: 1
+      message: "Quote must have at least one line item"
+
+    - field: amount_total
+      rule: greater_than
+      value: 0
+      message: "Quote total must be greater than zero"
+
+    - field: validity_date
+      rule: greater_than
+      value: now
+      message: "Validity date must be in the future"
+
+  email_sending:
+    - field: recipient_email
+      rule: email_format
+      message: "Valid email address is required"
+
+    - field: quote_access_token
+      rule: required
+      message: "Access token must be generated"
+
+# Callbacks configuration
+callbacks:
+  validate_quote_completeness:
+    type: validation
+    validations: quote_completeness
+
+  validate_not_expired:
+    type: custom
+    function: check_quote_expiry
+    fail_on_error: true
+
+  generate_access_token:
+    type: custom
+    function: generate_quote_access_token
+
+  send_email_notification:
+    type: email
+    template: quote_sent
+    to: "{{recipient_email}}"
+    subject: "Your Quote {{quote_number}} is Ready"
+    attach_pdf: true
+
+  schedule_follow_up:
+    type: activity
+    activity_type: task
+    title: "Follow up on quote {{quote_number}}"
+    due_in: "3 days"
+
+  track_sent_timestamp:
+    type: database
+    function: mark_quote_sent
+
+  track_view_timestamp:
+    type: database
+    function: track_quote_view
+
+  notify_sales_team:
+    type: notification
+    notify_role: sales_manager
+    message: "Quote {{quote_number}} viewed by {{customer_name}}"
+
+  update_analytics:
+    type: analytics
+    update: quote_metrics
+
+  convert_to_order:
+    type: custom
+    function: accept_quote
+    create_order: true
+
+  send_confirmation_email:
+    type: email
+    template: quote_accepted
+    to: "{{customer_email}}"
+    subject: "Order Confirmation - Quote {{quote_number}}"
+
+  create_invoice_task:
+    type: queue
+    job_type: create_invoice
+    payload:
+      order_id: "{{order_id}}"
+
+  notify_fulfillment_team:
+    type: notification
+    notify_role: fulfillment
+    message: "New order from quote {{quote_number}} ready for processing"
+
+  update_forecast:
+    type: custom
+    function: update_revenue_forecast
+
+  send_cancellation_notification:
+    type: email
+    template: quote_cancelled
+    to: "{{customer_email}}"
+
+  release_reserved_inventory:
+    type: custom
+    function: release_inventory_reservation
+
+  send_expiry_notification:
+    type: email
+    template: quote_expired
+    to: ["{{customer_email}}", "{{created_by_email}}"]
+
+  suggest_renewal:
+    type: activity
+    activity_type: task
+    title: "Consider renewing expired quote {{quote_number}}"
+    assigned_to: created_by
+
+  check_inventory_availability:
+    type: custom
+    function: validate_inventory_availability
+    fail_on_error: false
+
+# SLA (Service Level Agreement) rules
+sla_rules:
+  - name: Quote Response Time
+    description: Quotes should be sent within 24 hours of creation
+    condition:
+      state: draft
+      age_hours: 24
+    action:
+      type: escalation
+      notify: sales_manager
+
+  - name: Follow Up After View
+    description: Sales should follow up within 24 hours of customer viewing quote
+    condition:
+      state: viewed
+      age_hours: 24
+      no_activity: true
+    action:
+      type: reminder
+      notify: created_by
+
+  - name: Expiry Warning
+    description: Warn when quote is about to expire
+    condition:
+      days_until_expiry: 3
+    action:
+      type: notification
+      notify: [created_by, customer]
+      message: "Quote {{quote_number}} expires in {{days_until_expiry}} days"
+
+# Metrics to track
+metrics:
+  - id: quote_conversion_rate
+    name: Quote Conversion Rate
+    description: Percentage of sent quotes that are accepted
+    formula: "(quotes_accepted / quotes_sent) * 100"
+
+  - id: quote_view_rate
+    name: Quote View Rate
+    description: Percentage of sent quotes that are viewed
+    formula: "(quotes_viewed / quotes_sent) * 100"
+
+  - id: average_time_to_send
+    name: Average Time to Send
+    description: Average time from quote creation to sending
+    formula: "avg(sent_at - created_at)"
+
+  - id: average_time_to_accept
+    name: Average Time to Accept
+    description: Average time from sending to acceptance
+    formula: "avg(accepted_at - sent_at)"
+
+  - id: quote_expiry_rate
+    name: Quote Expiry Rate
+    description: Percentage of quotes that expire without acceptance
+    formula: "(quotes_expired / quotes_sent) * 100"
+
+# Integration points
+integrations:
+  - service: calendar
+    events:
+      - quote.created
+      - quote.sent
+      - quote.accepted
+    config:
+      create_event: true
+      event_title: "Quote {{quote_number}} - {{customer_name}}"
+
+  - service: crm
+    events:
+      - quote.sent
+      - quote.viewed
+      - quote.accepted
+    config:
+      update_lead_score: true
+      create_activity: true
+
+  - service: accounting
+    events:
+      - quote.accepted
+    config:
+      create_invoice: true
+      payment_terms: from_quote
