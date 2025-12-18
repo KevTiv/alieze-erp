@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Quote is Ready</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px 20px;
+        }
+
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #1e40af;
+        }
+
+        .message {
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 25px;
+            color: #555;
+        }
+
+        .quote-details {
+            background: #f8fafc;
+            border-left: 4px solid #2563eb;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+
+        .quote-details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .quote-details td {
+            padding: 8px 0;
+            font-size: 14px;
+        }
+
+        .quote-details td:first-child {
+            color: #666;
+            font-weight: 500;
+            width: 40%;
+        }
+
+        .quote-details td:last-child {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+        }
+
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .expiry-notice {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .expiry-notice strong {
+            color: #991b1b;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .expiry-notice p {
+            color: #7f1d1d;
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .custom-message {
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .custom-message p {
+            margin: 0;
+            color: #78350f;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .attachment-notice {
+            background: #f0fdf4;
+            border-left: 4px solid #10b981;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .attachment-notice strong {
+            color: #065f46;
+        }
+
+        .footer {
+            background: #f8fafc;
+            padding: 25px 20px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .footer p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .footer a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .divider {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 25px 0;
+        }
+
+        .help-text {
+            font-size: 13px;
+            color: #999;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📄 Your Quote is Ready</h1>
+            <p>We've prepared a custom quote just for you</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <div class="greeting">
+                Hello {{.RecipientName}},
+            </div>
+
+            <div class="message">
+                Thank you for your interest in our products/services. We're pleased to provide you with the following quotation for your review.
+            </div>
+
+            <!-- Quote Details -->
+            <div class="quote-details">
+                <table>
+                    <tr>
+                        <td>Quote Number:</td>
+                        <td>{{.QuoteNumber}}</td>
+                    </tr>
+                    <tr>
+                        <td>Total Amount:</td>
+                        <td>{{.Amount}}</td>
+                    </tr>
+                    <tr>
+                        <td>Valid Until:</td>
+                        <td>{{.ValidUntil}}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Custom Message -->
+            {{if .Message}}
+            <div class="custom-message">
+                <p>{{.Message}}</p>
+            </div>
+            {{end}}
+
+            <!-- CTA Button -->
+            <div class="button-container">
+                <a href="{{.ViewURL}}" class="cta-button">
+                    View Full Quote
+                </a>
+            </div>
+
+            <!-- Attachment Notice -->
+            <div class="attachment-notice">
+                <strong>📎 PDF Attached</strong> - A detailed PDF version of this quote is attached to this email for your convenience.
+            </div>
+
+            <!-- Expiry Notice -->
+            <div class="expiry-notice">
+                <strong>⚠ Important:</strong>
+                <p>This quote is valid until {{.ValidUntil}}. Please review and accept before this date to secure the quoted prices and availability.</p>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="message">
+                If you have any questions about this quote or would like to discuss any details, please don't hesitate to reach out. We're here to help!
+            </div>
+
+            <div class="message">
+                <strong>Next Steps:</strong>
+                <ol style="margin: 10px 0; padding-left: 20px; color: #555;">
+                    <li>Review the attached quote PDF</li>
+                    <li>Contact us with any questions or modifications</li>
+                    <li>Click the button above to accept the quote online</li>
+                </ol>
+            </div>
+
+            <div class="help-text">
+                Having trouble viewing the quote? <a href="{{.ViewURL}}">Click here</a> to view it in your browser.
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Thank you for your business!</strong></p>
+            <p>This is an automated message. Please do not reply directly to this email.</p>
+            <p>For support, contact us at <a href="mailto:support@yourcompany.com">support@yourcompany.com</a></p>
+            <p style="margin-top: 15px; font-size: 12px; color: #999;">
+                © 2025 Your Company. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quote - {{.QuoteNumber}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #2563eb;
+        }
+
+        .company-info {
+            flex: 1;
+        }
+
+        .company-logo {
+            max-width: 150px;
+            margin-bottom: 10px;
+        }
+
+        .company-name {
+            font-size: 20pt;
+            font-weight: bold;
+            color: #1e40af;
+            margin-bottom: 8px;
+        }
+
+        .company-details {
+            font-size: 9pt;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .quote-info {
+            text-align: right;
+            flex: 0 0 250px;
+        }
+
+        .quote-title {
+            font-size: 24pt;
+            font-weight: bold;
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+
+        .quote-meta {
+            font-size: 10pt;
+            margin-bottom: 5px;
+        }
+
+        .quote-meta strong {
+            color: #555;
+            display: inline-block;
+            width: 100px;
+        }
+
+        .customer-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #1e40af;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .customer-details {
+            background: #f8fafc;
+            padding: 15px;
+            border-left: 3px solid #2563eb;
+            font-size: 10pt;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        .items-table thead {
+            background: #1e40af;
+            color: white;
+        }
+
+        .items-table th {
+            padding: 12px 10px;
+            text-align: left;
+            font-size: 10pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .items-table th.text-right,
+        .items-table td.text-right {
+            text-align: right;
+        }
+
+        .items-table th.text-center,
+        .items-table td.text-center {
+            text-align: center;
+        }
+
+        .items-table tbody tr {
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .items-table tbody tr:nth-child(even) {
+            background: #f9fafb;
+        }
+
+        .items-table td {
+            padding: 10px;
+            font-size: 10pt;
+        }
+
+        .item-description {
+            color: #666;
+            font-size: 9pt;
+            margin-top: 2px;
+        }
+
+        .totals-section {
+            margin-left: auto;
+            width: 350px;
+            margin-bottom: 30px;
+        }
+
+        .totals-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .totals-table tr {
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .totals-table td {
+            padding: 8px 10px;
+            font-size: 10pt;
+        }
+
+        .totals-table td:first-child {
+            text-align: right;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .totals-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .totals-table .total-row {
+            background: #1e40af;
+            color: white;
+            font-size: 12pt;
+        }
+
+        .totals-table .total-row td {
+            padding: 12px 10px;
+        }
+
+        .notes-section {
+            margin-bottom: 30px;
+            background: #fffbeb;
+            padding: 15px;
+            border-left: 3px solid #f59e0b;
+        }
+
+        .notes-title {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+
+        .notes-content {
+            font-size: 9pt;
+            color: #78350f;
+            line-height: 1.5;
+        }
+
+        .terms-section {
+            margin-bottom: 20px;
+            font-size: 8pt;
+            color: #666;
+            line-height: 1.5;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 15px;
+        }
+
+        .terms-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 9pt;
+            color: #999;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .validity-notice {
+            background: #fef2f2;
+            border-left: 3px solid #ef4444;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 10pt;
+            color: #991b1b;
+        }
+
+        .validity-notice strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="company-info">
+                {{if .Company.Logo}}
+                <img src="{{.Company.Logo}}" alt="Company Logo" class="company-logo">
+                {{end}}
+                <div class="company-name">{{.Company.Name}}</div>
+                <div class="company-details">
+                    {{.Company.Address}}<br>
+                    Email: {{.Company.Email}}<br>
+                    Phone: {{.Company.Phone}}<br>
+                    {{if .Company.Website}}Web: {{.Company.Website}}<br>{{end}}
+                    {{if .Company.TaxID}}Tax ID: {{.Company.TaxID}}{{end}}
+                </div>
+            </div>
+            <div class="quote-info">
+                <div class="quote-title">QUOTATION</div>
+                <div class="quote-meta"><strong>Quote #:</strong> {{.QuoteNumber}}</div>
+                <div class="quote-meta"><strong>Date:</strong> {{.IssuedDate}}</div>
+                <div class="quote-meta"><strong>Valid Until:</strong> {{.ValidUntil}}</div>
+            </div>
+        </div>
+
+        <!-- Validity Notice -->
+        {{if .ValidUntil}}
+        <div class="validity-notice">
+            <strong>⚠ Important Notice</strong>
+            This quotation is valid until {{.ValidUntil}}. Please accept before this date to secure the quoted prices.
+        </div>
+        {{end}}
+
+        <!-- Customer Information -->
+        <div class="customer-section">
+            <div class="section-title">Bill To:</div>
+            <div class="customer-details">
+                <strong>{{.Customer.Name}}</strong><br>
+                {{if .Customer.Address}}{{.Customer.Address}}<br>{{end}}
+                {{if .Customer.City}}{{.Customer.City}}, {{.Customer.Country}}<br>{{end}}
+                {{if .Customer.Email}}Email: {{.Customer.Email}}<br>{{end}}
+                {{if .Customer.Phone}}Phone: {{.Customer.Phone}}{{end}}
+            </div>
+        </div>
+
+        <!-- Line Items -->
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    <th style="width: 40%;">Description</th>
+                    <th class="text-center" style="width: 10%;">Qty</th>
+                    <th class="text-right" style="width: 15%;">Unit Price</th>
+                    <th class="text-right" style="width: 10%;">Discount</th>
+                    <th class="text-right" style="width: 10%;">Tax</th>
+                    <th class="text-right" style="width: 15%;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range $index, $line := .Lines}}
+                <tr>
+                    <td class="text-center">{{add $index 1}}</td>
+                    <td>
+                        <strong>{{$line.ProductName}}</strong>
+                        {{if $line.Description}}
+                        <div class="item-description">{{$line.Description}}</div>
+                        {{end}}
+                    </td>
+                    <td class="text-center">{{printf "%.0f" $line.Quantity}}</td>
+                    <td class="text-right">${{printf "%.2f" $line.UnitPrice}}</td>
+                    <td class="text-right">{{if gt $line.Discount 0}}{{printf "%.0f" $line.Discount}}%{{else}}-{{end}}</td>
+                    <td class="text-right">${{printf "%.2f" $line.PriceTax}}</td>
+                    <td class="text-right">${{printf "%.2f" $line.PriceTotal}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+
+        <!-- Totals -->
+        <div class="totals-section">
+            <table class="totals-table">
+                <tr>
+                    <td>Subtotal:</td>
+                    <td>{{.TotalUntaxed}}</td>
+                </tr>
+                <tr>
+                    <td>Tax:</td>
+                    <td>{{.TotalTax}}</td>
+                </tr>
+                <tr class="total-row">
+                    <td><strong>TOTAL:</strong></td>
+                    <td><strong>{{.TotalAmount}}</strong></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Notes -->
+        {{if .Notes}}
+        <div class="notes-section">
+            <div class="notes-title">Additional Notes</div>
+            <div class="notes-content">{{.Notes}}</div>
+        </div>
+        {{end}}
+
+        <!-- Terms and Conditions -->
+        {{if .TermsConditions}}
+        <div class="terms-section">
+            <div class="terms-title">Terms & Conditions</div>
+            <div>{{.TermsConditions}}</div>
+        </div>
+        {{end}}
+
+        <!-- Footer -->
+        <div class="footer">
+            Thank you for your business!<br>
+            For questions about this quote, please contact {{.Company.Email}}
+        </div>
+    </div>
+</body>
+</html>
