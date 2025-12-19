@@ -12,12 +12,15 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 
 	"alieze-erp/internal/database"
+	"alieze-erp/pkg/audit"
 	authmodule "alieze-erp/internal/modules/auth"
+	commonmodule "alieze-erp/internal/modules/common"
 	crmmodule "alieze-erp/internal/modules/crm"
 	accountingmodule "alieze-erp/internal/modules/accounting"
 	inventorymodule "alieze-erp/internal/modules/inventory"
 	productsmodule "alieze-erp/internal/modules/products"
 	salesmodule "alieze-erp/internal/modules/sales"
+	deliverymodule "alieze-erp/internal/modules/delivery"
 	"alieze-erp/pkg/events"
 	"alieze-erp/pkg/policy"
 	"alieze-erp/pkg/registry"
@@ -76,6 +79,13 @@ func NewServer() *http.Server {
 	policyEngine := policy.NewEngineWithCasbin(casbinEnforcer)
 	logger.Info("Policy engine initialized")
 
+	// Create audit logger with memory repository
+	auditRepo := audit.NewMemoryAuditLogRepository()
+	auditLogger := audit.NewAuditLogger(auditRepo)
+
+	// Create permission-aware database connection with audit logging
+	permissionDB := database.NewPermissionDB(dbService.GetDB(), policyEngine, auditLogger)
+
 	// Initialize state machine factory
 	stateMachineFactory := workflow.NewStateMachineFactory()
 	if err := stateMachineFactory.LoadFromDirectory("config/workflows"); err != nil {
@@ -83,45 +93,91 @@ func NewServer() *http.Server {
 		// Continue without workflows - they're optional for now
 	}
 
-	// Create registry with dependencies
-	repoRegistry := registry.NewRegistry(registry.Dependencies{
-		DB:               dbService.GetDB(),
-		EventBus:         eventBus,
-		RuleEngine:       ruleEngine,
-		PolicyEngine:     policyEngine,
+	// Initialize base dependencies
+	baseDeps := registry.Dependencies{
+		DB:                  permissionDB,
+		EventBus:            eventBus,
+		RuleEngine:          ruleEngine,
+		PolicyEngine:        policyEngine,
 		StateMachineFactory: stateMachineFactory,
-		Logger:           logger,
-	})
+		Logger:              logger,
+	}
+
+	// Create registry with base dependencies
+	repoRegistry := registry.NewRegistry(baseDeps)
 
 	// Register all modules
-	repoRegistry.Register(authmodule.NewAuthModule())
-	repoRegistry.Register(crmmodule.NewCRMModule())
-	repoRegistry.Register(inventorymodule.NewInventoryModule())
-	repoRegistry.Register(accountingmodule.NewAccountingModule())
-	repoRegistry.Register(productsmodule.NewProductsModule())
-	repoRegistry.Register(salesmodule.NewSalesModule())
+	authMod := authmodule.NewAuthModule()
+	commonMod := commonmodule.NewCommonModule()
+	crmMod := crmmodule.NewCRMModule()
+	inventoryMod := inventorymodule.NewInventoryModule()
+	accountingMod := accountingmodule.NewAccountingModule()
+	productsMod := productsmodule.NewProductsModule()
+	salesMod := salesmodule.NewSalesModule()
+	deliveryMod := deliverymodule.NewDeliveryModule()
 
-	// Initialize all modules
-	if err := repoRegistry.InitAll(context.Background()); err != nil {
-		logger.Error("Failed to initialize modules", "error", err)
+	repoRegistry.Register(authMod)
+	repoRegistry.Register(commonMod)
+	repoRegistry.Register(crmMod)
+	repoRegistry.Register(inventoryMod)
+	repoRegistry.Register(accountingMod)
+	repoRegistry.Register(productsMod)
+	repoRegistry.Register(salesMod)
+	repoRegistry.Register(deliveryMod)
+
+	// Phase 1: Initialize auth, common, and products modules first (needed by inventory)
+	ctx := context.Background()
+	if err := authMod.Init(ctx, baseDeps); err != nil {
+		logger.Error("Failed to initialize auth module", "error", err)
+		os.Exit(1)
+	}
+	if err := commonMod.Init(ctx, baseDeps); err != nil {
+		logger.Error("Failed to initialize common module", "error", err)
+		os.Exit(1)
+	}
+
+	// Get AuthService and ProductRepo for dependencies
+	baseDeps.AuthService = authMod.GetAuthService()
+	baseDeps.ProductRepo = productsMod // Products module will be init with ProductRepo=nil initially
+
+	if err := productsMod.Init(ctx, baseDeps); err != nil {
+		logger.Error("Failed to initialize products module", "error", err)
+		os.Exit(1)
+	}
+
+	// Phase 2: Initialize inventory module to get integration service
+	if err := inventoryMod.Init(ctx, baseDeps); err != nil {
+		logger.Error("Failed to initialize inventory module", "error", err)
+		os.Exit(1)
+	}
+
+	// Get inventory integration service and add to dependencies
+	baseDeps.InventoryService = inventoryMod.GetIntegrationService()
+
+	// Update registry dependencies
+	repoRegistry.UpdateDependencies(baseDeps)
+
+	// Phase 3: Initialize remaining modules with full dependencies
+	if err := crmMod.Init(ctx, baseDeps); err != nil {
+		logger.Error("Failed to initialize CRM module", "error", err)
+		os.Exit(1)
+	}
+	if err := accountingMod.Init(ctx, baseDeps); err != nil {
+		logger.Error("Failed to initialize accounting module", "error", err)
+		os.Exit(1)
+	}
+	if err := salesMod.Init(ctx, baseDeps); err != nil {
+		logger.Error("Failed to initialize sales module", "error", err)
+		os.Exit(1)
+	}
+	if err := deliveryMod.Init(ctx, baseDeps); err != nil {
+		logger.Error("Failed to initialize delivery module", "error", err)
 		os.Exit(1)
 	}
 
 	// Register event handlers for all modules
 	repoRegistry.RegisterAllEventHandlers(eventBus)
 	logger.Info("Event handlers registered for all modules")
-
-	// Get auth module for middleware
-	authModule, ok := repoRegistry.GetModule("auth")
-	if !ok {
-		logger.Error("Auth module not found")
-		os.Exit(1)
-	}
-	authMod, ok := authModule.(*authmodule.AuthModule)
-	if !ok {
-		logger.Error("Failed to cast auth module")
-		os.Exit(1)
-	}
 
 	NewServer := &Server{
 		port:              port,

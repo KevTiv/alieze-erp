@@ -19,6 +19,9 @@ type SalesOrderRepository interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 	FindByCustomerID(ctx context.Context, customerID uuid.UUID) ([]types.SalesOrder, error)
 	FindByStatus(ctx context.Context, status types.SalesOrderStatus) ([]types.SalesOrder, error)
+	// Helper methods for quote service
+	ExecuteSQL(ctx context.Context, query string, args ...interface{}) error
+	QueryRow(ctx context.Context, query string, dest interface{}, args ...interface{}) error
 }
 
 type SalesOrderFilter struct {
@@ -263,6 +266,27 @@ func (r *salesOrderRepository) FindAll(ctx context.Context, filters SalesOrderFi
 	}
 
 	return orders, nil
+}
+
+// ExecuteSQL executes a SQL statement (useful for calling SQL functions)
+func (r *salesOrderRepository) ExecuteSQL(ctx context.Context, query string, args ...interface{}) error {
+	_, err := r.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("failed to execute SQL: %w", err)
+	}
+	return nil
+}
+
+// QueryRow executes a query that returns a single row
+func (r *salesOrderRepository) QueryRow(ctx context.Context, query string, dest interface{}, args ...interface{}) error {
+	err := r.db.QueryRowContext(ctx, query, args...).Scan(dest)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		return fmt.Errorf("failed to query row: %w", err)
+	}
+	return nil
 }
 
 func (r *salesOrderRepository) Update(ctx context.Context, order types.SalesOrder) (*types.SalesOrder, error) {
