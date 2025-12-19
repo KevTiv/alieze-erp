@@ -52,7 +52,7 @@ func (r *lostReasonRepository) FindByID(ctx context.Context, id uuid.UUID) (*typ
 	return &reason, nil
 }
 
-func (r *lostReasonRepository) FindAll(ctx context.Context, filter types.LostReasonFilter) ([]types.LostReason, error) {
+func (r *lostReasonRepository) FindAll(ctx context.Context, filter types.LostReasonFilter) ([]*types.LostReason, error) {
 	query := `SELECT id, organization_id, name, active, created_at FROM lost_reasons WHERE organization_id = $1`
 
 	var args []interface{}
@@ -84,13 +84,13 @@ func (r *lostReasonRepository) FindAll(ctx context.Context, filter types.LostRea
 	}
 	defer rows.Close()
 
-	var reasons []types.LostReason
+	var reasons []*types.LostReason
 	for rows.Next() {
 		var reason types.LostReason
 		if err := rows.Scan(&reason.ID, &reason.OrganizationID, &reason.Name, &reason.Active, &reason.CreatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan lost reason: %w", err)
 		}
-		reasons = append(reasons, reason)
+		reasons = append(reasons, &reason)
 	}
 
 	if err := rows.Err(); err != nil {

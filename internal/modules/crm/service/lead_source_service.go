@@ -96,7 +96,7 @@ func (s *LeadSourceService) GetLeadSource(ctx context.Context, id uuid.UUID) (*t
 	return source, nil
 }
 
-func (s *LeadSourceService) ListLeadSources(ctx context.Context, filter types.LeadSourceFilter) ([]types.LeadSource, error) {
+func (s *LeadSourceService) ListLeadSources(ctx context.Context, filter types.LeadSourceFilter) ([]*types.LeadSource, error) {
 	// Permission check
 	if err := s.authService.CheckPermission(ctx, "crm:lead_sources:read"); err != nil {
 		return nil, fmt.Errorf("permission denied: %w", err)

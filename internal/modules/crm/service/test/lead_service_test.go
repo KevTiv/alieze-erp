@@ -18,25 +18,27 @@ import (
 
 type LeadServiceTestSuite struct {
 	suite.Suite
-	service    *service.LeadService
-	repo       *testutils.MockLeadRepository
-	ruleEngine *rules.RuleEngine
-	ctx        context.Context
-	orgID      uuid.UUID
-	userID     uuid.UUID
-	leadID     uuid.UUID
-	stageID    uuid.UUID
-	sourceID   uuid.UUID
+	service                *service.LeadService
+	repo                   *testutils.MockLeadRepository
+	ruleEngine             *rules.RuleEngine
+	assignmentRuleAssigner *testutils.MockAssignmentRuleAssigner
+	ctx                    context.Context
+	orgID                  uuid.UUID
+	userID                 uuid.UUID
+	leadID                 uuid.UUID
+	stageID                uuid.UUID
+	sourceID               uuid.UUID
+	assigneeID             uuid.UUID
 }
 
 func (s *LeadServiceTestSuite) SetupTest() {
 	s.T().Log("Setting up test")
 
 	s.repo = testutils.NewMockLeadRepository()
-	s.ruleEngine = &rules.RuleEngine{}
+	s.assignmentRuleAssigner = testutils.NewMockAssignmentRuleAssigner()
 	s.service = service.NewLeadService(service.NewLeadServiceOptions{
-		LeadRepository: s.repo,
-		RuleEngine:     s.ruleEngine,
+		LeadRepository:         s.repo,
+		AssignmentRuleAssigner: s.assignmentRuleAssigner,
 	})
 	s.ctx = context.Background()
 	s.orgID = uuid.Must(uuid.NewV7())
@@ -44,6 +46,7 @@ func (s *LeadServiceTestSuite) SetupTest() {
 	s.leadID = uuid.Must(uuid.NewV7())
 	s.stageID = uuid.Must(uuid.NewV7())
 	s.sourceID = uuid.Must(uuid.NewV7())
+	s.assigneeID = uuid.Must(uuid.NewV7())
 }
 
 func (s *LeadServiceTestSuite) TearDownTest() {
@@ -547,7 +550,197 @@ func (s *LeadServiceTestSuite) TestCountLeadsSuccess() {
 	})
 }
 
+func (s *LeadServiceTestSuite) TestCreateLeadWithAssignmentRules() {
+	s.T().Run("CreateLead - With Assignment Rules", func(t *testing.T) {
+		// Setup test data
+		leadRequest := types.LeadCreateRequest{
+			Name:            "Enterprise Lead",
+			ContactName:     stringPtr("Jane Smith"),
+			Email:           stringPtr("jane@enterprise.com"),
+			Phone:           stringPtr("9876543210"),
+			LeadType:        stringPtr("enterprise"),
+			Priority:        stringPtr("high"),
+			ExpectedRevenue: floatPtr(100000),
+			StageID:         &s.stageID,
+			SourceID:        &s.sourceID,
+		}
+
+		// Setup mock assignment rule behavior
+		expectedAssignment := &types.AssignmentResult{
+			LeadID:         s.leadID,
+			AssignedToID:   s.assigneeID,
+			AssignedToName: "Sales Rep - Enterprise Team",
+			Reason:         "auto_assignment",
+			Changed:        true,
+		}
+
+		s.assignmentRuleAssigner.WithAssignLeadFunc(func(ctx context.Context, leadID uuid.UUID, conditions map[string]interface{}) (*types.AssignmentResult, error) {
+			// Verify conditions are passed correctly
+			require.Equal(t, "enterprise", conditions["lead_type"])
+			require.Equal(t, "high", conditions["priority"])
+			return expectedAssignment, nil
+		})
+
+		// Mock repository behavior
+		expectedLead := types.Lead{
+			ID:              s.leadID,
+			OrganizationID:  s.orgID,
+			Name:            "Enterprise Lead",
+			ContactName:     "Jane Smith",
+			Email:           "jane@enterprise.com",
+			Phone:           "9876543210",
+			LeadType:        "enterprise",
+			Priority:        "high",
+			ExpectedRevenue: 100000,
+			Probability:     10,
+			StageID:         s.stageID,
+			SourceID:        s.sourceID,
+			AssignedTo:      &s.assigneeID, // Should be set by assignment rules
+			Active:          true,
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
+		}
+
+		s.repo.WithCreateFunc(func(ctx context.Context, lead types.Lead) (*types.Lead, error) {
+			// Verify that the lead has the assigned user set by assignment rules
+			require.NotNil(t, lead.AssignedTo)
+			require.Equal(t, s.assigneeID, *lead.AssignedTo)
+			return &expectedLead, nil
+		})
+
+		// Execute
+		created, err := s.service.CreateLead(s.ctx, s.orgID, leadRequest)
+
+		// Assert
+		require.NoError(t, err)
+		require.NotNil(t, created)
+		require.Equal(t, expectedLead.OrganizationID, created.OrganizationID)
+		require.Equal(t, expectedLead.Name, created.Name)
+		require.Equal(t, expectedLead.AssignedTo, created.AssignedTo)
+		require.Equal(t, s.assigneeID, *created.AssignedTo)
+	})
+}
+
+func (s *LeadServiceTestSuite) TestCreateLeadWithoutAssignmentRules() {
+	s.T().Run("CreateLead - Without Assignment Rules", func(t *testing.T) {
+		// Setup test data - no assignment rule assigner
+		leadRequest := types.LeadCreateRequest{
+			Name:        "Basic Lead",
+			ContactName: stringPtr("Bob Johnson"),
+			Email:       stringPtr("bob@example.com"),
+			Phone:       stringPtr("5551234567"),
+			LeadType:    stringPtr("standard"),
+			Priority:    stringPtr("medium"),
+			StageID:     &s.stageID,
+			SourceID:    &s.sourceID,
+		}
+
+		// Create service without assignment rules
+		serviceWithoutRules := service.NewLeadService(service.NewLeadServiceOptions{
+			LeadRepository:         s.repo,
+			AssignmentRuleAssigner: nil, // No assignment rules
+		})
+
+		expectedLead := types.Lead{
+			ID:             s.leadID,
+			OrganizationID: s.orgID,
+			Name:           "Basic Lead",
+			ContactName:    "Bob Johnson",
+			Email:          "bob@example.com",
+			Phone:          "5551234567",
+			LeadType:       "standard",
+			Priority:       "medium",
+			Probability:    10,
+			StageID:        s.stageID,
+			SourceID:       s.sourceID,
+			AssignedTo:     nil, // Should remain nil without assignment rules
+			Active:         true,
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+		}
+
+		s.repo.WithCreateFunc(func(ctx context.Context, lead types.Lead) (*types.Lead, error) {
+			// Verify that no assignment was made
+			require.Nil(t, lead.AssignedTo)
+			return &expectedLead, nil
+		})
+
+		// Execute
+		created, err := serviceWithoutRules.CreateLead(s.ctx, s.orgID, leadRequest)
+
+		// Assert
+		require.NoError(t, err)
+		require.NotNil(t, created)
+		require.Equal(t, expectedLead.OrganizationID, created.OrganizationID)
+		require.Equal(t, expectedLead.Name, created.Name)
+		require.Nil(t, created.AssignedTo)
+	})
+}
+
+func (s *LeadServiceTestSuite) TestCreateLeadAssignmentRuleError() {
+	s.T().Run("CreateLead - Assignment Rule Error", func(t *testing.T) {
+		// Setup test data
+		leadRequest := types.LeadCreateRequest{
+			Name:        "Problem Lead",
+			ContactName: stringPtr("Error Test"),
+			Email:       stringPtr("error@test.com"),
+			Phone:       stringPtr("1112223333"),
+			LeadType:    stringPtr("enterprise"),
+			Priority:    stringPtr("high"),
+			StageID:     &s.stageID,
+			SourceID:    &s.sourceID,
+		}
+
+		// Setup mock assignment rule to return error
+		s.assignmentRuleAssigner.WithAssignLeadFunc(func(ctx context.Context, leadID uuid.UUID, conditions map[string]interface{}) (*types.AssignmentResult, error) {
+			return nil, errors.New("assignment service unavailable")
+		})
+
+		expectedLead := types.Lead{
+			ID:             s.leadID,
+			OrganizationID: s.orgID,
+			Name:           "Problem Lead",
+			ContactName:    "Error Test",
+			Email:          "error@test.com",
+			Phone:          "1112223333",
+			LeadType:       "enterprise",
+			Priority:       "high",
+			Probability:    10,
+			StageID:        s.stageID,
+			SourceID:       s.sourceID,
+			AssignedTo:     nil, // Should remain nil when assignment fails
+			Active:         true,
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+		}
+
+		s.repo.WithCreateFunc(func(ctx context.Context, lead types.Lead) (*types.Lead, error) {
+			// Verify that no assignment was made due to error
+			require.Nil(t, lead.AssignedTo)
+			return &expectedLead, nil
+		})
+
+		// Execute - should not fail even with assignment error
+		created, err := s.service.CreateLead(s.ctx, s.orgID, leadRequest)
+
+		// Assert
+		require.NoError(t, err, "Lead creation should succeed even when assignment rules fail")
+		require.NotNil(t, created)
+		require.Equal(t, expectedLead.OrganizationID, created.OrganizationID)
+		require.Equal(t, expectedLead.Name, created.Name)
+		require.Nil(t, created.AssignedTo, "Assignment should be nil when assignment rules fail")
+	})
+}
+
 // Helper functions
+func stringPtr(s string) *string {
+	return &s
+}
+
+func floatPtr(f float64) *float64 {
+	return &f
+}
+
 type MockRuleEngine struct {
 	validateError error
 }

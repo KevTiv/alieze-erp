@@ -257,11 +257,16 @@ func (s *ContactServiceTestSuite) TestListContactsSuccess() {
 		}
 		expectedCount := 2
 
-		s.repo.WithFindAllFunc(func(ctx context.Context, f types.ContactFilter) ([]types.Contact, error) {
+		s.repo.WithFindAllFunc(func(ctx context.Context, f types.ContactFilter) ([]*types.Contact, error) {
 			require.Equal(t, s.orgID, f.OrganizationID)
 			require.Equal(t, filter.Name, f.Name)
 			require.Equal(t, filter.Limit, f.Limit)
-			return expectedContacts, nil
+			// Convert to pointers
+			result := make([]*types.Contact, len(expectedContacts))
+			for i := range expectedContacts {
+				result[i] = &expectedContacts[i]
+			}
+			return result, nil
 		})
 
 		s.repo.WithCountFunc(func(ctx context.Context, f types.ContactFilter) (int, error) {

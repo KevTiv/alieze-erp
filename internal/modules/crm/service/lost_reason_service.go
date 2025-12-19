@@ -97,7 +97,7 @@ func (s *LostReasonService) GetLostReason(ctx context.Context, id uuid.UUID) (*t
 	return reason, nil
 }
 
-func (s *LostReasonService) ListLostReasons(ctx context.Context, filter types.LostReasonFilter) ([]types.LostReason, error) {
+func (s *LostReasonService) ListLostReasons(ctx context.Context, filter types.LostReasonFilter) ([]*types.LostReason, error) {
 	// Permission check
 	if err := s.authService.CheckPermission(ctx, "crm:lost_reasons:read"); err != nil {
 		return nil, fmt.Errorf("permission denied: %w", err)

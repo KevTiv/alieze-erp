@@ -103,7 +103,7 @@ func (s *LeadStageService) GetLeadStage(ctx context.Context, id uuid.UUID) (*typ
 	return stage, nil
 }
 
-func (s *LeadStageService) ListLeadStages(ctx context.Context, filter types.LeadStageFilter) ([]types.LeadStage, error) {
+func (s *LeadStageService) ListLeadStages(ctx context.Context, filter types.LeadStageFilter) ([]*types.LeadStage, error) {
 	// Permission check
 	if err := s.authService.CheckPermission(ctx, "crm:lead_stages:read"); err != nil {
 		return nil, fmt.Errorf("permission denied: %w", err)

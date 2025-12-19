@@ -105,3 +105,34 @@ func (m *MockContactRepository) WithCountFunc(f func(ctx context.Context, filter
 	return m
 }
 
+// MockAssignmentRuleAssigner implements the AssignmentRuleAssigner interface for testing
+type MockAssignmentRuleAssigner struct {
+	assignLeadFunc func(ctx context.Context, leadID uuid.UUID, conditions map[string]interface{}) (*types.AssignmentResult, error)
+}
+
+// NewMockAssignmentRuleAssigner creates a new mock assignment rule assigner
+func NewMockAssignmentRuleAssigner() *MockAssignmentRuleAssigner {
+	return &MockAssignmentRuleAssigner{}
+}
+
+// AssignLead implements the AssignmentRuleAssigner interface
+func (m *MockAssignmentRuleAssigner) AssignLead(ctx context.Context, leadID uuid.UUID, conditions map[string]interface{}) (*types.AssignmentResult, error) {
+	if m.assignLeadFunc != nil {
+		return m.assignLeadFunc(ctx, leadID, conditions)
+	}
+	// Default behavior: assign to a fixed user
+	defaultAssigneeID := uuid.Must(uuid.NewV7())
+	return &types.AssignmentResult{
+		LeadID:         leadID,
+		AssignedToID:   defaultAssigneeID,
+		AssignedToName: "Test Assignee",
+		Reason:         "auto_assignment",
+		Changed:        true,
+	}, nil
+}
+
+// WithAssignLeadFunc sets the mock behavior for AssignLead
+func (m *MockAssignmentRuleAssigner) WithAssignLeadFunc(f func(ctx context.Context, leadID uuid.UUID, conditions map[string]interface{}) (*types.AssignmentResult, error)) *MockAssignmentRuleAssigner {
+	m.assignLeadFunc = f
+	return m
+}

@@ -130,7 +130,7 @@ func (r *contactRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.
 	return &contact, nil
 }
 
-func (r *contactRepository) FindAll(ctx context.Context, filter types.ContactFilter) ([]types.Contact, error) {
+func (r *contactRepository) FindAll(ctx context.Context, filter types.ContactFilter) ([]*types.Contact, error) {
 	query := `SELECT id, organization_id, name, email, phone, is_customer, is_vendor,
 		street, city, state_id, country_id, created_at, updated_at, deleted_at
 		FROM contacts WHERE deleted_at IS NULL`
@@ -193,7 +193,7 @@ func (r *contactRepository) FindAll(ctx context.Context, filter types.ContactFil
 	}
 	defer rows.Close()
 
-	var contacts []types.Contact
+	var contacts []*types.Contact
 	for rows.Next() {
 		var contact types.Contact
 		err := rows.Scan(
@@ -215,7 +215,7 @@ func (r *contactRepository) FindAll(ctx context.Context, filter types.ContactFil
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan contact: %w", err)
 		}
-		contacts = append(contacts, contact)
+		contacts = append(contacts, &contact)
 	}
 
 	if err := rows.Err(); err != nil {

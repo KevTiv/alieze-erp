@@ -98,7 +98,7 @@ func (s *ContactTagService) GetContactTag(ctx context.Context, id uuid.UUID) (*t
 	return tag, nil
 }
 
-func (s *ContactTagService) ListContactTags(ctx context.Context, filter types.ContactTagFilter) ([]types.ContactTag, error) {
+func (s *ContactTagService) ListContactTags(ctx context.Context, filter types.ContactTagFilter) ([]*types.ContactTag, error) {
 	// Permission check
 	if err := s.authService.CheckPermission(ctx, "crm:contact_tags:read"); err != nil {
 		return nil, fmt.Errorf("permission denied: %w", err)

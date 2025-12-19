@@ -214,7 +214,7 @@ func (r *LeadRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Lea
 }
 
 // FindAll retrieves all enhanced leads with optional filters
-func (r *LeadRepository) FindAll(ctx context.Context, filter types.LeadFilter) ([]types.Lead, error) {
+func (r *LeadRepository) FindAll(ctx context.Context, filter types.LeadFilter) ([]*types.Lead, error) {
 	query := `SELECT id, organization_id, company_id, name, contact_name, email, phone, mobile,
 		contact_id, user_id, team_id, lead_type, stage_id, priority, source_id,
 		medium_id, campaign_id, expected_revenue, probability, recurring_revenue,
@@ -426,7 +426,7 @@ func (r *LeadRepository) FindAll(ctx context.Context, filter types.LeadFilter) (
 	}
 	defer rows.Close()
 
-	var leads []types.Lead
+	var leads []*types.Lead
 	for rows.Next() {
 		var lead types.Lead
 		err := rows.Scan(
@@ -479,7 +479,7 @@ func (r *LeadRepository) FindAll(ctx context.Context, filter types.LeadFilter) (
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan enhanced lead: %w", err)
 		}
-		leads = append(leads, lead)
+		leads = append(leads, &lead)
 	}
 
 	if err := rows.Err(); err != nil {

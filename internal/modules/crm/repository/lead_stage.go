@@ -56,7 +56,7 @@ func (r *leadStageRepository) FindByID(ctx context.Context, id uuid.UUID) (*type
 	return &stage, nil
 }
 
-func (r *leadStageRepository) FindAll(ctx context.Context, filter types.LeadStageFilter) ([]types.LeadStage, error) {
+func (r *leadStageRepository) FindAll(ctx context.Context, filter types.LeadStageFilter) ([]*types.LeadStage, error) {
 	query := `SELECT id, organization_id, name, sequence, probability, fold, is_won, requirements, team_id, created_at, updated_at FROM lead_stages WHERE organization_id = $1`
 
 	var args []interface{}
@@ -93,14 +93,14 @@ func (r *leadStageRepository) FindAll(ctx context.Context, filter types.LeadStag
 	}
 	defer rows.Close()
 
-	var stages []types.LeadStage
+	var stages []*types.LeadStage
 	for rows.Next() {
 		var stage types.LeadStage
 		if err := rows.Scan(&stage.ID, &stage.OrganizationID, &stage.Name, &stage.Sequence, &stage.Probability,
 			&stage.Fold, &stage.IsWon, &stage.Requirements, &stage.TeamID, &stage.CreatedAt, &stage.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan lead stage: %w", err)
 		}
-		stages = append(stages, stage)
+		stages = append(stages, &stage)
 	}
 
 	if err := rows.Err(); err != nil {

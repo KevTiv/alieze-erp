@@ -5,18 +5,18 @@ import (
 	"net/http"
 	"strconv"
 
-	"alieze-erp/internal/modules/crm/types"
 	"alieze-erp/internal/modules/crm/service"
+	"alieze-erp/internal/modules/crm/types"
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 )
 
 type ContactHandler struct {
-	service *service.ContactService
+	service *service.ContactServiceV2
 }
 
-func NewContactHandler(service *service.ContactService) *ContactHandler {
+func NewContactHandler(service *service.ContactServiceV2) *ContactHandler {
 	return &ContactHandler{
 		service: service,
 	}

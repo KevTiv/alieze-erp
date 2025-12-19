@@ -37,7 +37,7 @@ func (s *LeadService) GetLeadPipelineValue(ctx context.Context, orgID uuid.UUID)
 // GetLeadPipelineValueByStage calculates pipeline value by stage
 func (s *LeadService) GetLeadPipelineValueByStage(ctx context.Context, orgID uuid.UUID) (map[uuid.UUID]float64, error) {
 	// Get counts by stage first (currently unused but kept for future reference)
-	counts, err := s.repo.CountByStage(ctx, orgID)
+	counts, err := s.repo.CountByStage(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get lead counts by stage: %w", err)
 	}
@@ -259,7 +259,7 @@ func (s *LeadService) GetLeadTotalRecurringRevenue(ctx context.Context, orgID uu
 }
 
 // GetLeadsBySource retrieves leads by source
-func (s *LeadService) GetLeadsBySource(ctx context.Context, orgID uuid.UUID, sourceID uuid.UUID) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsBySource(ctx context.Context, orgID uuid.UUID, sourceID uuid.UUID) ([]*types.Lead, error) {
 	if sourceID == uuid.Nil {
 		return nil, fmt.Errorf("invalid source ID")
 	}
@@ -278,7 +278,7 @@ func (s *LeadService) GetLeadsBySource(ctx context.Context, orgID uuid.UUID, sou
 }
 
 // GetLeadsByCampaign retrieves leads by campaign
-func (s *LeadService) GetLeadsByCampaign(ctx context.Context, orgID uuid.UUID, campaignID uuid.UUID) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByCampaign(ctx context.Context, orgID uuid.UUID, campaignID uuid.UUID) ([]*types.Lead, error) {
 	if campaignID == uuid.Nil {
 		return nil, fmt.Errorf("invalid campaign ID")
 	}
@@ -297,7 +297,7 @@ func (s *LeadService) GetLeadsByCampaign(ctx context.Context, orgID uuid.UUID, c
 }
 
 // GetLeadsByMedium retrieves leads by medium
-func (s *LeadService) GetLeadsByMedium(ctx context.Context, orgID uuid.UUID, mediumID uuid.UUID) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByMedium(ctx context.Context, orgID uuid.UUID, mediumID uuid.UUID) ([]*types.Lead, error) {
 	if mediumID == uuid.Nil {
 		return nil, fmt.Errorf("invalid medium ID")
 	}
@@ -316,7 +316,7 @@ func (s *LeadService) GetLeadsByMedium(ctx context.Context, orgID uuid.UUID, med
 }
 
 // GetLeadsByTag retrieves leads by tag
-func (s *LeadService) GetLeadsByTag(ctx context.Context, orgID uuid.UUID, tagID uuid.UUID) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByTag(ctx context.Context, orgID uuid.UUID, tagID uuid.UUID) ([]*types.Lead, error) {
 	if tagID == uuid.Nil {
 		return nil, fmt.Errorf("invalid tag ID")
 	}
@@ -333,7 +333,7 @@ func (s *LeadService) GetLeadsByTag(ctx context.Context, orgID uuid.UUID, tagID 
 	}
 
 	// Filter in memory (not ideal for large datasets)
-	var filteredLeads []types.Lead
+	var filteredLeads []*types.Lead
 	for _, lead := range leads {
 		for _, id := range lead.TagIDs {
 			if id == tagID {
@@ -347,7 +347,7 @@ func (s *LeadService) GetLeadsByTag(ctx context.Context, orgID uuid.UUID, tagID 
 }
 
 // GetLeadsByCompany retrieves leads by company
-func (s *LeadService) GetLeadsByCompany(ctx context.Context, orgID uuid.UUID, companyID uuid.UUID) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByCompany(ctx context.Context, orgID uuid.UUID, companyID uuid.UUID) ([]*types.Lead, error) {
 	if companyID == uuid.Nil {
 		return nil, fmt.Errorf("invalid company ID")
 	}
@@ -366,7 +366,7 @@ func (s *LeadService) GetLeadsByCompany(ctx context.Context, orgID uuid.UUID, co
 }
 
 // GetLeadsByCountry retrieves leads by country
-func (s *LeadService) GetLeadsByCountry(ctx context.Context, orgID uuid.UUID, countryID uuid.UUID) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByCountry(ctx context.Context, orgID uuid.UUID, countryID uuid.UUID) ([]*types.Lead, error) {
 	if countryID == uuid.Nil {
 		return nil, fmt.Errorf("invalid country ID")
 	}
@@ -385,7 +385,7 @@ func (s *LeadService) GetLeadsByCountry(ctx context.Context, orgID uuid.UUID, co
 }
 
 // GetLeadsByState retrieves leads by state
-func (s *LeadService) GetLeadsByState(ctx context.Context, orgID uuid.UUID, stateID uuid.UUID) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByState(ctx context.Context, orgID uuid.UUID, stateID uuid.UUID) ([]*types.Lead, error) {
 	if stateID == uuid.Nil {
 		return nil, fmt.Errorf("invalid state ID")
 	}
@@ -404,7 +404,7 @@ func (s *LeadService) GetLeadsByState(ctx context.Context, orgID uuid.UUID, stat
 }
 
 // GetLeadsByCity retrieves leads by city
-func (s *LeadService) GetLeadsByCity(ctx context.Context, orgID uuid.UUID, city string) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByCity(ctx context.Context, orgID uuid.UUID, city string) ([]*types.Lead, error) {
 	if city == "" {
 		return nil, fmt.Errorf("city cannot be empty")
 	}
@@ -567,7 +567,7 @@ func (s *LeadService) GetLeadAverageRecurringRevenue(ctx context.Context, orgID 
 }
 
 // GetLeadsByContact retrieves leads by contact
-func (s *LeadService) GetLeadsByContact(ctx context.Context, orgID uuid.UUID, contactID uuid.UUID) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByContact(ctx context.Context, orgID uuid.UUID, contactID uuid.UUID) ([]*types.Lead, error) {
 	if contactID == uuid.Nil {
 		return nil, fmt.Errorf("invalid contact ID")
 	}
@@ -586,7 +586,7 @@ func (s *LeadService) GetLeadsByContact(ctx context.Context, orgID uuid.UUID, co
 }
 
 // GetLeadsByUser retrieves leads by user
-func (s *LeadService) GetLeadsByUser(ctx context.Context, orgID uuid.UUID, userID uuid.UUID) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByUser(ctx context.Context, orgID uuid.UUID, userID uuid.UUID) ([]*types.Lead, error) {
 	if userID == uuid.Nil {
 		return nil, fmt.Errorf("invalid user ID")
 	}
@@ -605,7 +605,7 @@ func (s *LeadService) GetLeadsByUser(ctx context.Context, orgID uuid.UUID, userI
 }
 
 // GetLeadsByTeam retrieves leads by team
-func (s *LeadService) GetLeadsByTeam(ctx context.Context, orgID uuid.UUID, teamID uuid.UUID) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByTeam(ctx context.Context, orgID uuid.UUID, teamID uuid.UUID) ([]*types.Lead, error) {
 	if teamID == uuid.Nil {
 		return nil, fmt.Errorf("invalid team ID")
 	}
@@ -624,7 +624,7 @@ func (s *LeadService) GetLeadsByTeam(ctx context.Context, orgID uuid.UUID, teamI
 }
 
 // GetLeadsByStage retrieves leads by stage
-func (s *LeadService) GetLeadsByStage(ctx context.Context, orgID uuid.UUID, stageID uuid.UUID) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByStage(ctx context.Context, orgID uuid.UUID, stageID uuid.UUID) ([]*types.Lead, error) {
 	if stageID == uuid.Nil {
 		return nil, fmt.Errorf("invalid stage ID")
 	}
@@ -643,7 +643,7 @@ func (s *LeadService) GetLeadsByStage(ctx context.Context, orgID uuid.UUID, stag
 }
 
 // GetLeadsByLostReason retrieves leads by lost reason
-func (s *LeadService) GetLeadsByLostReason(ctx context.Context, orgID uuid.UUID, lostReasonID uuid.UUID) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByLostReason(ctx context.Context, orgID uuid.UUID, lostReasonID uuid.UUID) ([]*types.Lead, error) {
 	if lostReasonID == uuid.Nil {
 		return nil, fmt.Errorf("invalid lost reason ID")
 	}
@@ -662,7 +662,7 @@ func (s *LeadService) GetLeadsByLostReason(ctx context.Context, orgID uuid.UUID,
 }
 
 // GetOverdueLeads retrieves overdue leads
-func (s *LeadService) GetOverdueLeads(ctx context.Context, orgID uuid.UUID) ([]types.Lead, error) {
+func (s *LeadService) GetOverdueLeads(ctx context.Context, orgID uuid.UUID) ([]*types.Lead, error) {
 	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
@@ -673,7 +673,7 @@ func (s *LeadService) GetOverdueLeads(ctx context.Context, orgID uuid.UUID) ([]t
 	}
 
 	// Filter in memory for overdue leads
-	var overdueLeads []types.Lead
+	var overdueLeads []*types.Lead
 	now := time.Now()
 	for _, lead := range leads {
 		if lead.DateDeadline != nil && lead.DateDeadline.Before(now) && lead.WonStatus == nil {
@@ -685,7 +685,7 @@ func (s *LeadService) GetOverdueLeads(ctx context.Context, orgID uuid.UUID) ([]t
 }
 
 // GetHighValueLeads retrieves high-value leads
-func (s *LeadService) GetHighValueLeads(ctx context.Context, orgID uuid.UUID, minExpectedRevenue float64) ([]types.Lead, error) {
+func (s *LeadService) GetHighValueLeads(ctx context.Context, orgID uuid.UUID, minExpectedRevenue float64) ([]*types.Lead, error) {
 	filter := types.LeadFilter{
 		OrganizationID:     orgID,
 		ExpectedRevenueMin: &minExpectedRevenue,
@@ -715,7 +715,7 @@ func (s *LeadService) GetRecentLeads(ctx context.Context, orgID uuid.UUID, days 
 	cutoff := time.Now().AddDate(0, 0, -days)
 	for _, lead := range leads {
 		if lead.CreatedAt.After(cutoff) || lead.UpdatedAt.After(cutoff) {
-			recentLeads = append(recentLeads, lead)
+			recentLeads = append(recentLeads, *lead)
 		}
 	}
 
@@ -723,7 +723,7 @@ func (s *LeadService) GetRecentLeads(ctx context.Context, orgID uuid.UUID, days 
 }
 
 // GetLeadsByCreatedBy retrieves leads by created by user
-func (s *LeadService) GetLeadsByCreatedBy(ctx context.Context, orgID uuid.UUID, createdBy uuid.UUID) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByCreatedBy(ctx context.Context, orgID uuid.UUID, createdBy uuid.UUID) ([]*types.Lead, error) {
 	if createdBy == uuid.Nil {
 		return nil, fmt.Errorf("invalid created by ID")
 	}
@@ -742,7 +742,7 @@ func (s *LeadService) GetLeadsByCreatedBy(ctx context.Context, orgID uuid.UUID, 
 }
 
 // GetLeadsByUpdatedBy retrieves leads by updated by user
-func (s *LeadService) GetLeadsByUpdatedBy(ctx context.Context, orgID uuid.UUID, updatedBy uuid.UUID) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByUpdatedBy(ctx context.Context, orgID uuid.UUID, updatedBy uuid.UUID) ([]*types.Lead, error) {
 	if updatedBy == uuid.Nil {
 		return nil, fmt.Errorf("invalid updated by ID")
 	}
@@ -761,7 +761,7 @@ func (s *LeadService) GetLeadsByUpdatedBy(ctx context.Context, orgID uuid.UUID, 
 }
 
 // GetLeadsByColor retrieves leads by color
-func (s *LeadService) GetLeadsByColor(ctx context.Context, orgID uuid.UUID, color string) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByColor(ctx context.Context, orgID uuid.UUID, color string) ([]*types.Lead, error) {
 	if color == "" {
 		return nil, fmt.Errorf("color cannot be empty")
 	}
@@ -780,7 +780,7 @@ func (s *LeadService) GetLeadsByColor(ctx context.Context, orgID uuid.UUID, colo
 }
 
 // GetLeadsByStatus retrieves leads by status
-func (s *LeadService) GetLeadsByStatus(ctx context.Context, orgID uuid.UUID, status string) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByStatus(ctx context.Context, orgID uuid.UUID, status string) ([]*types.Lead, error) {
 	if status == "" {
 		return nil, fmt.Errorf("status cannot be empty")
 	}
@@ -795,7 +795,7 @@ func (s *LeadService) GetLeadsByStatus(ctx context.Context, orgID uuid.UUID, sta
 	}
 
 	// Filter in memory for status (simplified approach)
-	var filteredLeads []types.Lead
+	var filteredLeads []*types.Lead
 	for _, lead := range leads {
 		// This is a simplified approach - in a real implementation, you'd need
 		// to define what "status" means for leads (e.g., won/lost, active/inactive, etc.)
@@ -812,7 +812,7 @@ func (s *LeadService) GetLeadsByStatus(ctx context.Context, orgID uuid.UUID, sta
 }
 
 // GetLeadsByActiveStatus retrieves leads by active status
-func (s *LeadService) GetLeadsByActiveStatus(ctx context.Context, orgID uuid.UUID, active bool) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByActiveStatus(ctx context.Context, orgID uuid.UUID, active bool) ([]*types.Lead, error) {
 	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		Active:         &active,
@@ -827,7 +827,7 @@ func (s *LeadService) GetLeadsByActiveStatus(ctx context.Context, orgID uuid.UUI
 }
 
 // GetLeadsByPriority retrieves leads by priority
-func (s *LeadService) GetLeadsByPriority(ctx context.Context, orgID uuid.UUID, priority types.LeadPriority) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByPriority(ctx context.Context, orgID uuid.UUID, priority types.LeadPriority) ([]*types.Lead, error) {
 	if priority == "" {
 		return nil, fmt.Errorf("priority cannot be empty")
 	}
@@ -846,7 +846,7 @@ func (s *LeadService) GetLeadsByPriority(ctx context.Context, orgID uuid.UUID, p
 }
 
 // GetLeadsByType retrieves leads by type
-func (s *LeadService) GetLeadsByType(ctx context.Context, orgID uuid.UUID, leadType types.LeadType) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByType(ctx context.Context, orgID uuid.UUID, leadType types.LeadType) ([]*types.Lead, error) {
 	if leadType == "" {
 		return nil, fmt.Errorf("lead type cannot be empty")
 	}
@@ -865,7 +865,7 @@ func (s *LeadService) GetLeadsByType(ctx context.Context, orgID uuid.UUID, leadT
 }
 
 // GetLeadsByWonStatus retrieves leads by won status
-func (s *LeadService) GetLeadsByWonStatus(ctx context.Context, orgID uuid.UUID, wonStatus types.LeadWonStatus) ([]types.Lead, error) {
+func (s *LeadService) GetLeadsByWonStatus(ctx context.Context, orgID uuid.UUID, wonStatus types.LeadWonStatus) ([]*types.Lead, error) {
 	if wonStatus == "" {
 		return nil, fmt.Errorf("won status cannot be empty")
 	}
@@ -885,7 +885,7 @@ func (s *LeadService) GetLeadsByWonStatus(ctx context.Context, orgID uuid.UUID, 
 
 // CountLeadsByStage counts leads by stage
 func (s *LeadService) CountLeadsByStage(ctx context.Context, orgID uuid.UUID) (map[uuid.UUID]int, error) {
-	counts, err := s.repo.CountByStage(ctx, orgID)
+	counts, err := s.repo.CountByStage(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to count leads by stage: %w", err)
 	}

@@ -110,7 +110,7 @@ func (s *SalesTeamService) GetSalesTeam(ctx context.Context, id uuid.UUID) (*typ
 	return team, nil
 }
 
-func (s *SalesTeamService) ListSalesTeams(ctx context.Context, filter types.SalesTeamFilter) ([]types.SalesTeam, error) {
+func (s *SalesTeamService) ListSalesTeams(ctx context.Context, filter types.SalesTeamFilter) ([]*types.SalesTeam, error) {
 	// Permission check
 	if err := s.authService.CheckPermission(ctx, "crm:sales_teams:read"); err != nil {
 		return nil, fmt.Errorf("permission denied: %w", err)

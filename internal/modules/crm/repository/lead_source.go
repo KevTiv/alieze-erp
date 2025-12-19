@@ -52,7 +52,7 @@ func (r *leadSourceRepository) FindByID(ctx context.Context, id uuid.UUID) (*typ
 	return &source, nil
 }
 
-func (r *leadSourceRepository) FindAll(ctx context.Context, filter types.LeadSourceFilter) ([]types.LeadSource, error) {
+func (r *leadSourceRepository) FindAll(ctx context.Context, filter types.LeadSourceFilter) ([]*types.LeadSource, error) {
 	query := `SELECT id, organization_id, name, created_at FROM lead_sources WHERE organization_id = $1`
 
 	var args []interface{}
@@ -79,13 +79,13 @@ func (r *leadSourceRepository) FindAll(ctx context.Context, filter types.LeadSou
 	}
 	defer rows.Close()
 
-	var sources []types.LeadSource
+	var sources []*types.LeadSource
 	for rows.Next() {
 		var source types.LeadSource
 		if err := rows.Scan(&source.ID, &source.OrganizationID, &source.Name, &source.CreatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan lead source: %w", err)
 		}
-		sources = append(sources, source)
+		sources = append(sources, &source)
 	}
 
 	if err := rows.Err(); err != nil {

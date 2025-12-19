@@ -153,28 +153,54 @@ func (s *AssignmentRuleService) UpdateAssignmentRule(ctx context.Context, id uui
 	existingRule.UpdatedBy = userID
 	existingRule.UpdatedAt = time.Now()
 
-	err = s.repo.UpdateAssignmentRule(ctx, existingRule)
+	updatedRule, err := s.repo.Update(ctx, *existingRule)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update assignment rule: %w", err)
 	}
 
-	return existingRule, nil
+	return updatedRule, nil
 }
 
 // DeleteAssignmentRule deletes an assignment rule
 func (s *AssignmentRuleService) DeleteAssignmentRule(ctx context.Context, id uuid.UUID) error {
-	return s.repo.DeleteAssignmentRule(ctx, id)
+	return s.repo.Delete(ctx, id)
 }
 
 // ListAssignmentRules lists assignment rules with filters
 func (s *AssignmentRuleService) ListAssignmentRules(ctx context.Context, orgID uuid.UUID, targetModel string, activeOnly bool) ([]*types.AssignmentRule, error) {
-	return s.repo.ListAssignmentRules(ctx, orgID, targetModel, activeOnly)
+	// Convert targetModel to AssignmentTargetModel
+	target := types.AssignmentTargetModel(targetModel)
+
+	// Get all rules for the target model
+	rules, err := s.repo.FindByTargetModel(ctx, target)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list assignment rules: %w", err)
+	}
+
+	// Filter by active status if needed
+	if activeOnly {
+		var activeRules []*types.AssignmentRule
+		for i := range rules {
+			if rules[i].IsActive {
+				activeRules = append(activeRules, &rules[i])
+			}
+		}
+		return activeRules, nil
+	}
+
+	// Convert to pointer slice
+	result := make([]*types.AssignmentRule, len(rules))
+	for i := range rules {
+		result[i] = &rules[i]
+	}
+
+	return result, nil
 }
 
 // CreateTerritory creates a new territory
 func (s *AssignmentRuleService) CreateTerritory(ctx context.Context, req *types.CreateTerritoryRequest) (*types.Territory, error) {
 	// Validate request
-	if &req.Name != nil {
+	if req.Name == "" {
 		return nil, fmt.Errorf("name is required")
 	}
 

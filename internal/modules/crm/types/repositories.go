@@ -11,7 +11,7 @@ import (
 type CRUDRepository[T any, F any] interface {
 	Create(ctx context.Context, entity T) (*T, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*T, error)
-	FindAll(ctx context.Context, filter F) ([]T, error)
+	FindAll(ctx context.Context, filter F) ([]*T, error)
 	Update(ctx context.Context, entity T) (*T, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	Count(ctx context.Context, filter F) (int, error)
@@ -46,7 +46,7 @@ type LeadRepository interface {
 	FindByDeadlineRange(ctx context.Context, startDate, endDate time.Time) ([]Lead, error)
 
 	// Utility methods
-	CountByStage(ctx context.Context, orgID uuid.UUID) (map[uuid.UUID]int, error)
+	CountByStage(ctx context.Context) (map[uuid.UUID]int, error)
 	FindOverdue(ctx context.Context) ([]Lead, error)
 	FindHighValue(ctx context.Context, minValue float64) ([]Lead, error)
 	FindBySearchTerm(ctx context.Context, searchTerm string) ([]Lead, error)

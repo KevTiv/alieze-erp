@@ -18,22 +18,27 @@ type LeadServiceOptions struct {
 }
 
 // NewLeadService creates a new LeadService
+// AssignmentRuleAssigner defines the interface for assignment rule functionality
+type AssignmentRuleAssigner interface {
+	AssignLead(ctx context.Context, leadID uuid.UUID, conditions map[string]interface{}) (*types.AssignmentResult, error)
+}
+
 type NewLeadServiceOptions struct {
-	LeadRepository types.LeadRepository
-	RuleEngine     *rules.RuleEngine
+	LeadRepository         types.LeadRepository
+	AssignmentRuleAssigner AssignmentRuleAssigner
 }
 
 // LeadService provides lead management functionality
 type LeadService struct {
-	repo       types.LeadRepository
-	ruleEngine *rules.RuleEngine
+	repo                   types.LeadRepository
+	assignmentRuleAssigner AssignmentRuleAssigner
 }
 
 // NewLeadService creates a new LeadService instance
 func NewLeadService(opts NewLeadServiceOptions) *LeadService {
 	return &LeadService{
-		repo:       opts.LeadRepository,
-		ruleEngine: opts.RuleEngine,
+		repo:                   opts.LeadRepository,
+		assignmentRuleAssigner: opts.AssignmentRuleAssigner,
 	}
 }
 
@@ -103,8 +108,18 @@ func (s *LeadService) CreateLead(ctx context.Context, orgID uuid.UUID, req types
 	}
 
 	// Apply assignment rules if available
-	if s.ruleEngine != nil {
-		// TODO: Implement assignment rule logic
+	if s.assignmentRuleAssigner != nil {
+		// Use assignment rule assigner to assign the lead
+		assignmentResult, err := s.assignmentRuleAssigner.AssignLead(ctx, lead.ID, map[string]interface{}{
+			"lead_type": lead.LeadType,
+			"priority":  lead.Priority,
+		})
+		if err != nil {
+			// Log the error but don't fail lead creation
+			// s.logger.Warn("Failed to apply assignment rules", "error", err)
+		} else if assignmentResult != nil && assignmentResult.AssignedToID != uuid.Nil {
+			lead.AssignedTo = &assignmentResult.AssignedToID
+		}
 	}
 
 	// Create the lead in the repository
@@ -288,7 +303,7 @@ func (s *LeadService) DeleteLead(ctx context.Context, orgID uuid.UUID, id uuid.U
 }
 
 // ListLeads lists leads with filtering
-func (s *LeadService) ListLeads(ctx context.Context, orgID uuid.UUID, filter types.LeadFilter) ([]types.Lead, error) {
+func (s *LeadService) ListLeads(ctx context.Context, orgID uuid.UUID, filter types.LeadFilter) ([]*types.Lead, error) {
 	filter.OrganizationID = orgID
 	return s.repo.FindAll(ctx, filter)
 }

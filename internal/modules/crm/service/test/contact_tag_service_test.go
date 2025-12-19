@@ -197,9 +197,14 @@ func TestContactTagService_ListContactTags(t *testing.T) {
 	// Mock expectations
 	mockAuth.On("CheckPermission", mock.Anything, "crm:contact_tags:read").Return(nil)
 	mockAuth.On("GetOrganizationID", mock.Anything).Return(orgID, nil)
+	// Convert tags to pointers for the mock
+	tagPtrs := make([]*types.ContactTag, len(tags))
+	for i := range tags {
+		tagPtrs[i] = &tags[i]
+	}
 	mockRepo.On("FindAll", mock.Anything, mock.MatchedBy(func(f types.ContactTagFilter) bool {
 		return f.OrganizationID == orgID
-	})).Return(tags, nil)
+	})).Return(tagPtrs, nil)
 
 	// Test
 	result, err := service.ListContactTags(context.Background(), types.ContactTagFilter{})

@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"alieze-erp/internal/modules/crm/types"
+
 	"github.com/google/uuid"
 )
 
@@ -51,7 +52,7 @@ func (r *contactTagRepository) FindByID(ctx context.Context, id uuid.UUID) (*typ
 	return &tag, nil
 }
 
-func (r *contactTagRepository) FindAll(ctx context.Context, filter types.ContactTagFilter) ([]types.ContactTag, error) {
+func (r *contactTagRepository) FindAll(ctx context.Context, filter types.ContactTagFilter) ([]*types.ContactTag, error) {
 	query := `SELECT id, organization_id, name, color, created_at FROM contact_tags WHERE organization_id = $1`
 
 	var args []interface{}
@@ -78,13 +79,13 @@ func (r *contactTagRepository) FindAll(ctx context.Context, filter types.Contact
 	}
 	defer rows.Close()
 
-	var tags []types.ContactTag
+	var tags []*types.ContactTag
 	for rows.Next() {
 		var tag types.ContactTag
 		if err := rows.Scan(&tag.ID, &tag.OrganizationID, &tag.Name, &tag.Color, &tag.CreatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan contact tag: %w", err)
 		}
-		tags = append(tags, tag)
+		tags = append(tags, &tag)
 	}
 
 	if err := rows.Err(); err != nil {

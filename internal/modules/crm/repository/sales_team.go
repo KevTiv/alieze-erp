@@ -59,7 +59,7 @@ func (r *salesTeamRepository) FindByID(ctx context.Context, id uuid.UUID) (*type
 	return &team, nil
 }
 
-func (r *salesTeamRepository) FindAll(ctx context.Context, filter types.SalesTeamFilter) ([]types.SalesTeam, error) {
+func (r *salesTeamRepository) FindAll(ctx context.Context, filter types.SalesTeamFilter) ([]*types.SalesTeam, error) {
 	query := `SELECT id, organization_id, company_id, name, code, team_leader_id, member_ids, is_active, created_at, updated_at, created_by, updated_by, deleted_at FROM sales_teams WHERE organization_id = $1`
 
 	var args []interface{}
@@ -106,7 +106,7 @@ func (r *salesTeamRepository) FindAll(ctx context.Context, filter types.SalesTea
 	}
 	defer rows.Close()
 
-	var teams []types.SalesTeam
+	var teams []*types.SalesTeam
 	for rows.Next() {
 		var team types.SalesTeam
 		if err := rows.Scan(&team.ID, &team.OrganizationID, &team.CompanyID, &team.Name, &team.Code,
@@ -114,7 +114,7 @@ func (r *salesTeamRepository) FindAll(ctx context.Context, filter types.SalesTea
 			&team.CreatedBy, &team.UpdatedBy, &team.DeletedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan sales team: %w", err)
 		}
-		teams = append(teams, team)
+		teams = append(teams, &team)
 	}
 
 	if err := rows.Err(); err != nil {
