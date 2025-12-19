@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"alieze-erp/internal/modules/products/service"
-	"alieze-erp/internal/modules/products/types"
-	"alieze-erp/internal/testutils"
+	"github.com/KevTiv/alieze-erp/internal/modules/products/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/products/types"
+	"github.com/KevTiv/alieze-erp/internal/testutils"
 )
 
 type ProductServiceTestSuite struct {

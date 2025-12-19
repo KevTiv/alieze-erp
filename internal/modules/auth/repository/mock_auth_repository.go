@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"alieze-erp/internal/modules/auth/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/auth/types"
 
 	"github.com/google/uuid"
 )

@@ -3,7 +3,7 @@ package service_test
 import (
 	"testing"
 
-	"alieze-erp/internal/modules/accounting/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/accounting/service"
 
 	"github.com/stretchr/testify/assert"
 )

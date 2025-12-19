@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	deliveryrepository "alieze-erp/internal/modules/delivery/repository"
-	deliverytypes "alieze-erp/internal/modules/delivery/types"
-	"alieze-erp/pkg/events"
+	deliveryrepository "github.com/KevTiv/alieze-erp/internal/modules/delivery/repository"
+	deliverytypes "github.com/KevTiv/alieze-erp/internal/modules/delivery/types"
+	"github.com/KevTiv/alieze-erp/pkg/events"
 
 	"github.com/google/uuid"
 )

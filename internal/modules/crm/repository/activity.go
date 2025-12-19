@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
 
 	"github.com/google/uuid"
 )
@@ -59,7 +59,7 @@ func (r *activityRepository) FindByID(ctx context.Context, id uuid.UUID) (*types
 	return &activity, nil
 }
 
-func (r *activityRepository) FindAll(ctx context.Context, filter types.ActivityFilter) ([]types.Activity, error) {
+func (r *activityRepository) FindAll(ctx context.Context, filter types.ActivityFilter) ([]*types.Activity, error) {
 	query := `SELECT id, organization_id, activity_type, summary, note, date_deadline, user_id, assigned_to, res_model, res_id, state, done_date, created_at, updated_at, created_by, updated_by FROM activities WHERE organization_id = $1`
 
 	var args []interface{}
@@ -111,7 +111,7 @@ func (r *activityRepository) FindAll(ctx context.Context, filter types.ActivityF
 	}
 	defer rows.Close()
 
-	var activities []types.Activity
+	var activities []*types.Activity
 	for rows.Next() {
 		var activity types.Activity
 		if err := rows.Scan(&activity.ID, &activity.OrganizationID, &activity.ActivityType, &activity.Summary, &activity.Note,
@@ -119,7 +119,7 @@ func (r *activityRepository) FindAll(ctx context.Context, filter types.ActivityF
 			&activity.State, &activity.DoneDate, &activity.CreatedAt, &activity.UpdatedAt, &activity.CreatedBy, &activity.UpdatedBy); err != nil {
 			return nil, fmt.Errorf("failed to scan activity: %w", err)
 		}
-		activities = append(activities, activity)
+		activities = append(activities, &activity)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -223,7 +223,7 @@ func (r *activityRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *activityRepository) FindByContact(ctx context.Context, contactID uuid.UUID) ([]types.Activity, error) {
+func (r *activityRepository) FindByContact(ctx context.Context, contactID uuid.UUID) ([]*types.Activity, error) {
 	query := `SELECT id, organization_id, activity_type, summary, note, date_deadline, user_id, assigned_to, res_model, res_id, state, done_date, created_at, updated_at, created_by, updated_by FROM activities WHERE res_model = 'contacts' AND res_id = $1 ORDER BY date_deadline, created_at`
 
 	rows, err := r.db.QueryContext(ctx, query, contactID)
@@ -232,7 +232,7 @@ func (r *activityRepository) FindByContact(ctx context.Context, contactID uuid.U
 	}
 	defer rows.Close()
 
-	var activities []types.Activity
+	var activities []*types.Activity
 	for rows.Next() {
 		var activity types.Activity
 		if err := rows.Scan(&activity.ID, &activity.OrganizationID, &activity.ActivityType, &activity.Summary, &activity.Note,
@@ -240,7 +240,7 @@ func (r *activityRepository) FindByContact(ctx context.Context, contactID uuid.U
 			&activity.State, &activity.DoneDate, &activity.CreatedAt, &activity.UpdatedAt, &activity.CreatedBy, &activity.UpdatedBy); err != nil {
 			return nil, fmt.Errorf("failed to scan activity: %w", err)
 		}
-		activities = append(activities, activity)
+		activities = append(activities, &activity)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -250,7 +250,7 @@ func (r *activityRepository) FindByContact(ctx context.Context, contactID uuid.U
 	return activities, nil
 }
 
-func (r *activityRepository) FindByLead(ctx context.Context, leadID uuid.UUID) ([]types.Activity, error) {
+func (r *activityRepository) FindByLead(ctx context.Context, leadID uuid.UUID) ([]*types.Activity, error) {
 	query := `SELECT id, organization_id, activity_type, summary, note, date_deadline, user_id, assigned_to, res_model, res_id, state, done_date, created_at, updated_at, created_by, updated_by FROM activities WHERE res_model = 'leads' AND res_id = $1 ORDER BY date_deadline, created_at`
 
 	rows, err := r.db.QueryContext(ctx, query, leadID)
@@ -259,7 +259,7 @@ func (r *activityRepository) FindByLead(ctx context.Context, leadID uuid.UUID) (
 	}
 	defer rows.Close()
 
-	var activities []types.Activity
+	var activities []*types.Activity
 	for rows.Next() {
 		var activity types.Activity
 		if err := rows.Scan(&activity.ID, &activity.OrganizationID, &activity.ActivityType, &activity.Summary, &activity.Note,
@@ -267,7 +267,7 @@ func (r *activityRepository) FindByLead(ctx context.Context, leadID uuid.UUID) (
 			&activity.State, &activity.DoneDate, &activity.CreatedAt, &activity.UpdatedAt, &activity.CreatedBy, &activity.UpdatedBy); err != nil {
 			return nil, fmt.Errorf("failed to scan activity: %w", err)
 		}
-		activities = append(activities, activity)
+		activities = append(activities, &activity)
 	}
 
 	if err := rows.Err(); err != nil {

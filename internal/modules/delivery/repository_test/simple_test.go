@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	deliverytypes "alieze-erp/internal/modules/delivery/types"
-	deliveryrepository "alieze-erp/internal/modules/delivery/repository"
+	deliverytypes "github.com/KevTiv/alieze-erp/internal/modules/delivery/types"
+	deliveryrepository "github.com/KevTiv/alieze-erp/internal/modules/delivery/repository"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

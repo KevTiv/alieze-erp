@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"alieze-erp/internal/modules/crm/service"
-	"alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"

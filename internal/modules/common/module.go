@@ -4,10 +4,10 @@ import (
 	"context"
 	"log/slog"
 
-	"alieze-erp/internal/modules/common/handler"
-	"alieze-erp/internal/modules/common/repository"
-	"alieze-erp/internal/modules/common/service"
-	"alieze-erp/pkg/registry"
+	"github.com/KevTiv/alieze-erp/internal/modules/common/handler"
+	"github.com/KevTiv/alieze-erp/internal/modules/common/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/common/service"
+	"github.com/KevTiv/alieze-erp/pkg/registry"
 	"github.com/julienschmidt/httprouter"
 )
 

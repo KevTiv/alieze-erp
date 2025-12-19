@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"alieze-erp/internal/modules/crm/types"
-	"alieze-erp/pkg/events"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/pkg/events"
 
 	"github.com/google/uuid"
 )

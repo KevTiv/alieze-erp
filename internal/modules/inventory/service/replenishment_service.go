@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"alieze-erp/internal/modules/inventory/repository"
-	"alieze-erp/internal/modules/inventory/types"
-	productsRepo "alieze-erp/internal/modules/products/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/inventory/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/inventory/types"
+	productsRepo "github.com/KevTiv/alieze-erp/internal/modules/products/repository"
 
 	"github.com/google/uuid"
 )

@@ -4,8 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	"alieze-erp/internal/modules/auth/types"
-	"alieze-erp/pkg/events"
+	"github.com/KevTiv/alieze-erp/internal/modules/auth/types"
+	"github.com/KevTiv/alieze-erp/pkg/events"
 	"github.com/google/uuid"
 )
 

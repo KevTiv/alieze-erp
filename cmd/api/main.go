@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"alieze-erp/internal/server"
+	"github.com/KevTiv/alieze-erp/internal/server"
 )
 
 func gracefulShutdown(apiServer *http.Server, done chan bool) {

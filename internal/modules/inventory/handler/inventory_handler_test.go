@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"alieze-erp/internal/modules/inventory/types"
-	"alieze-erp/internal/modules/inventory/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/inventory/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/inventory/service"
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"

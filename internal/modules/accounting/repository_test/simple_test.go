@@ -3,7 +3,7 @@ package repository_test
 import (
 	"testing"
 
-	"alieze-erp/internal/modules/accounting/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/accounting/repository"
 
 	"github.com/stretchr/testify/assert"
 )

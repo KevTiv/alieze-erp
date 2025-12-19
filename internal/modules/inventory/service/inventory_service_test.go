@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"alieze-erp/internal/modules/inventory/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/inventory/types"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

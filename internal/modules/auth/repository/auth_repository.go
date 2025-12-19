@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"alieze-erp/internal/modules/auth/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/auth/types"
 
 	"github.com/google/uuid"
 )

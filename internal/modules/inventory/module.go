@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 
-	"alieze-erp/internal/modules/inventory/handler"
-	"alieze-erp/internal/modules/inventory/repository"
-	"alieze-erp/internal/modules/inventory/service"
-	productsRepo "alieze-erp/internal/modules/products/repository"
-	"alieze-erp/pkg/registry"
+	"github.com/KevTiv/alieze-erp/internal/modules/inventory/handler"
+	"github.com/KevTiv/alieze-erp/internal/modules/inventory/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/inventory/service"
+	productsRepo "github.com/KevTiv/alieze-erp/internal/modules/products/repository"
+	"github.com/KevTiv/alieze-erp/pkg/registry"
 
 	"github.com/julienschmidt/httprouter"
 )

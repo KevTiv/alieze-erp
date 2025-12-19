@@ -3,8 +3,8 @@ package testutils
 import (
 	"context"
 
-	"alieze-erp/internal/modules/products/types"
-	"alieze-erp/internal/modules/products/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/products/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/products/repository"
 
 	"github.com/google/uuid"
 )

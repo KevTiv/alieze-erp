@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 
-	"alieze-erp/internal/modules/sales/handler"
-	"alieze-erp/internal/modules/sales/repository"
-	"alieze-erp/internal/modules/sales/service"
-	"alieze-erp/pkg/registry"
-	"alieze-erp/pkg/tax"
+	"github.com/KevTiv/alieze-erp/internal/modules/sales/handler"
+	"github.com/KevTiv/alieze-erp/internal/modules/sales/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/sales/service"
+	"github.com/KevTiv/alieze-erp/pkg/registry"
+	"github.com/KevTiv/alieze-erp/pkg/tax"
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 )

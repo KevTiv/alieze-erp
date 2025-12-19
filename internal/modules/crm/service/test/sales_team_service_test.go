@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"alieze-erp/internal/modules/crm/service"
-	"alieze-erp/internal/modules/crm/types"
-	"alieze-erp/internal/testutils"
-	"alieze-erp/pkg/events"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/internal/testutils"
+	"github.com/KevTiv/alieze-erp/pkg/events"
 )
 
 type SalesTeamServiceTestSuite struct {
@@ -314,7 +314,7 @@ func (s *SalesTeamServiceTestSuite) TestListSalesTeamsSuccess() {
 		}
 
 		// Mock repository behavior
-		expectedTeams := []types.SalesTeam{
+		expectedTeams := []*types.SalesTeam{
 			{
 				ID:             uuid.Must(uuid.NewV7()),
 				OrganizationID: s.orgID,
@@ -331,7 +331,7 @@ func (s *SalesTeamServiceTestSuite) TestListSalesTeamsSuccess() {
 			},
 		}
 
-		s.repo.WithFindAllFunc(func(ctx context.Context, f types.SalesTeamFilter) ([]types.SalesTeam, error) {
+		s.repo.WithFindAllFunc(func(ctx context.Context, f types.SalesTeamFilter) ([]*types.SalesTeam, error) {
 			require.Equal(t, s.orgID, f.OrganizationID)
 			require.Equal(t, filter.Name, f.Name)
 			require.Equal(t, filter.IsActive, f.IsActive)
@@ -349,15 +349,6 @@ func (s *SalesTeamServiceTestSuite) TestListSalesTeamsSuccess() {
 		require.Equal(t, expectedTeams[0].Name, teams[0].Name)
 		require.Equal(t, expectedTeams[1].Name, teams[1].Name)
 	})
-}
-
-// Helper functions
-func stringPtr(s string) *string {
-	return &s
-}
-
-func boolPtr(b bool) *bool {
-	return &b
 }
 
 // Run the test suite

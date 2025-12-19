@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"alieze-erp/internal/modules/accounting/types"
-	"alieze-erp/internal/modules/accounting/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/accounting/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/accounting/repository"
 
 	"github.com/google/uuid"
 )

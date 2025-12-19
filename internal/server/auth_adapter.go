@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"alieze-erp/internal/modules/auth/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/auth/service"
 
 	"github.com/google/uuid"
 )

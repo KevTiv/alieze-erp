@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	authTypes "alieze-erp/internal/modules/auth/types"
-	"alieze-erp/pkg/crm/errors"
+	authTypes "github.com/KevTiv/alieze-erp/internal/modules/auth/types"
+	"github.com/KevTiv/alieze-erp/pkg/crm/errors"
 	"github.com/google/uuid"
 )
 

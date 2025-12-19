@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"alieze-erp/internal/modules/inventory/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/inventory/types"
 
 	"github.com/google/uuid"
 )

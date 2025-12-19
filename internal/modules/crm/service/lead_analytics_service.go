@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
 
 	"github.com/google/uuid"
 )

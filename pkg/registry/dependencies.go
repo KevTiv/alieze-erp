@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"log/slog"
 
-	"alieze-erp/pkg/events"
-	"alieze-erp/pkg/policy"
-	"alieze-erp/pkg/rules"
-	"alieze-erp/pkg/workflow"
+	"github.com/KevTiv/alieze-erp/pkg/events"
+	"github.com/KevTiv/alieze-erp/pkg/policy"
+	"github.com/KevTiv/alieze-erp/pkg/rules"
+	"github.com/KevTiv/alieze-erp/pkg/workflow"
 )
 
 // Dependencies contains the shared dependencies for all modules

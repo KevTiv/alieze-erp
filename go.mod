@@ -1,4 +1,4 @@
-module alieze-erp
+module github.com/KevTiv/alieze-erp
 
 go 1.25.4
 

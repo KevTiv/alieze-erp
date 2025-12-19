@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	deliverytypes "alieze-erp/internal/modules/delivery/types"
+	deliverytypes "github.com/KevTiv/alieze-erp/internal/modules/delivery/types"
 
 	"github.com/google/uuid"
 )

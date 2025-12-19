@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"alieze-erp/internal/modules/inventory/service"
-	"alieze-erp/internal/modules/inventory/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/inventory/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/inventory/types"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"

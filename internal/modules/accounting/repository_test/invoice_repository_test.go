@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"alieze-erp/internal/modules/accounting/repository"
-	types "alieze-erp/internal/modules/accounting/types"
-	"alieze-erp/internal/testutils"
+	"github.com/KevTiv/alieze-erp/internal/modules/accounting/repository"
+	types "github.com/KevTiv/alieze-erp/internal/modules/accounting/types"
+	"github.com/KevTiv/alieze-erp/internal/testutils"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

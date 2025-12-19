@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"alieze-erp/internal/modules/auth/repository"
-	"alieze-erp/internal/modules/auth/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/auth/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/auth/types"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

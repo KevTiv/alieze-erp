@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"alieze-erp/internal/modules/auth/utils"
+	"github.com/KevTiv/alieze-erp/internal/modules/auth/utils"
 
 	"github.com/google/uuid"
 )

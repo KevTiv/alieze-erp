@@ -9,16 +9,19 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"alieze-erp/internal/modules/crm/service"
-	"alieze-erp/internal/modules/crm/types"
-	"alieze-erp/internal/testutils"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/internal/testutils"
+	"github.com/KevTiv/alieze-erp/pkg/crm/base"
+	"github.com/KevTiv/alieze-erp/pkg/events"
 )
 
 type ContactServiceTestSuite struct {
 	suite.Suite
-	service   *service.ContactService
+	service   *service.ContactServiceV2
 	repo      *testutils.MockContactRepository
 	auth      *testutils.MockAuthService
+	eventBus  *events.Bus
 	ctx       context.Context
 	orgID     uuid.UUID
 	userID    uuid.UUID
@@ -30,7 +33,10 @@ func (s *ContactServiceTestSuite) SetupTest() {
 
 	s.repo = testutils.NewMockContactRepository()
 	s.auth = testutils.NewMockAuthService()
-	s.service = service.NewContactService(s.repo, s.auth)
+	s.eventBus = &events.Bus{}
+	s.service = service.NewContactServiceV2(s.repo, s.auth, base.ServiceOptions{
+		EventBus: s.eventBus,
+	})
 	s.ctx = context.Background()
 	s.orgID = uuid.Must(uuid.NewV7())
 	s.userID = uuid.Must(uuid.NewV7())
@@ -53,31 +59,37 @@ func (s *ContactServiceTestSuite) TearDownTest() {
 func (s *ContactServiceTestSuite) TestCreateContactSuccess() {
 	s.T().Run("CreateContact - Success", func(t *testing.T) {
 		// Setup test data
-		contact := types.Contact{
-			Name:       "John Doe",
-			Email:      stringPtr("john@example.com"),
-			Phone:      stringPtr("1234567890"),
-			IsCustomer: true,
+		request := service.ContactRequest{
+			Name:           "John Doe",
+			Email:          stringPtr("john@example.com"),
+			Phone:          stringPtr("1234567890"),
+			IsCustomer:     true,
+			OrganizationID: s.orgID,
 		}
 
 		// Mock repository behavior
-		expectedContact := contact
-		expectedContact.ID = s.contactID
-		expectedContact.OrganizationID = s.orgID
-		expectedContact.CreatedAt = time.Now()
-		expectedContact.UpdatedAt = time.Now()
+		expectedContact := types.Contact{
+			ID:             s.contactID,
+			OrganizationID: s.orgID,
+			Name:           request.Name,
+			Email:          request.Email,
+			Phone:          request.Phone,
+			IsCustomer:     request.IsCustomer,
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+		}
 
 		s.repo.WithCreateFunc(func(ctx context.Context, c types.Contact) (*types.Contact, error) {
 			require.Equal(t, s.orgID, c.OrganizationID)
-			require.Equal(t, contact.Name, c.Name)
-			require.Equal(t, contact.Email, c.Email)
-			require.Equal(t, contact.Phone, c.Phone)
-			require.Equal(t, contact.IsCustomer, c.IsCustomer)
+			require.Equal(t, request.Name, c.Name)
+			require.Equal(t, request.Email, c.Email)
+			require.Equal(t, request.Phone, c.Phone)
+			require.Equal(t, request.IsCustomer, c.IsCustomer)
 			return &expectedContact, nil
 		})
 
 		// Execute
-		created, err := s.service.CreateContact(s.ctx, contact)
+		created, err := s.service.CreateContact(s.ctx, request)
 
 		// Assert
 		require.NoError(t, err)
@@ -98,21 +110,23 @@ func (s *ContactServiceTestSuite) TestCreateContactValidationError() {
 		// Test cases with validation errors
 		testCases := []struct {
 			name        string
-			contact     types.Contact
+			request     service.ContactRequest
 			expectedErr string
 		}{
 			{
 				name: "Empty Name",
-				contact: types.Contact{
-					Email: stringPtr("john@example.com"),
+				request: service.ContactRequest{
+					Email:          stringPtr("john@example.com"),
+					OrganizationID: s.orgID,
 				},
 				expectedErr: "contact name is required",
 			},
 			{
 				name: "Invalid Email",
-				contact: types.Contact{
-					Name:  "John Doe",
-					Email: stringPtr("invalid-email"),
+				request: service.ContactRequest{
+					Name:           "John Doe",
+					Email:          stringPtr("invalid-email"),
+					OrganizationID: s.orgID,
 				},
 				expectedErr: "invalid email format",
 			},
@@ -121,7 +135,7 @@ func (s *ContactServiceTestSuite) TestCreateContactValidationError() {
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				// Execute
-				created, err := s.service.CreateContact(s.ctx, tc.contact)
+				created, err := s.service.CreateContact(s.ctx, tc.request)
 
 				// Assert
 				require.Error(t, err)
@@ -135,16 +149,17 @@ func (s *ContactServiceTestSuite) TestCreateContactValidationError() {
 func (s *ContactServiceTestSuite) TestCreateContactPermissionError() {
 	s.T().Run("CreateContact - Permission Error", func(t *testing.T) {
 		// Setup test data
-		contact := types.Contact{
-			Name:  "John Doe",
-			Email: stringPtr("john@example.com"),
+		request := service.ContactRequest{
+			Name:           "John Doe",
+			Email:          stringPtr("john@example.com"),
+			OrganizationID: s.orgID,
 		}
 
 		// Mock permission denial
 		s.auth.DenyPermission("contacts:create")
 
 		// Execute
-		created, err := s.service.CreateContact(s.ctx, contact)
+		created, err := s.service.CreateContact(s.ctx, request)
 
 		// Assert
 		require.Error(t, err)
@@ -290,13 +305,12 @@ func (s *ContactServiceTestSuite) TestUpdateContactSuccess() {
 	s.T().Run("UpdateContact - Success", func(t *testing.T) {
 		// Setup test data
 		contactID := s.contactID
-		contact := types.Contact{
-			ID:         contactID,
-			Name:       "John Doe Updated",
+		request := service.ContactUpdateRequest{
+			Name:       stringPtr("John Doe Updated"),
 			Email:      stringPtr("john.updated@example.com"),
 			Phone:      stringPtr("5555555555"),
-			IsCustomer: false,
-			IsVendor:   true,
+			IsCustomer: boolPtr(false),
+			IsVendor:   boolPtr(true),
 		}
 
 		// Mock repository behavior
@@ -308,9 +322,16 @@ func (s *ContactServiceTestSuite) TestUpdateContactSuccess() {
 			IsCustomer:     true,
 		}
 
-		expectedContact := contact
-		expectedContact.OrganizationID = s.orgID
-		expectedContact.UpdatedAt = time.Now()
+		expectedContact := types.Contact{
+			ID:             contactID,
+			OrganizationID: s.orgID,
+			Name:           *request.Name,
+			Email:          request.Email,
+			Phone:          request.Phone,
+			IsCustomer:     *request.IsCustomer,
+			IsVendor:       *request.IsVendor,
+			UpdatedAt:      time.Now(),
+		}
 
 		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Contact, error) {
 			require.Equal(t, contactID, id)
@@ -320,16 +341,16 @@ func (s *ContactServiceTestSuite) TestUpdateContactSuccess() {
 		s.repo.WithUpdateFunc(func(ctx context.Context, c types.Contact) (*types.Contact, error) {
 			require.Equal(t, contactID, c.ID)
 			require.Equal(t, s.orgID, c.OrganizationID)
-			require.Equal(t, contact.Name, c.Name)
-			require.Equal(t, contact.Email, c.Email)
-			require.Equal(t, contact.Phone, c.Phone)
-			require.Equal(t, contact.IsCustomer, c.IsCustomer)
-			require.Equal(t, contact.IsVendor, c.IsVendor)
+			require.Equal(t, *request.Name, c.Name)
+			require.Equal(t, request.Email, c.Email)
+			require.Equal(t, request.Phone, c.Phone)
+			require.Equal(t, *request.IsCustomer, c.IsCustomer)
+			require.Equal(t, *request.IsVendor, c.IsVendor)
 			return &expectedContact, nil
 		})
 
 		// Execute
-		updated, err := s.service.UpdateContact(s.ctx, contact)
+		updated, err := s.service.UpdateContact(s.ctx, contactID, request)
 
 		// Assert
 		require.NoError(t, err)
@@ -350,33 +371,27 @@ func (s *ContactServiceTestSuite) TestUpdateContactValidationError() {
 		// Test cases with validation errors
 		testCases := []struct {
 			name        string
-			contact     types.Contact
+			request     service.ContactUpdateRequest
+			contactID   uuid.UUID
 			expectedErr string
 			mockRepo    bool // Whether to mock the repository for organization check
 		}{
 			{
-				name: "Empty ID",
-				contact: types.Contact{
-					Name: "John Doe",
-				},
-				expectedErr: "contact id is required",
-				mockRepo:    false,
-			},
-			{
 				name: "Empty Name",
-				contact: types.Contact{
-					ID: s.contactID,
+				request: service.ContactUpdateRequest{
+					Name: stringPtr(""),
 				},
+				contactID:   s.contactID,
 				expectedErr: "contact name is required",
 				mockRepo:    false,
 			},
 			{
 				name: "Invalid Email",
-				contact: types.Contact{
-					ID:    s.contactID,
-					Name:  "John Doe",
+				request: service.ContactUpdateRequest{
+					Name:  stringPtr("John Doe"),
 					Email: stringPtr("invalid-email"),
 				},
+				contactID:   s.contactID,
 				expectedErr: "invalid email format",
 				mockRepo:    true, // Need to mock repo for organization check
 			},
@@ -398,7 +413,7 @@ func (s *ContactServiceTestSuite) TestUpdateContactValidationError() {
 				}
 
 				// Execute
-				updated, err := s.service.UpdateContact(s.ctx, tc.contact)
+				updated, err := s.service.UpdateContact(s.ctx, tc.contactID, tc.request)
 
 				// Assert
 				require.Error(t, err)
@@ -412,9 +427,9 @@ func (s *ContactServiceTestSuite) TestUpdateContactValidationError() {
 func (s *ContactServiceTestSuite) TestUpdateContactPermissionError() {
 	s.T().Run("UpdateContact - Permission Error", func(t *testing.T) {
 		// Setup test data
-		contact := types.Contact{
-			ID:   s.contactID,
-			Name: "John Doe",
+		contactID := s.contactID
+		request := service.ContactUpdateRequest{
+			Name: stringPtr("John Doe"),
 		}
 
 		// Mock repository behavior - contact belongs to the organization
@@ -432,7 +447,7 @@ func (s *ContactServiceTestSuite) TestUpdateContactPermissionError() {
 		s.auth.DenyPermission("contacts:update")
 
 		// Execute
-		updated, err := s.service.UpdateContact(s.ctx, contact)
+		updated, err := s.service.UpdateContact(s.ctx, contactID, request)
 
 		// Assert
 		require.Error(t, err)
@@ -446,9 +461,8 @@ func (s *ContactServiceTestSuite) TestUpdateContactOrganizationMismatch() {
 		// Setup test data
 		contactID := s.contactID
 		otherOrgID := uuid.Must(uuid.NewV7())
-		contact := types.Contact{
-			ID:   contactID,
-			Name: "John Doe",
+		request := service.ContactUpdateRequest{
+			Name: stringPtr("John Doe"),
 		}
 
 		// Mock repository behavior - return contact from different organization
@@ -461,7 +475,7 @@ func (s *ContactServiceTestSuite) TestUpdateContactOrganizationMismatch() {
 		})
 
 		// Execute
-		updated, err := s.service.UpdateContact(s.ctx, contact)
+		updated, err := s.service.UpdateContact(s.ctx, contactID, request)
 
 		// Assert
 		require.Error(t, err)

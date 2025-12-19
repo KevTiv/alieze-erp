@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"alieze-erp/internal/modules/crm/service"
-	"alieze-erp/internal/modules/crm/types"
-	"alieze-erp/pkg/events"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/pkg/events"
 )
 
 // MockContactTagRepository is a mock implementation of ContactTagRepository
@@ -29,9 +29,9 @@ func (m *MockContactTagRepository) FindByID(ctx context.Context, id uuid.UUID) (
 	return args.Get(0).(*types.ContactTag), args.Error(1)
 }
 
-func (m *MockContactTagRepository) FindAll(ctx context.Context, filter types.ContactTagFilter) ([]types.ContactTag, error) {
+func (m *MockContactTagRepository) FindAll(ctx context.Context, filter types.ContactTagFilter) ([]*types.ContactTag, error) {
 	args := m.Called(ctx, filter)
-	return args.Get(0).([]types.ContactTag), args.Error(1)
+	return args.Get(0).([]*types.ContactTag), args.Error(1)
 }
 
 func (m *MockContactTagRepository) Update(ctx context.Context, tag types.ContactTag) (*types.ContactTag, error) {

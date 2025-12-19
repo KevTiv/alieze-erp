@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"alieze-erp/internal/modules/sales/repository"
-	"alieze-erp/internal/modules/sales/types"
-	"alieze-erp/pkg/events"
-	"alieze-erp/pkg/tax"
+	"github.com/KevTiv/alieze-erp/internal/modules/sales/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/sales/types"
+	"github.com/KevTiv/alieze-erp/pkg/events"
+	"github.com/KevTiv/alieze-erp/pkg/tax"
 
 	"github.com/google/uuid"
 )

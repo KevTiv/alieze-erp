@@ -6,7 +6,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"alieze-erp/internal/modules/inventory/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/inventory/types"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"

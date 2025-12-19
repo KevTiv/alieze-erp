@@ -10,11 +10,11 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"alieze-erp/pkg/events"
-	"alieze-erp/pkg/policy"
-	"alieze-erp/pkg/registry"
-	"alieze-erp/pkg/rules"
-	"alieze-erp/pkg/workflow"
+	"github.com/KevTiv/alieze-erp/pkg/events"
+	"github.com/KevTiv/alieze-erp/pkg/policy"
+	"github.com/KevTiv/alieze-erp/pkg/registry"
+	"github.com/KevTiv/alieze-erp/pkg/rules"
+	"github.com/KevTiv/alieze-erp/pkg/workflow"
 )
 
 // ExampleModule demonstrates how to implement a module

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"alieze-erp/internal/modules/crm/service"
-	"alieze-erp/internal/modules/crm/types"
-	auth "alieze-erp/pkg/auth"
+	auth "github.com/KevTiv/alieze-erp/internal/modules/auth/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -15,11 +15,11 @@ import (
 // AssignmentRuleHandler handles HTTP requests for assignment rules
 type AssignmentRuleHandler struct {
 	service     *service.AssignmentRuleService
-	authService auth.Service
+	authService *auth.AuthService
 }
 
 // NewAssignmentRuleHandler creates a new assignment rule handler
-func NewAssignmentRuleHandler(service *service.AssignmentRuleService, authService auth.Service) *AssignmentRuleHandler {
+func NewAssignmentRuleHandler(service *service.AssignmentRuleService, authService *auth.AuthService) *AssignmentRuleHandler {
 	return &AssignmentRuleHandler{
 		service:     service,
 		authService: authService,
@@ -48,21 +48,21 @@ func respondWithError(w http.ResponseWriter, statusCode int, message string, err
 // RegisterRoutes registers assignment rule routes
 func (h *AssignmentRuleHandler) RegisterRoutes(router *httprouter.Router) {
 	// Assignment Rule routes
-	router.POST("/assignment-rules", h.CreateAssignmentRule)
-	router.GET("/assignment-rules/:id", h.GetAssignmentRule)
-	router.PUT("/assignment-rules/:id", h.UpdateAssignmentRule)
-	router.DELETE("/assignment-rules/:id", h.DeleteAssignmentRule)
-	router.GET("/assignment-rules", h.ListAssignmentRules)
-	router.POST("/assignment-rules/:id/assign", h.AssignLead)
-	router.GET("/assignment-rules/stats/users", h.GetAssignmentStatsByUser)
-	router.GET("/assignment-rules/stats/rules", h.GetAssignmentRuleEffectiveness)
+	router.POST("/api/crm/assignment-rules", h.CreateAssignmentRule)
+	router.GET("/api/crm/assignment-rules/:id", h.GetAssignmentRule)
+	router.PUT("/api/crm/assignment-rules/:id", h.UpdateAssignmentRule)
+	router.DELETE("/api/crm/assignment-rules/:id", h.DeleteAssignmentRule)
+	router.GET("/api/crm/assignment-rules", h.ListAssignmentRules)
+	router.POST("/api/crm/assignment-rules/:id/assign", h.AssignLead)
+	router.GET("/api/crm/assignment-rules/stats/users", h.GetAssignmentStatsByUser)
+	router.GET("/api/crm/assignment-rules/stats/rules", h.GetAssignmentRuleEffectiveness)
 
 	// Territory routes
-	router.POST("/territories", h.CreateTerritory)
-	router.GET("/territories/:id", h.GetTerritory)
-	router.PUT("/territories/:id", h.UpdateTerritory)
-	router.DELETE("/territories/:id", h.DeleteTerritory)
-	router.GET("/territories", h.ListTerritories)
+	router.POST("/api/crm/territories", h.CreateTerritory)
+	router.GET("/api/crm/territories/:id", h.GetTerritory)
+	router.PUT("/api/crm/territories/:id", h.UpdateTerritory)
+	router.DELETE("/api/crm/territories/:id", h.DeleteTerritory)
+	router.GET("/api/crm/territories", h.ListTerritories)
 }
 
 // CreateAssignmentRule handles POST /assignment-rules
@@ -157,9 +157,9 @@ func (h *AssignmentRuleHandler) DeleteAssignmentRule(w http.ResponseWriter, r *h
 // ListAssignmentRules handles GET /assignment-rules
 func (h *AssignmentRuleHandler) ListAssignmentRules(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Get organization ID from context
-	orgID, err := h.authService.GetOrganizationID(r.Context())
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+	orgID, ok := r.Context().Value("organizationID").(uuid.UUID)
+	if !ok {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
@@ -252,9 +252,9 @@ func (h *AssignmentRuleHandler) DeleteTerritory(w http.ResponseWriter, r *http.R
 // ListTerritories handles GET /territories
 func (h *AssignmentRuleHandler) ListTerritories(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Get organization ID from context
-	orgID, err := h.authService.GetOrganizationID(r.Context())
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+	orgID, ok := r.Context().Value("organizationID").(uuid.UUID)
+	if !ok {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
@@ -295,9 +295,9 @@ func (h *AssignmentRuleHandler) AssignLead(w http.ResponseWriter, r *http.Reques
 // GetAssignmentStatsByUser handles GET /assignment-rules/stats/users
 func (h *AssignmentRuleHandler) GetAssignmentStatsByUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Get organization ID from context
-	orgID, err := h.authService.GetOrganizationID(r.Context())
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+	orgID, ok := r.Context().Value("organizationID").(uuid.UUID)
+	if !ok {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
@@ -315,9 +315,9 @@ func (h *AssignmentRuleHandler) GetAssignmentStatsByUser(w http.ResponseWriter, 
 // GetAssignmentRuleEffectiveness handles GET /assignment-rules/stats/rules
 func (h *AssignmentRuleHandler) GetAssignmentRuleEffectiveness(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Get organization ID from context
-	orgID, err := h.authService.GetOrganizationID(r.Context())
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+	orgID, ok := r.Context().Value("organizationID").(uuid.UUID)
+	if !ok {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 

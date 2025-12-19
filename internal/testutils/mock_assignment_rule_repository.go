@@ -4,18 +4,25 @@ import (
 	"context"
 	"time"
 
-	"alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
 
 	"github.com/google/uuid"
 )
 
 // MockAssignmentRuleRepository implements the repository.AssignmentRuleRepository interface for testing
 type MockAssignmentRuleRepository struct {
+	createFunc                         func(ctx context.Context, rule types.AssignmentRule) (*types.AssignmentRule, error)
 	createAssignmentRuleFunc           func(ctx context.Context, rule *types.AssignmentRule) error
 	getAssignmentRuleFunc              func(ctx context.Context, id uuid.UUID) (*types.AssignmentRule, error)
 	updateAssignmentRuleFunc           func(ctx context.Context, rule *types.AssignmentRule) error
+	deleteFunc                         func(ctx context.Context, id uuid.UUID) error
 	deleteAssignmentRuleFunc           func(ctx context.Context, id uuid.UUID) error
 	listAssignmentRulesFunc            func(ctx context.Context, orgID uuid.UUID, targetModel string, activeOnly bool) ([]*types.AssignmentRule, error)
+	findByIDFunc                       func(ctx context.Context, id uuid.UUID) (*types.AssignmentRule, error)
+	findAllFunc                        func(ctx context.Context, limit, offset int) ([]types.AssignmentRule, error)
+	findActiveRulesFunc                func(ctx context.Context, targetModel types.AssignmentTargetModel) ([]types.AssignmentRule, error)
+	findByTargetModelFunc              func(ctx context.Context, targetModel types.AssignmentTargetModel) ([]types.AssignmentRule, error)
+	updateFunc                         func(ctx context.Context, rule types.AssignmentRule) (*types.AssignmentRule, error)
 	createTerritoryFunc                func(ctx context.Context, territory *types.Territory) error
 	getTerritoryFunc                   func(ctx context.Context, id uuid.UUID) (*types.Territory, error)
 	updateTerritoryFunc                func(ctx context.Context, territory *types.Territory) error
@@ -37,6 +44,14 @@ type MockAssignmentRuleRepository struct {
 // NewMockAssignmentRuleRepository creates a new mock assignment rule repository
 func NewMockAssignmentRuleRepository() *MockAssignmentRuleRepository {
 	return &MockAssignmentRuleRepository{}
+}
+
+// Create implements the repository interface
+func (m *MockAssignmentRuleRepository) Create(ctx context.Context, rule types.AssignmentRule) (*types.AssignmentRule, error) {
+	if m.createFunc != nil {
+		return m.createFunc(ctx, rule)
+	}
+	return &rule, nil
 }
 
 // CreateAssignmentRule implements the repository interface
@@ -69,6 +84,14 @@ func (m *MockAssignmentRuleRepository) UpdateAssignmentRule(ctx context.Context,
 	return nil
 }
 
+// Delete implements the repository interface
+func (m *MockAssignmentRuleRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	if m.deleteFunc != nil {
+		return m.deleteFunc(ctx, id)
+	}
+	return nil
+}
+
 // DeleteAssignmentRule implements the repository interface
 func (m *MockAssignmentRuleRepository) DeleteAssignmentRule(ctx context.Context, id uuid.UUID) error {
 	if m.deleteAssignmentRuleFunc != nil {
@@ -97,6 +120,88 @@ func (m *MockAssignmentRuleRepository) ListAssignmentRules(ctx context.Context, 
 			Name:           "Rule 2",
 			RuleType:       types.AssignmentRuleTypeTerritory,
 			TargetModel:    types.AssignmentTargetModelLeads,
+			IsActive:       true,
+		},
+	}, nil
+}
+
+// Update implements the repository interface
+func (m *MockAssignmentRuleRepository) Update(ctx context.Context, rule types.AssignmentRule) (*types.AssignmentRule, error) {
+	if m.updateFunc != nil {
+		return m.updateFunc(ctx, rule)
+	}
+	return &rule, nil
+}
+
+// FindByID implements the repository interface
+func (m *MockAssignmentRuleRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.AssignmentRule, error) {
+	if m.findByIDFunc != nil {
+		return m.findByIDFunc(ctx, id)
+	}
+	return &types.AssignmentRule{
+		ID:             id,
+		OrganizationID: uuid.Must(uuid.NewV7()),
+		Name:           "Test Rule",
+		RuleType:       types.AssignmentRuleTypeRoundRobin,
+		TargetModel:    types.AssignmentTargetModelLeads,
+		IsActive:       true,
+	}, nil
+}
+
+// FindAll implements the repository interface
+func (m *MockAssignmentRuleRepository) FindAll(ctx context.Context, limit, offset int) ([]types.AssignmentRule, error) {
+	if m.findAllFunc != nil {
+		return m.findAllFunc(ctx, limit, offset)
+	}
+	return []types.AssignmentRule{
+		{
+			ID:             uuid.Must(uuid.NewV7()),
+			OrganizationID: uuid.Must(uuid.NewV7()),
+			Name:           "Rule 1",
+			RuleType:       types.AssignmentRuleTypeRoundRobin,
+			TargetModel:    types.AssignmentTargetModelLeads,
+			IsActive:       true,
+		},
+		{
+			ID:             uuid.Must(uuid.NewV7()),
+			OrganizationID: uuid.Must(uuid.NewV7()),
+			Name:           "Rule 2",
+			RuleType:       types.AssignmentRuleTypeWeighted,
+			TargetModel:    types.AssignmentTargetModelContacts,
+			IsActive:       false,
+		},
+	}, nil
+}
+
+// FindActiveRules implements the repository interface
+func (m *MockAssignmentRuleRepository) FindActiveRules(ctx context.Context, targetModel types.AssignmentTargetModel) ([]types.AssignmentRule, error) {
+	if m.findActiveRulesFunc != nil {
+		return m.findActiveRulesFunc(ctx, targetModel)
+	}
+	return []types.AssignmentRule{
+		{
+			ID:             uuid.Must(uuid.NewV7()),
+			OrganizationID: uuid.Must(uuid.NewV7()),
+			Name:           "Active Rule 1",
+			RuleType:       types.AssignmentRuleTypeRoundRobin,
+			TargetModel:    targetModel,
+			IsActive:       true,
+		},
+	}, nil
+}
+
+// FindByTargetModel implements the repository interface
+func (m *MockAssignmentRuleRepository) FindByTargetModel(ctx context.Context, targetModel types.AssignmentTargetModel) ([]types.AssignmentRule, error) {
+	if m.findByTargetModelFunc != nil {
+		return m.findByTargetModelFunc(ctx, targetModel)
+	}
+	return []types.AssignmentRule{
+		{
+			ID:             uuid.Must(uuid.NewV7()),
+			OrganizationID: uuid.Must(uuid.NewV7()),
+			Name:           "Rule for " + string(targetModel),
+			RuleType:       types.AssignmentRuleTypeRoundRobin,
+			TargetModel:    targetModel,
 			IsActive:       true,
 		},
 	}, nil
@@ -307,6 +412,16 @@ func (m *MockAssignmentRuleRepository) ListAssignmentHistory(ctx context.Context
 }
 
 // Helper methods to set mock behaviors
+func (m *MockAssignmentRuleRepository) WithCreateFunc(f func(ctx context.Context, rule types.AssignmentRule) (*types.AssignmentRule, error)) *MockAssignmentRuleRepository {
+	m.createFunc = f
+	return m
+}
+
+func (m *MockAssignmentRuleRepository) WithDeleteFunc(f func(ctx context.Context, id uuid.UUID) error) *MockAssignmentRuleRepository {
+	m.deleteFunc = f
+	return m
+}
+
 func (m *MockAssignmentRuleRepository) WithCreateAssignmentRuleFunc(f func(ctx context.Context, rule *types.AssignmentRule) error) *MockAssignmentRuleRepository {
 	m.createAssignmentRuleFunc = f
 	return m
@@ -409,5 +524,30 @@ func (m *MockAssignmentRuleRepository) WithListUserAssignmentLoadsFunc(f func(ct
 
 func (m *MockAssignmentRuleRepository) WithListAssignmentHistoryFunc(f func(ctx context.Context, orgID uuid.UUID, targetModel string, limit int) ([]*types.AssignmentHistory, error)) *MockAssignmentRuleRepository {
 	m.listAssignmentHistoryFunc = f
+	return m
+}
+
+func (m *MockAssignmentRuleRepository) WithUpdateFunc(f func(ctx context.Context, rule types.AssignmentRule) (*types.AssignmentRule, error)) *MockAssignmentRuleRepository {
+	m.updateFunc = f
+	return m
+}
+
+func (m *MockAssignmentRuleRepository) WithFindByIDFunc(f func(ctx context.Context, id uuid.UUID) (*types.AssignmentRule, error)) *MockAssignmentRuleRepository {
+	m.findByIDFunc = f
+	return m
+}
+
+func (m *MockAssignmentRuleRepository) WithFindAllFunc(f func(ctx context.Context, limit, offset int) ([]types.AssignmentRule, error)) *MockAssignmentRuleRepository {
+	m.findAllFunc = f
+	return m
+}
+
+func (m *MockAssignmentRuleRepository) WithFindActiveRulesFunc(f func(ctx context.Context, targetModel types.AssignmentTargetModel) ([]types.AssignmentRule, error)) *MockAssignmentRuleRepository {
+	m.findActiveRulesFunc = f
+	return m
+}
+
+func (m *MockAssignmentRuleRepository) WithFindByTargetModelFunc(f func(ctx context.Context, targetModel types.AssignmentTargetModel) ([]types.AssignmentRule, error)) *MockAssignmentRuleRepository {
+	m.findByTargetModelFunc = f
 	return m
 }

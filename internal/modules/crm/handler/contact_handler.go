@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"alieze-erp/internal/modules/crm/service"
-	"alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -39,7 +39,7 @@ func (h *ContactHandler) RegisterRoutes(router *httprouter.Router) {
 }
 
 func (h *ContactHandler) CreateContact(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var req types.Contact
+	var req service.ContactRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -287,14 +287,13 @@ func (h *ContactHandler) UpdateContact(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	var req types.Contact
+	var req service.ContactUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	req.ID = id
 
-	updatedContact, err := h.service.UpdateContact(r.Context(), req)
+	updatedContact, err := h.service.UpdateContact(r.Context(), id, req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -327,8 +326,18 @@ func (h *ContactHandler) GetContactsByCustomer(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// Get organization ID from context
+	orgID, ok := r.Context().Value("organizationID").(uuid.UUID)
+	if !ok {
+		http.Error(w, "Organization ID not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// For now, use a general filter approach since specific customer contact methods aren't implemented yet
+	// This would need to be enhanced with proper customer-contact relationship handling
 	filters := types.ContactFilter{
-		IsCustomer: func() *bool { b := true; return &b }(),
+		OrganizationID: orgID,
+		IsCustomer:     func() *bool { b := true; return &b }(),
 	}
 
 	contacts, _, err := h.service.ListContacts(r.Context(), filters)
@@ -349,8 +358,18 @@ func (h *ContactHandler) GetContactsByVendor(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Get organization ID from context
+	orgID, ok := r.Context().Value("organizationID").(uuid.UUID)
+	if !ok {
+		http.Error(w, "Organization ID not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// For now, use a general filter approach since specific vendor contact methods aren't implemented yet
+	// This would need to be enhanced with proper vendor-contact relationship handling
 	filters := types.ContactFilter{
-		IsVendor: func() *bool { b := true; return &b }(),
+		OrganizationID: orgID,
+		IsVendor:       func() *bool { b := true; return &b }(),
 	}
 
 	contacts, _, err := h.service.ListContacts(r.Context(), filters)

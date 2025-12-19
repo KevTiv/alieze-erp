@@ -4,11 +4,11 @@ import (
 	"context"
 	"log/slog"
 
-	"alieze-erp/internal/modules/auth/handler"
-	"alieze-erp/internal/modules/auth/middleware"
-	"alieze-erp/internal/modules/auth/repository"
-	"alieze-erp/internal/modules/auth/service"
-	"alieze-erp/pkg/registry"
+	"github.com/KevTiv/alieze-erp/internal/modules/auth/handler"
+	"github.com/KevTiv/alieze-erp/internal/modules/auth/middleware"
+	"github.com/KevTiv/alieze-erp/internal/modules/auth/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/auth/service"
+	"github.com/KevTiv/alieze-erp/pkg/registry"
 	"github.com/julienschmidt/httprouter"
 )
 

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"alieze-erp/pkg/audit"
-	"alieze-erp/pkg/policy"
+	"github.com/KevTiv/alieze-erp/pkg/audit"
+	"github.com/KevTiv/alieze-erp/pkg/policy"
 	"github.com/google/uuid"
 )
 

@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"alieze-erp/internal/modules/crm/service"
-	"alieze-erp/internal/modules/crm/types"
-	"alieze-erp/internal/testutils"
-	"alieze-erp/pkg/events"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/internal/testutils"
+	"github.com/KevTiv/alieze-erp/pkg/events"
 )
 
 type AssignmentRuleServiceTestSuite struct {
@@ -516,7 +516,7 @@ func (s *AssignmentRuleServiceTestSuite) TestGetTerritorySuccess() {
 			ID:             territoryID,
 			OrganizationID: s.orgID,
 			Name:           "Test Territory",
-			Description:    stringPtr("Test Description"),
+			Description:    "Test Description",
 			TerritoryType:  "geographic",
 			Priority:       1,
 			IsActive:       true,

@@ -3,7 +3,7 @@ package testutils
 import (
 	"context"
 
-	"alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
 
 	"github.com/google/uuid"
 )
@@ -12,7 +12,7 @@ import (
 type MockActivityRepository struct {
 	createFunc   func(ctx context.Context, activity types.Activity) (*types.Activity, error)
 	findByIDFunc func(ctx context.Context, id uuid.UUID) (*types.Activity, error)
-	findAllFunc  func(ctx context.Context, filter types.ActivityFilter) ([]types.Activity, error)
+	findAllFunc  func(ctx context.Context, filter types.ActivityFilter) ([]*types.Activity, error)
 	updateFunc   func(ctx context.Context, activity types.Activity) (*types.Activity, error)
 	deleteFunc   func(ctx context.Context, id uuid.UUID) error
 	countFunc    func(ctx context.Context, filter types.ActivityFilter) (int, error)
@@ -46,11 +46,11 @@ func (m *MockActivityRepository) FindByID(ctx context.Context, id uuid.UUID) (*t
 }
 
 // FindAll implements the repository interface
-func (m *MockActivityRepository) FindAll(ctx context.Context, filter types.ActivityFilter) ([]types.Activity, error) {
+func (m *MockActivityRepository) FindAll(ctx context.Context, filter types.ActivityFilter) ([]*types.Activity, error) {
 	if m.findAllFunc != nil {
 		return m.findAllFunc(ctx, filter)
 	}
-	return []types.Activity{
+	return []*types.Activity{
 		{
 			ID:             uuid.Must(uuid.NewV7()),
 			OrganizationID: filter.OrganizationID,
@@ -93,15 +93,15 @@ func (m *MockActivityRepository) Count(ctx context.Context, filter types.Activit
 }
 
 // FindByContact implements the repository interface
-func (m *MockActivityRepository) FindByContact(ctx context.Context, contactID uuid.UUID) ([]types.Activity, error) {
+func (m *MockActivityRepository) FindByContact(ctx context.Context, contactID uuid.UUID) ([]*types.Activity, error) {
 	// Default implementation returns empty slice
-	return []types.Activity{}, nil
+	return []*types.Activity{}, nil
 }
 
 // FindByLead implements the repository interface
-func (m *MockActivityRepository) FindByLead(ctx context.Context, leadID uuid.UUID) ([]types.Activity, error) {
+func (m *MockActivityRepository) FindByLead(ctx context.Context, leadID uuid.UUID) ([]*types.Activity, error) {
 	// Default implementation returns empty slice
-	return []types.Activity{}, nil
+	return []*types.Activity{}, nil
 }
 
 // Helper methods to set mock behaviors
@@ -115,7 +115,7 @@ func (m *MockActivityRepository) WithFindByIDFunc(f func(ctx context.Context, id
 	return m
 }
 
-func (m *MockActivityRepository) WithFindAllFunc(f func(ctx context.Context, filter types.ActivityFilter) ([]types.Activity, error)) *MockActivityRepository {
+func (m *MockActivityRepository) WithFindAllFunc(f func(ctx context.Context, filter types.ActivityFilter) ([]*types.Activity, error)) *MockActivityRepository {
 	m.findAllFunc = f
 	return m
 }

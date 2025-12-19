@@ -6,12 +6,12 @@ import (
 	"log/slog"
 	"strings"
 
-	"alieze-erp/internal/modules/crm/handler"
-	"alieze-erp/internal/modules/crm/repository"
-	"alieze-erp/internal/modules/crm/service"
-	"alieze-erp/pkg/events"
-	"alieze-erp/pkg/registry"
-	"alieze-erp/pkg/rules"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/handler"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/pkg/events"
+	"github.com/KevTiv/alieze-erp/pkg/registry"
+	"github.com/KevTiv/alieze-erp/pkg/rules"
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"

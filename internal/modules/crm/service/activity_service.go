@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"time"
 
-	"alieze-erp/internal/modules/crm/types"
-	"alieze-erp/pkg/events"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/pkg/events"
 
 	"github.com/google/uuid"
 )
@@ -114,7 +114,7 @@ func (s *ActivityService) GetActivity(ctx context.Context, id uuid.UUID) (*types
 	return activity, nil
 }
 
-func (s *ActivityService) ListActivities(ctx context.Context, filter types.ActivityFilter) ([]types.Activity, error) {
+func (s *ActivityService) ListActivities(ctx context.Context, filter types.ActivityFilter) ([]*types.Activity, error) {
 	// Permission check
 	if err := s.authService.CheckPermission(ctx, "crm:activities:read"); err != nil {
 		return nil, fmt.Errorf("permission denied: %w", err)
@@ -201,6 +201,67 @@ func (s *ActivityService) UpdateActivity(ctx context.Context, id uuid.UUID, req 
 	return updated, nil
 }
 
+func (s *ActivityService) CompleteActivity(ctx context.Context, id uuid.UUID) (*types.Activity, error) {
+	// Permission check
+	if err := s.authService.CheckPermission(ctx, "crm:activities:update"); err != nil {
+		return nil, fmt.Errorf("permission denied: %w", err)
+	}
+
+	// Verify organization access
+	orgID, err := s.authService.GetOrganizationID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get organization: %w", err)
+	}
+
+	// Get existing activity to verify organization
+	existing, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get existing activity: %w", err)
+	}
+
+	if existing.OrganizationID != orgID {
+		return nil, fmt.Errorf("activity does not belong to organization: %w", errors.New("access denied"))
+	}
+
+	// Set user
+	userID, err := s.authService.GetUserID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	// Complete the activity
+	now := time.Now()
+	activity := types.Activity{
+		ID:             id,
+		OrganizationID: orgID,
+		ActivityType:   existing.ActivityType,
+		Summary:        existing.Summary,
+		Note:           existing.Note,
+		DateDeadline:   existing.DateDeadline,
+		UserID:         existing.UserID,
+		AssignedTo:     existing.AssignedTo,
+		ResModel:       existing.ResModel,
+		ResID:          existing.ResID,
+		State:          types.ActivityStateDone,
+		DoneDate:       &now,
+		UpdatedAt:      now,
+		UpdatedBy:      &userID,
+	}
+
+	// Update
+	updated, err := s.repo.Update(ctx, activity)
+	if err != nil {
+		return nil, fmt.Errorf("failed to complete activity: %w", err)
+	}
+
+	// Event
+	s.eventBus.Publish(ctx, "crm.activity.completed", updated)
+
+	s.logger.Info("Completed activity", "activity_id", updated.ID, "type", updated.ActivityType)
+
+	return updated, nil
+}
+
 func (s *ActivityService) DeleteActivity(ctx context.Context, id uuid.UUID) error {
 	// Permission check
 	if err := s.authService.CheckPermission(ctx, "crm:activities:delete"); err != nil {
@@ -237,7 +298,7 @@ func (s *ActivityService) DeleteActivity(ctx context.Context, id uuid.UUID) erro
 	return nil
 }
 
-func (s *ActivityService) GetActivitiesByContact(ctx context.Context, contactID uuid.UUID) ([]types.Activity, error) {
+func (s *ActivityService) GetActivitiesByContact(ctx context.Context, contactID uuid.UUID) ([]*types.Activity, error) {
 	// Permission check - verify contact access
 	if err := s.authService.CheckPermission(ctx, "crm:contacts:read"); err != nil {
 		return nil, fmt.Errorf("permission denied: %w", err)
@@ -256,7 +317,7 @@ func (s *ActivityService) GetActivitiesByContact(ctx context.Context, contactID 
 	}
 
 	// Filter by organization
-	var filteredActivities []types.Activity
+	var filteredActivities []*types.Activity
 	for _, activity := range activities {
 		if activity.OrganizationID == orgID {
 			filteredActivities = append(filteredActivities, activity)
@@ -266,7 +327,7 @@ func (s *ActivityService) GetActivitiesByContact(ctx context.Context, contactID 
 	return filteredActivities, nil
 }
 
-func (s *ActivityService) GetActivitiesByLead(ctx context.Context, leadID uuid.UUID) ([]types.Activity, error) {
+func (s *ActivityService) GetActivitiesByLead(ctx context.Context, leadID uuid.UUID) ([]*types.Activity, error) {
 	// Permission check - verify lead access
 	if err := s.authService.CheckPermission(ctx, "crm:leads:read"); err != nil {
 		return nil, fmt.Errorf("permission denied: %w", err)
@@ -285,7 +346,7 @@ func (s *ActivityService) GetActivitiesByLead(ctx context.Context, leadID uuid.U
 	}
 
 	// Filter by organization
-	var filteredActivities []types.Activity
+	var filteredActivities []*types.Activity
 	for _, activity := range activities {
 		if activity.OrganizationID == orgID {
 			filteredActivities = append(filteredActivities, activity)

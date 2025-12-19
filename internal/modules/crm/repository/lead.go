@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	types "alieze-erp/internal/modules/crm/types"
+	types "github.com/KevTiv/alieze-erp/internal/modules/crm/types"
 
 	"github.com/google/uuid"
 )

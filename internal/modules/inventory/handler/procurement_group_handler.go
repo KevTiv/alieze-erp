@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"alieze-erp/internal/modules/auth/middleware"
-	"alieze-erp/internal/modules/inventory/service"
-	"alieze-erp/internal/modules/inventory/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/auth/middleware"
+	"github.com/KevTiv/alieze-erp/internal/modules/inventory/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/inventory/types"
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 )

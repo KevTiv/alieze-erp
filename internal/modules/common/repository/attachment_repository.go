@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmi
 
-	"alieze-erp/internal/modules/common/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/common/types"
 
 	"github.com/google/uuid"
 )

@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"time"
 
-	"alieze-erp/internal/modules/sales/repository"
-	"alieze-erp/internal/modules/sales/types"
-	"alieze-erp/pkg/email"
-	"alieze-erp/pkg/events"
-	"alieze-erp/pkg/queue"
-	"alieze-erp/pkg/storage"
-	"alieze-erp/pkg/templates"
+	"github.com/KevTiv/alieze-erp/internal/modules/sales/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/sales/types"
+	"github.com/KevTiv/alieze-erp/pkg/email"
+	"github.com/KevTiv/alieze-erp/pkg/events"
+	"github.com/KevTiv/alieze-erp/pkg/queue"
+	"github.com/KevTiv/alieze-erp/pkg/storage"
+	"github.com/KevTiv/alieze-erp/pkg/templates"
 
 	"github.com/google/uuid"
 )

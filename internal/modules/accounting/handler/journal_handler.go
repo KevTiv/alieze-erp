@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"alieze-erp/internal/modules/accounting/repository"
-	"alieze-erp/internal/modules/accounting/service"
-	"alieze-erp/internal/modules/accounting/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/accounting/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/accounting/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/accounting/types"
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"

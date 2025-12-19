@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"alieze-erp/internal/modules/sales/repository"
-	"alieze-erp/internal/modules/sales/service"
-	"alieze-erp/internal/modules/sales/types"io
+	"github.com/KevTiv/alieze-erp/internal/modules/sales/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/sales/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/sales/types"io
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

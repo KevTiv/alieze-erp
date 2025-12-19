@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"alieze-erp/internal/modules/sales/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/sales/types"
 
 	"github.com/google/uuid"
 )

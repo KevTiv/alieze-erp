@@ -3,7 +3,7 @@ package testutils
 import (
 	"context"
 
-	"alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
 
 	"github.com/google/uuid"
 )
@@ -12,7 +12,7 @@ import (
 type MockSalesTeamRepository struct {
 	createFunc       func(ctx context.Context, team types.SalesTeam) (*types.SalesTeam, error)
 	findByIDFunc     func(ctx context.Context, id uuid.UUID) (*types.SalesTeam, error)
-	findAllFunc      func(ctx context.Context, filter types.SalesTeamFilter) ([]types.SalesTeam, error)
+	findAllFunc      func(ctx context.Context, filter types.SalesTeamFilter) ([]*types.SalesTeam, error)
 	updateFunc       func(ctx context.Context, team types.SalesTeam) (*types.SalesTeam, error)
 	deleteFunc       func(ctx context.Context, id uuid.UUID) error
 	countFunc        func(ctx context.Context, filter types.SalesTeamFilter) (int, error)
@@ -46,24 +46,23 @@ func (m *MockSalesTeamRepository) FindByID(ctx context.Context, id uuid.UUID) (*
 }
 
 // FindAll implements the repository interface
-func (m *MockSalesTeamRepository) FindAll(ctx context.Context, filter types.SalesTeamFilter) ([]types.SalesTeam, error) {
+func (m *MockSalesTeamRepository) FindAll(ctx context.Context, filter types.SalesTeamFilter) ([]*types.SalesTeam, error) {
 	if m.findAllFunc != nil {
 		return m.findAllFunc(ctx, filter)
 	}
-	return []types.SalesTeam{
-		{
-			ID:             uuid.Must(uuid.NewV7()),
-			OrganizationID: filter.OrganizationID,
-			Name:           "Sales Team 1",
-			IsActive:       true,
-		},
-		{
-			ID:             uuid.Must(uuid.NewV7()),
-			OrganizationID: filter.OrganizationID,
-			Name:           "Sales Team 2",
-			IsActive:       true,
-		},
-	}, nil
+	team1 := &types.SalesTeam{
+		ID:             uuid.Must(uuid.NewV7()),
+		OrganizationID: filter.OrganizationID,
+		Name:           "Sales Team 1",
+		IsActive:       true,
+	}
+	team2 := &types.SalesTeam{
+		ID:             uuid.Must(uuid.NewV7()),
+		OrganizationID: filter.OrganizationID,
+		Name:           "Sales Team 2",
+		IsActive:       true,
+	}
+	return []*types.SalesTeam{team1, team2}, nil
 }
 
 // Update implements the repository interface
@@ -117,7 +116,7 @@ func (m *MockSalesTeamRepository) WithFindByIDFunc(f func(ctx context.Context, i
 	return m
 }
 
-func (m *MockSalesTeamRepository) WithFindAllFunc(f func(ctx context.Context, filter types.SalesTeamFilter) ([]types.SalesTeam, error)) *MockSalesTeamRepository {
+func (m *MockSalesTeamRepository) WithFindAllFunc(f func(ctx context.Context, filter types.SalesTeamFilter) ([]*types.SalesTeam, error)) *MockSalesTeamRepository {
 	m.findAllFunc = f
 	return m
 }

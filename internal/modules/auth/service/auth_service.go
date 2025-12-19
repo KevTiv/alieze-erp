@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"alieze-erp/internal/modules/auth/types"
-	"alieze-erp/internal/modules/auth/repository"
-	"alieze-erp/internal/modules/auth/utils"
+	"github.com/KevTiv/alieze-erp/internal/modules/auth/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/auth/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/auth/utils"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"

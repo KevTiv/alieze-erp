@@ -7,9 +7,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
-	"alieze-erp/internal/modules/crm/service"
-	"alieze-erp/internal/modules/crm/types"
-	"alieze-erp/internal/testutils"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/internal/testutils"
 )
 
 // TestLeadAssignmentSuccess tests the core lead assignment functionality
@@ -35,7 +35,7 @@ func TestLeadAssignmentSuccess(t *testing.T) {
 		return &types.Lead{
 			ID:         leadID,
 			AssignedTo: nil, // Not assigned yet
-			Status:     "new",
+			Status:     stringPtr("new"),
 		}, nil
 	})
 
@@ -87,7 +87,7 @@ func TestLeadAlreadyAssigned(t *testing.T) {
 		return &types.Lead{
 			ID:         leadID,
 			AssignedTo: &assigneeID, // Already assigned
-			Status:     "new",
+			Status:     stringPtr("new"),
 		}, nil
 	})
 
@@ -131,7 +131,7 @@ func TestLeadReassignment(t *testing.T) {
 		return &types.Lead{
 			ID:         leadID,
 			AssignedTo: &oldAssigneeID, // Assigned to different user
-			Status:     "new",
+			Status:     stringPtr("new"),
 		}, nil
 	})
 
@@ -179,7 +179,7 @@ func TestLeadAssignmentNoAssigneeFound(t *testing.T) {
 		return &types.Lead{
 			ID:         leadID,
 			AssignedTo: nil,
-			Status:     "new",
+			Status:     stringPtr("new"),
 		}, nil
 	})
 

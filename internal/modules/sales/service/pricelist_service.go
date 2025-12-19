@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"alieze-erp/internal/modules/sales/types"
-	"alieze-erp/internal/modules/sales/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/sales/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/sales/repository"
 
 	"github.com/google/uuid"
 )

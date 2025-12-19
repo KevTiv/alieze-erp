@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"time"
 
-	"alieze-erp/internal/modules/common/repository"
-	"alieze-erp/internal/modules/common/types"
-	"alieze-erp/pkg/events"
-	"alieze-erp/pkg/storage"
+	"github.com/KevTiv/alieze-erp/internal/modules/common/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/common/types"
+	"github.com/KevTiv/alieze-erp/pkg/events"
+	"github.com/KevTiv/alieze-erp/pkg/storage"
 
 	"github.com/google/uuid"
 )

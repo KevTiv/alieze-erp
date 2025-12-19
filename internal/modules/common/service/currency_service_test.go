@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"alieze-erp/internal/modules/common/repository"
-	"alieze-erp/internal/modules/common/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/common/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/common/types"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

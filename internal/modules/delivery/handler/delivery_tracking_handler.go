@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	deliveryservice "alieze-erp/internal/modules/delivery/service"
-	deliverytypes "alieze-erp/internal/modules/delivery/types"
+	deliveryservice "github.com/KevTiv/alieze-erp/internal/modules/delivery/service"
+	deliverytypes "github.com/KevTiv/alieze-erp/internal/modules/delivery/types"
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"

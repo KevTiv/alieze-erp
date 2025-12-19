@@ -3,7 +3,7 @@ package testutils
 import (
 	"context"
 
-	"alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
 
 	"github.com/google/uuid"
 )
@@ -12,7 +12,7 @@ import (
 type MockContactRepository struct {
 	createFunc   func(ctx context.Context, contact types.Contact) (*types.Contact, error)
 	findByIDFunc func(ctx context.Context, id uuid.UUID) (*types.Contact, error)
-	findAllFunc  func(ctx context.Context, filter types.ContactFilter) ([]types.Contact, error)
+	findAllFunc  func(ctx context.Context, filter types.ContactFilter) ([]*types.Contact, error)
 	updateFunc   func(ctx context.Context, contact types.Contact) (*types.Contact, error)
 	deleteFunc   func(ctx context.Context, id uuid.UUID) error
 	countFunc    func(ctx context.Context, filter types.ContactFilter) (int, error)
@@ -40,11 +40,11 @@ func (m *MockContactRepository) FindByID(ctx context.Context, id uuid.UUID) (*ty
 }
 
 // FindAll implements the repository interface
-func (m *MockContactRepository) FindAll(ctx context.Context, filter types.ContactFilter) ([]types.Contact, error) {
+func (m *MockContactRepository) FindAll(ctx context.Context, filter types.ContactFilter) ([]*types.Contact, error) {
 	if m.findAllFunc != nil {
 		return m.findAllFunc(ctx, filter)
 	}
-	return []types.Contact{
+	return []*types.Contact{
 		{ID: uuid.Must(uuid.NewV7()), OrganizationID: filter.OrganizationID, Name: "Contact 1"},
 		{ID: uuid.Must(uuid.NewV7()), OrganizationID: filter.OrganizationID, Name: "Contact 2"},
 	}, nil
@@ -85,7 +85,7 @@ func (m *MockContactRepository) WithFindByIDFunc(f func(ctx context.Context, id 
 	return m
 }
 
-func (m *MockContactRepository) WithFindAllFunc(f func(ctx context.Context, filter types.ContactFilter) ([]types.Contact, error)) *MockContactRepository {
+func (m *MockContactRepository) WithFindAllFunc(f func(ctx context.Context, filter types.ContactFilter) ([]*types.Contact, error)) *MockContactRepository {
 	m.findAllFunc = f
 	return m
 }

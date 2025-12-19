@@ -11,14 +11,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"alieze-erp/internal/modules/crm/repository"
-	"alieze-erp/internal/modules/crm/types"
-	"alieze-erp/internal/testutils"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/internal/testutils"
 )
 
 type ContactRepositoryTestSuite struct {
 	suite.Suite
-	repo      *repository.ContactRepository
+	repo      types.ContactRepository
 	mockDB    *testutils.MockDB
 	ctx       context.Context
 	orgID     uuid.UUID

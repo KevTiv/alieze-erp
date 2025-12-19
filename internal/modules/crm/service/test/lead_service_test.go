@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"alieze-erp/internal/modules/crm/service"
-	"alieze-erp/internal/modules/crm/types"
-	"alieze-erp/internal/testutils"
-	"alieze-erp/pkg/rules"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/internal/testutils"
+	"github.com/KevTiv/alieze-erp/pkg/rules"
 )
 
 type LeadServiceTestSuite struct {
@@ -69,7 +69,7 @@ func (s *LeadServiceTestSuite) TestCreateLeadSuccess() {
 		}
 
 		// Mock repository behavior
-		expectedLead := &types.LeadEnhanced{
+		expectedLead := types.Lead{
 			ID:              uuid.Must(uuid.NewV7()),
 			OrganizationID:  s.orgID,
 			Name:            leadRequest.Name,
@@ -85,7 +85,7 @@ func (s *LeadServiceTestSuite) TestCreateLeadSuccess() {
 			UpdatedAt:       time.Now(),
 		}
 
-		s.repo.WithCreateFunc(func(ctx context.Context, lead *types.LeadEnhanced) error {
+		s.repo.WithCreateFunc(func(ctx context.Context, lead types.Lead) (*types.Lead, error) {
 			require.Equal(t, s.orgID, lead.OrganizationID)
 			require.Equal(t, leadRequest.Name, lead.Name)
 			require.Equal(t, leadRequest.ContactName, lead.ContactName)
@@ -93,8 +93,8 @@ func (s *LeadServiceTestSuite) TestCreateLeadSuccess() {
 			require.Equal(t, leadRequest.Phone, lead.Phone)
 			require.Equal(t, types.LeadTypeLead, lead.LeadType)
 			require.Equal(t, types.LeadPriorityMedium, lead.Priority)
-			require.Equal(t, 10, lead.Probability) // Default probability
-			return nil
+			require.Equal(t, 50, lead.Probability) // Probability from request
+			return &expectedLead, nil
 		})
 
 		// Execute
@@ -155,38 +155,13 @@ func (s *LeadServiceTestSuite) TestCreateLeadValidationError() {
 	})
 }
 
-func (s *LeadServiceTestSuite) TestCreateLeadRuleEngineError() {
-	s.T().Run("CreateLead - Rule Engine Error", func(t *testing.T) {
-		// Setup test data
-		leadRequest := types.LeadCreateRequest{
-			Name: "Test Lead",
-		}
-
-		// Mock rule engine to return error
-		mockRuleEngine := &MockRuleEngine{
-			validateError: errors.New("rule validation failed"),
-		}
-
-		testService := service.NewLeadService(service.NewLeadServiceOptions{
-			LeadRepository: s.repo,
-			RuleEngine:     mockRuleEngine,
-		})
-
-		// Execute
-		created, err := testService.CreateLead(s.ctx, s.orgID, leadRequest)
-
-		// Assert
-		require.Error(t, err)
-		require.Nil(t, created)
-		require.Contains(t, err.Error(), "failed to apply business rules")
-	})
-}
+// Removed TestCreateLeadRuleEngineError as RuleEngine is not part of the current service interface
 
 func (s *LeadServiceTestSuite) TestGetLeadSuccess() {
 	s.T().Run("GetLead - Success", func(t *testing.T) {
 		// Setup test data
 		leadID := s.leadID
-		expectedLead := &types.LeadEnhanced{
+		expectedLead := types.Lead{
 			ID:             leadID,
 			OrganizationID: s.orgID,
 			Name:           "Test Lead",
@@ -199,9 +174,9 @@ func (s *LeadServiceTestSuite) TestGetLeadSuccess() {
 		}
 
 		// Mock repository behavior
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.LeadEnhanced, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Lead, error) {
 			require.Equal(t, leadID, id)
-			return expectedLead, nil
+			return &expectedLead, nil
 		})
 
 		// Execute
@@ -228,7 +203,7 @@ func (s *LeadServiceTestSuite) TestGetLeadNotFound() {
 		leadID := s.leadID
 
 		// Mock repository behavior - return nil (not found)
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.LeadEnhanced, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Lead, error) {
 			require.Equal(t, leadID, id)
 			return nil, nil
 		})
@@ -250,12 +225,13 @@ func (s *LeadServiceTestSuite) TestGetLeadOrganizationMismatch() {
 		otherOrgID := uuid.Must(uuid.NewV7())
 
 		// Mock repository behavior - return lead from different organization
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.LeadEnhanced, error) {
-			return &types.LeadEnhanced{
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Lead, error) {
+			lead := types.Lead{
 				ID:             leadID,
 				OrganizationID: otherOrgID, // Different organization
 				Name:           "Test Lead",
-			}, nil
+			}
+			return &lead, nil
 		})
 
 		// Execute
@@ -276,14 +252,14 @@ func (s *LeadServiceTestSuite) TestUpdateLeadSuccess() {
 		newEmail := "updated@example.com"
 		newProbability := 75
 
-		updateRequest := types.LeadEnhancedUpdateRequest{
+		updateRequest := types.LeadUpdateRequest{
 			Name:        stringPtr(newName),
 			Email:       stringPtr(newEmail),
 			Probability: intPtr(newProbability),
 		}
 
 		// Mock repository behavior
-		existingLead := &types.LeadEnhanced{
+		existingLead := types.Lead{
 			ID:             leadID,
 			OrganizationID: s.orgID,
 			Name:           "Original Lead",
@@ -292,7 +268,7 @@ func (s *LeadServiceTestSuite) TestUpdateLeadSuccess() {
 			Active:         true,
 		}
 
-		expectedLead := &types.LeadEnhanced{
+		expectedLead := types.Lead{
 			ID:             leadID,
 			OrganizationID: s.orgID,
 			Name:           newName,
@@ -302,18 +278,18 @@ func (s *LeadServiceTestSuite) TestUpdateLeadSuccess() {
 			UpdatedAt:      time.Now(),
 		}
 
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.LeadEnhanced, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Lead, error) {
 			require.Equal(t, leadID, id)
-			return existingLead, nil
+			return &existingLead, nil
 		})
 
-		s.repo.WithUpdateFunc(func(ctx context.Context, lead *types.LeadEnhanced) error {
+		s.repo.WithUpdateFunc(func(ctx context.Context, lead types.Lead) (*types.Lead, error) {
 			require.Equal(t, leadID, lead.ID)
 			require.Equal(t, s.orgID, lead.OrganizationID)
 			require.Equal(t, newName, lead.Name)
 			require.Equal(t, stringPtr(newEmail), lead.Email)
 			require.Equal(t, newProbability, lead.Probability)
-			return nil
+			return &expectedLead, nil
 		})
 
 		// Execute
@@ -338,19 +314,19 @@ func (s *LeadServiceTestSuite) TestUpdateLeadValidationError() {
 		testCases := []struct {
 			name        string
 			leadID      uuid.UUID
-			update      types.LeadEnhancedUpdateRequest
+			update      types.LeadUpdateRequest
 			expectedErr string
 		}{
 			{
 				name:        "Invalid Lead ID",
 				leadID:      uuid.Nil,
-				update:      types.LeadEnhancedUpdateRequest{},
+				update:      types.LeadUpdateRequest{},
 				expectedErr: "invalid lead ID",
 			},
 			{
 				name:   "Invalid Email",
 				leadID: s.leadID,
-				update: types.LeadEnhancedUpdateRequest{
+				update: types.LeadUpdateRequest{
 					Email: stringPtr("invalid-email"),
 				},
 				expectedErr: "invalid email format",
@@ -361,13 +337,13 @@ func (s *LeadServiceTestSuite) TestUpdateLeadValidationError() {
 			t.Run(tc.name, func(t *testing.T) {
 				// For valid lead ID cases, mock the repository
 				if tc.leadID != uuid.Nil {
-					existingLead := &types.LeadEnhanced{
+					existingLead := &types.Lead{
 						ID:             tc.leadID,
 						OrganizationID: s.orgID,
 						Name:           "Original Lead",
 					}
 
-					s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.LeadEnhanced, error) {
+					s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Lead, error) {
 						return existingLead, nil
 					})
 				}
@@ -390,17 +366,18 @@ func (s *LeadServiceTestSuite) TestUpdateLeadOrganizationMismatch() {
 		leadID := s.leadID
 		otherOrgID := uuid.Must(uuid.NewV7())
 
-		updateRequest := types.LeadEnhancedUpdateRequest{
+		updateRequest := types.LeadUpdateRequest{
 			Name: stringPtr("Updated Lead"),
 		}
 
 		// Mock repository behavior - return lead from different organization
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.LeadEnhanced, error) {
-			return &types.LeadEnhanced{
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Lead, error) {
+			lead := types.Lead{
 				ID:             leadID,
 				OrganizationID: otherOrgID, // Different organization
 				Name:           "Original Lead",
-			}, nil
+			}
+			return &lead, nil
 		})
 
 		// Execute
@@ -419,15 +396,15 @@ func (s *LeadServiceTestSuite) TestDeleteLeadSuccess() {
 		leadID := s.leadID
 
 		// Mock repository behavior
-		existingLead := &types.LeadEnhanced{
+		existingLead := types.Lead{
 			ID:             leadID,
 			OrganizationID: s.orgID,
 			Name:           "Lead to Delete",
 		}
 
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.LeadEnhanced, error) {
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Lead, error) {
 			require.Equal(t, leadID, id)
-			return existingLead, nil
+			return &existingLead, nil
 		})
 
 		s.repo.WithDeleteFunc(func(ctx context.Context, id uuid.UUID) error {
@@ -461,12 +438,13 @@ func (s *LeadServiceTestSuite) TestDeleteLeadOrganizationMismatch() {
 		otherOrgID := uuid.Must(uuid.NewV7())
 
 		// Mock repository behavior - return lead from different organization
-		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.LeadEnhanced, error) {
-			return &types.LeadEnhanced{
+		s.repo.WithFindByIDFunc(func(ctx context.Context, id uuid.UUID) (*types.Lead, error) {
+			lead := types.Lead{
 				ID:             leadID,
 				OrganizationID: otherOrgID, // Different organization
 				Name:           "Lead to Delete",
-			}, nil
+			}
+			return &lead, nil
 		})
 
 		// Execute
@@ -481,13 +459,13 @@ func (s *LeadServiceTestSuite) TestDeleteLeadOrganizationMismatch() {
 func (s *LeadServiceTestSuite) TestListLeadsSuccess() {
 	s.T().Run("ListLeads - Success", func(t *testing.T) {
 		// Setup test data
-		filter := types.LeadEnhancedFilter{
+		filter := types.LeadFilter{
 			Name:  stringPtr("Test"),
 			Limit: 10,
 		}
 
 		// Mock repository behavior
-		expectedLeads := []*types.LeadEnhanced{
+		expectedLeads := []*types.Lead{
 			{
 				ID:             uuid.Must(uuid.NewV7()),
 				OrganizationID: s.orgID,
@@ -506,7 +484,7 @@ func (s *LeadServiceTestSuite) TestListLeadsSuccess() {
 			},
 		}
 
-		s.repo.WithFindAllFunc(func(ctx context.Context, f types.LeadEnhancedFilter) ([]*types.LeadEnhanced, error) {
+		s.repo.WithFindAllFunc(func(ctx context.Context, f types.LeadFilter) ([]*types.Lead, error) {
 			require.Equal(t, s.orgID, f.OrganizationID)
 			require.Equal(t, filter.Name, f.Name)
 			require.Equal(t, filter.Limit, f.Limit)
@@ -528,14 +506,14 @@ func (s *LeadServiceTestSuite) TestListLeadsSuccess() {
 func (s *LeadServiceTestSuite) TestCountLeadsSuccess() {
 	s.T().Run("CountLeads - Success", func(t *testing.T) {
 		// Setup test data
-		filter := types.LeadEnhancedFilter{
+		filter := types.LeadFilter{
 			Active: boolPtr(true),
 		}
 
 		expectedCount := 42
 
 		// Mock repository behavior
-		s.repo.WithCountFunc(func(ctx context.Context, f types.LeadEnhancedFilter) (int, error) {
+		s.repo.WithCountFunc(func(ctx context.Context, f types.LeadFilter) (int, error) {
 			require.Equal(t, s.orgID, f.OrganizationID)
 			require.Equal(t, filter.Active, f.Active)
 			return expectedCount, nil
@@ -558,8 +536,8 @@ func (s *LeadServiceTestSuite) TestCreateLeadWithAssignmentRules() {
 			ContactName:     stringPtr("Jane Smith"),
 			Email:           stringPtr("jane@enterprise.com"),
 			Phone:           stringPtr("9876543210"),
-			LeadType:        stringPtr("enterprise"),
-			Priority:        stringPtr("high"),
+			LeadType:        "enterprise",
+			Priority:        "high",
 			ExpectedRevenue: floatPtr(100000),
 			StageID:         &s.stageID,
 			SourceID:        &s.sourceID,
@@ -586,15 +564,15 @@ func (s *LeadServiceTestSuite) TestCreateLeadWithAssignmentRules() {
 			ID:              s.leadID,
 			OrganizationID:  s.orgID,
 			Name:            "Enterprise Lead",
-			ContactName:     "Jane Smith",
-			Email:           "jane@enterprise.com",
-			Phone:           "9876543210",
-			LeadType:        "enterprise",
-			Priority:        "high",
-			ExpectedRevenue: 100000,
+			ContactName:     stringPtr("Jane Smith"),
+			Email:           stringPtr("jane@enterprise.com"),
+			Phone:           stringPtr("9876543210"),
+			LeadType:        types.LeadType("enterprise"),
+			Priority:        types.LeadPriority("high"),
+			ExpectedRevenue: floatPtr(100000),
 			Probability:     10,
-			StageID:         s.stageID,
-			SourceID:        s.sourceID,
+			StageID:         &s.stageID,
+			SourceID:        &s.sourceID,
 			AssignedTo:      &s.assigneeID, // Should be set by assignment rules
 			Active:          true,
 			CreatedAt:       time.Now(),
@@ -629,8 +607,8 @@ func (s *LeadServiceTestSuite) TestCreateLeadWithoutAssignmentRules() {
 			ContactName: stringPtr("Bob Johnson"),
 			Email:       stringPtr("bob@example.com"),
 			Phone:       stringPtr("5551234567"),
-			LeadType:    stringPtr("standard"),
-			Priority:    stringPtr("medium"),
+			LeadType:    types.LeadTypeLead,
+			Priority:    types.LeadPriorityMedium,
 			StageID:     &s.stageID,
 			SourceID:    &s.sourceID,
 		}
@@ -645,14 +623,14 @@ func (s *LeadServiceTestSuite) TestCreateLeadWithoutAssignmentRules() {
 			ID:             s.leadID,
 			OrganizationID: s.orgID,
 			Name:           "Basic Lead",
-			ContactName:    "Bob Johnson",
-			Email:          "bob@example.com",
-			Phone:          "5551234567",
-			LeadType:       "standard",
-			Priority:       "medium",
+			ContactName:    stringPtr("Bob Johnson"),
+			Email:          stringPtr("bob@example.com"),
+			Phone:          stringPtr("5551234567"),
+			LeadType:       types.LeadTypeLead,
+			Priority:       types.LeadPriorityMedium,
 			Probability:    10,
-			StageID:        s.stageID,
-			SourceID:       s.sourceID,
+			StageID:        &s.stageID,
+			SourceID:       &s.sourceID,
 			AssignedTo:     nil, // Should remain nil without assignment rules
 			Active:         true,
 			CreatedAt:      time.Now(),
@@ -685,8 +663,8 @@ func (s *LeadServiceTestSuite) TestCreateLeadAssignmentRuleError() {
 			ContactName: stringPtr("Error Test"),
 			Email:       stringPtr("error@test.com"),
 			Phone:       stringPtr("1112223333"),
-			LeadType:    stringPtr("enterprise"),
-			Priority:    stringPtr("high"),
+			LeadType:    types.LeadType("enterprise"),
+			Priority:    types.LeadPriority("high"),
 			StageID:     &s.stageID,
 			SourceID:    &s.sourceID,
 		}
@@ -700,14 +678,14 @@ func (s *LeadServiceTestSuite) TestCreateLeadAssignmentRuleError() {
 			ID:             s.leadID,
 			OrganizationID: s.orgID,
 			Name:           "Problem Lead",
-			ContactName:    "Error Test",
-			Email:          "error@test.com",
-			Phone:          "1112223333",
-			LeadType:       "enterprise",
-			Priority:       "high",
+			ContactName:    stringPtr("Error Test"),
+			Email:          stringPtr("error@test.com"),
+			Phone:          stringPtr("1112223333"),
+			LeadType:       types.LeadType("enterprise"),
+			Priority:       types.LeadPriority("high"),
 			Probability:    10,
-			StageID:        s.stageID,
-			SourceID:       s.sourceID,
+			StageID:        &s.stageID,
+			SourceID:       &s.sourceID,
 			AssignedTo:     nil, // Should remain nil when assignment fails
 			Active:         true,
 			CreatedAt:      time.Now(),
@@ -732,22 +710,7 @@ func (s *LeadServiceTestSuite) TestCreateLeadAssignmentRuleError() {
 	})
 }
 
-// Helper functions
-func stringPtr(s string) *string {
-	return &s
-}
-
-func floatPtr(f float64) *float64 {
-	return &f
-}
-
-type MockRuleEngine struct {
-	validateError error
-}
-
-func (m *MockRuleEngine) Validate(ctx context.Context, entityType string, entity interface{}) error {
-	return m.validateError
-}
+// Removed MockRuleEngine as it's no longer needed
 
 // Run the test suite
 func TestLeadServiceTestSuite(t *testing.T) {

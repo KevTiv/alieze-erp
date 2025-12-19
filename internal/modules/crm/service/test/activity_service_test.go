@@ -9,11 +9,44 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"alieze-erp/internal/modules/crm/service"
-	"alieze-erp/internal/modules/crm/types"
-	"alieze-erp/internal/testutils"
-	"alieze-erp/pkg/events"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/internal/testutils"
+	"github.com/KevTiv/alieze-erp/pkg/events"
 )
+
+// Helper functions
+func stringPtr(s string) *string {
+	return &s
+}
+
+func intPtr(i int) *int {
+	return &i
+}
+
+func floatPtr(f float64) *float64 {
+	return &f
+}
+
+func boolPtr(b bool) *bool {
+	return &b
+}
+
+func uuidPtr(u uuid.UUID) *uuid.UUID {
+	return &u
+}
+
+func timePtr(t time.Time) *time.Time {
+	return &t
+}
+
+func activityTypePtr(at types.ActivityType) *types.ActivityType {
+	return &at
+}
+
+func activityStatePtr(as types.ActivityState) *types.ActivityState {
+	return &as
+}
 
 type ActivityServiceTestSuite struct {
 	suite.Suite
@@ -321,15 +354,15 @@ func (s *ActivityServiceTestSuite) TestListActivitiesSuccess() {
 	s.T().Run("ListActivities - Success", func(t *testing.T) {
 		// Setup test data
 		filter := types.ActivityFilter{
-			ActivityType: stringPtr(string(types.ActivityTypeMeeting)),
-			State:        stringPtr(string(types.ActivityStatePlanned)),
+			ActivityType: activityTypePtr(types.ActivityTypeMeeting),
+			State:        activityStatePtr(types.ActivityStatePlanned),
 			Limit:        10,
 		}
 
 		// Mock repository behavior
 		now := time.Now()
 		deadline := now.Add(24 * time.Hour)
-		expectedActivities := []types.Activity{
+		expectedActivities := []*types.Activity{
 			{
 				ID:             uuid.Must(uuid.NewV7()),
 				OrganizationID: s.orgID,
@@ -348,7 +381,7 @@ func (s *ActivityServiceTestSuite) TestListActivitiesSuccess() {
 			},
 		}
 
-		s.repo.WithFindAllFunc(func(ctx context.Context, f types.ActivityFilter) ([]types.Activity, error) {
+		s.repo.WithFindAllFunc(func(ctx context.Context, f types.ActivityFilter) ([]*types.Activity, error) {
 			require.Equal(t, s.orgID, f.OrganizationID)
 			require.Equal(t, filter.ActivityType, f.ActivityType)
 			require.Equal(t, filter.State, f.State)

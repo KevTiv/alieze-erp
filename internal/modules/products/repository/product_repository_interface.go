@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"alieze-erp/internal/modules/products/types"
+	"github.com/KevTiv/alieze-erp/internal/modules/products/types"
 
 	"github.com/google/uuid"
 )

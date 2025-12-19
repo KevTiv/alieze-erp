@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"alieze-erp/pkg/events"
+	"github.com/KevTiv/alieze-erp/pkg/events"
 )
 
 // This example demonstrates how the event system works across modules
