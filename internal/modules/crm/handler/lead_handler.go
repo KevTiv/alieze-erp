@@ -99,7 +99,7 @@ func (h *LeadHandler) CreateLead(w http.ResponseWriter, r *http.Request, _ httpr
 		return
 	}
 
-	var req types.LeadEnhancedCreateRequest
+	var req types.LeadCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -155,7 +155,7 @@ func (h *LeadHandler) UpdateLead(w http.ResponseWriter, r *http.Request, ps http
 		return
 	}
 
-	var req types.LeadEnhancedUpdateRequest
+	var req types.LeadUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -204,7 +204,7 @@ func (h *LeadHandler) ListLeads(w http.ResponseWriter, r *http.Request, _ httpro
 	}
 
 	// Parse query parameters
-	filter := types.LeadEnhancedFilter{}
+	filter := types.LeadFilter{}
 
 	if name := r.URL.Query().Get("name"); name != "" {
 		filter.Name = &name
@@ -365,7 +365,7 @@ func (h *LeadHandler) CountLeads(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 
 	// Parse query parameters (similar to ListLeads)
-	filter := types.LeadEnhancedFilter{}
+	filter := types.LeadFilter{}
 
 	// Parse string parameters
 	if name := r.URL.Query().Get("name"); name != "" {

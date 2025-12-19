@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"alieze-erp/internal/modules/crm/repository"
+	"alieze-erp/internal/modules/crm/types"
 	"alieze-erp/internal/testutils"
 )
 

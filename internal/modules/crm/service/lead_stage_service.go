@@ -7,21 +7,21 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/google/uuid"
-	"alieze-erp/internal/modules/crm/repository"
 	"alieze-erp/internal/modules/crm/types"
 	"alieze-erp/pkg/events"
+
+	"github.com/google/uuid"
 )
 
 // LeadStageService handles lead stage business logic
 type LeadStageService struct {
-	repo        repository.LeadStageRepository
+	repo        types.LeadStageRepository
 	authService AuthService
 	eventBus    *events.Bus
 	logger      *slog.Logger
 }
 
-func NewLeadStageService(repo repository.LeadStageRepository, authService AuthService, eventBus *events.Bus) *LeadStageService {
+func NewLeadStageService(repo types.LeadStageRepository, authService AuthService, eventBus *events.Bus) *LeadStageService {
 	return &LeadStageService{
 		repo:        repo,
 		authService: authService,
@@ -52,17 +52,17 @@ func (s *LeadStageService) CreateLeadStage(ctx context.Context, req types.LeadSt
 
 	// Create stage
 	stage := types.LeadStage{
-		ID:           stageID,
+		ID:             stageID,
 		OrganizationID: orgID,
-		Name:         req.Name,
-		Sequence:     req.Sequence,
-		Probability:  req.Probability,
-		Fold:         req.Fold,
-		IsWon:        req.IsWon,
-		Requirements: req.Requirements,
-		TeamID:       req.TeamID,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		Name:           req.Name,
+		Sequence:       req.Sequence,
+		Probability:    req.Probability,
+		Fold:           req.Fold,
+		IsWon:          req.IsWon,
+		Requirements:   req.Requirements,
+		TeamID:         req.TeamID,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	created, err := s.repo.Create(ctx, stage)
@@ -154,16 +154,16 @@ func (s *LeadStageService) UpdateLeadStage(ctx context.Context, id uuid.UUID, re
 
 	// Build update
 	stage := types.LeadStage{
-		ID:           id,
+		ID:             id,
 		OrganizationID: orgID,
-		Name:         *req.Name,
-		Sequence:     *req.Sequence,
-		Probability:  *req.Probability,
-		Fold:         *req.Fold,
-		IsWon:        *req.IsWon,
-		Requirements: req.Requirements,
-		TeamID:       req.TeamID,
-		UpdatedAt:    time.Now(),
+		Name:           *req.Name,
+		Sequence:       *req.Sequence,
+		Probability:    *req.Probability,
+		Fold:           *req.Fold,
+		IsWon:          *req.IsWon,
+		Requirements:   req.Requirements,
+		TeamID:         req.TeamID,
+		UpdatedAt:      time.Now(),
 	}
 
 	// Update

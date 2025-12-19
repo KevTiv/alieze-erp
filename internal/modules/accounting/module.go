@@ -10,6 +10,8 @@ import (
 	"alieze-erp/internal/modules/accounting/service"
 	"alieze-erp/pkg/registry"
 	"alieze-erp/pkg/tax"
+	"alieze-erp/pkg/workflow"
+
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 )
@@ -52,7 +54,12 @@ func (m *AccountingModule) Init(ctx context.Context, deps registry.Dependencies)
 	taxCalc := tax.NewCalculator(deps.DB)
 
 	// Create services with state machine and event bus support
-	invoiceStateMachine, _ := m.getStateMachine(deps, "accounting.invoice")
+	var invoiceStateMachine *workflow.StateMachine
+	if deps.StateMachineFactory != nil {
+		if sm, exists := deps.StateMachineFactory.GetStateMachine("accounting.invoice"); exists {
+			invoiceStateMachine = sm
+		}
+	}
 	invoiceService := service.NewInvoiceServiceWithDependencies(invoiceRepo, paymentRepo, taxCalc, invoiceStateMachine, deps.EventBus)
 	paymentService := service.NewPaymentService(paymentRepo)
 	accountService := service.NewAccountService(accountRepo)
@@ -223,7 +230,7 @@ func (m *AccountingModule) Health() error {
 // getStateMachine helper function to retrieve state machines from dependencies
 func (m *AccountingModule) getStateMachine(deps registry.Dependencies, workflowID string) (interface{}, bool) {
 	if deps.StateMachineFactory != nil {
-		if factory, ok := deps.StateMachineFactory.(interface{
+		if factory, ok := deps.StateMachineFactory.(interface {
 			GetStateMachine(workflowID string) (interface{}, bool)
 		}); ok {
 			return factory.GetStateMachine(workflowID)

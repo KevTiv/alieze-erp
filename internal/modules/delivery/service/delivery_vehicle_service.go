@@ -3,17 +3,17 @@ package service
 import (
 	"context"
 	"fmt"
-	"time"
 
-	deliverytypes "alieze-erp/internal/modules/delivery/types"
 	deliveryrepository "alieze-erp/internal/modules/delivery/repository"
+	deliverytypes "alieze-erp/internal/modules/delivery/types"
+	"alieze-erp/pkg/events"
 
 	"github.com/google/uuid"
 )
 
 type DeliveryVehicleService struct {
 	repo     deliveryrepository.DeliveryVehicleRepository
-	eventBus interface{} // Event bus for publishing domain events
+	eventBus *events.Bus
 }
 
 func NewDeliveryVehicleService(repo deliveryrepository.DeliveryVehicleRepository) *DeliveryVehicleService {
@@ -22,7 +22,7 @@ func NewDeliveryVehicleService(repo deliveryrepository.DeliveryVehicleRepository
 	}
 }
 
-func NewDeliveryVehicleServiceWithEventBus(repo deliveryrepository.DeliveryVehicleRepository, eventBus interface{}) *DeliveryVehicleService {
+func NewDeliveryVehicleServiceWithEventBus(repo deliveryrepository.DeliveryVehicleRepository, eventBus *events.Bus) *DeliveryVehicleService {
 	service := NewDeliveryVehicleService(repo)
 	service.eventBus = eventBus
 	return service
@@ -168,16 +168,16 @@ func (s *DeliveryVehicleService) publishVehicleEvent(ctx context.Context, eventT
 		Publish(eventType string, event interface{}) error
 	}); ok {
 		eventData := map[string]interface{}{
-			"id":                vehicle.ID,
-			"organization_id":    vehicle.OrganizationID,
-			"name":              vehicle.Name,
+			"id":                  vehicle.ID,
+			"organization_id":     vehicle.OrganizationID,
+			"name":                vehicle.Name,
 			"registration_number": vehicle.RegistrationNumber,
-			"vehicle_type":       vehicle.VehicleType,
-			"active":            vehicle.Active,
-			"capacity":          vehicle.Capacity,
-			"metadata":          vehicle.Metadata,
-			"created_at":        vehicle.CreatedAt,
-			"updated_at":        vehicle.UpdatedAt,
+			"vehicle_type":        vehicle.VehicleType,
+			"active":              vehicle.Active,
+			"capacity":            vehicle.Capacity,
+			"metadata":            vehicle.Metadata,
+			"created_at":          vehicle.CreatedAt,
+			"updated_at":          vehicle.UpdatedAt,
 		}
 
 		_ = eventBus.Publish(eventType, eventData)

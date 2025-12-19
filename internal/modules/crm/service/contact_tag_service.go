@@ -6,21 +6,28 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/google/uuid"
-	"alieze-erp/internal/modules/crm/repository"
 	"alieze-erp/internal/modules/crm/types"
 	"alieze-erp/pkg/events"
+
+	"github.com/google/uuid"
 )
+
+// AuthService represents authentication and authorization service
+type AuthService interface {
+	CheckPermission(ctx context.Context, permission string) error
+	GetOrganizationID(ctx context.Context) (uuid.UUID, error)
+	GetUserID(ctx context.Context) (uuid.UUID, error)
+}
 
 // ContactTagService handles contact tag business logic
 type ContactTagService struct {
-	repo        repository.ContactTagRepository
+	repo        types.ContactTagRepository
 	authService AuthService
 	eventBus    *events.Bus
 	logger      *slog.Logger
 }
 
-func NewContactTagService(repo repository.ContactTagRepository, authService AuthService, eventBus *events.Bus) *ContactTagService {
+func NewContactTagService(repo types.ContactTagRepository, authService AuthService, eventBus *events.Bus) *ContactTagService {
 	return &ContactTagService{
 		repo:        repo,
 		authService: authService,
@@ -189,8 +196,6 @@ func (s *ContactTagService) DeleteContactTag(ctx context.Context, id uuid.UUID) 
 
 	return nil
 }
-
-
 
 func (s *ContactTagService) validateContactTag(tag types.ContactTag) error {
 	if tag.Name == "" {

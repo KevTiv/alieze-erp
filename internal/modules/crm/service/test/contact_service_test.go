@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"alieze-erp/internal/modules/crm/domain"
 	"alieze-erp/internal/modules/crm/service"
+	"alieze-erp/internal/modules/crm/types"
 	"alieze-erp/internal/testutils"
 )
 
@@ -543,11 +543,6 @@ func (s *ContactServiceTestSuite) TestDeleteContactOrganizationMismatch() {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "does not belong to organization")
 	})
-}
-
-// Helper functions
-func stringPtr(s string) *string {
-	return &s
 }
 
 // Run the test suite

@@ -12,22 +12,23 @@ import (
 	"alieze-erp/pkg/events"
 	"alieze-erp/pkg/registry"
 	"alieze-erp/pkg/rules"
+
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 )
 
 // CRMModule represents the CRM module
 type CRMModule struct {
-	contactHandler    *handler.ContactHandler
-	contactTagHandler *handler.ContactTagHandler
-	salesTeamHandler  *handler.SalesTeamHandler
-	activityHandler   *handler.ActivityHandler
-	leadStageHandler  *handler.LeadStageHandler
-	leadSourceHandler *handler.LeadSourceHandler
-	lostReasonHandler *handler.LostReasonHandler
-	leadHandler       *handler.LeadHandler
+	contactHandler        *handler.ContactHandler
+	contactTagHandler     *handler.ContactTagHandler
+	salesTeamHandler      *handler.SalesTeamHandler
+	activityHandler       *handler.ActivityHandler
+	leadStageHandler      *handler.LeadStageHandler
+	leadSourceHandler     *handler.LeadSourceHandler
+	lostReasonHandler     *handler.LostReasonHandler
+	leadHandler           *handler.LeadHandler
 	assignmentRuleHandler *handler.AssignmentRuleHandler
-	logger            *slog.Logger
+	logger                *slog.Logger
 }
 
 // NewCRMModule creates a new CRM module
@@ -390,7 +391,7 @@ func (a *PolicyAuthServiceAdapter) CheckPermission(ctx context.Context, permissi
 
 	// Use the policy engine for RBAC check
 	if a.policyEngine != nil {
-		if engine, ok := a.policyEngine.(interface{
+		if engine, ok := a.policyEngine.(interface {
 			CheckPermission(ctx context.Context, subject, object, action string) (bool, error)
 		}); ok {
 			// Parse permission in format "action" (e.g., "contacts:create" or just "create")

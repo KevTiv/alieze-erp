@@ -6,15 +6,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"alieze-erp/internal/modules/crm/types"
+
+	"github.com/google/uuid"
 )
 
 type salesTeamRepository struct {
 	db *sql.DB
 }
 
-func NewSalesTeamRepository(db *sql.DB) SalesTeamRepository {
+func NewSalesTeamRepository(db *sql.DB) types.SalesTeamRepository {
 	return &salesTeamRepository{db: db}
 }
 
@@ -121,6 +122,33 @@ func (r *salesTeamRepository) FindAll(ctx context.Context, filter types.SalesTea
 	}
 
 	return teams, nil
+}
+
+// Count counts sales teams matching the filter criteria
+func (r *salesTeamRepository) Count(ctx context.Context, filter types.SalesTeamFilter) (int, error) {
+	// Get organization ID from context for security
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return 0, errors.New("organization ID not found in context")
+	}
+
+	query := `SELECT COUNT(*) FROM sales_teams WHERE organization_id = $1`
+	args := []interface{}{orgID}
+	argIndex := 2
+
+	if filter.Name != nil && *filter.Name != "" {
+		query += fmt.Sprintf(" AND name ILIKE $%d", argIndex)
+		args = append(args, "%"+*filter.Name+"%")
+		argIndex++
+	}
+
+	var count int
+	err := r.db.QueryRowContext(ctx, query, args...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count sales teams: %w", err)
+	}
+
+	return count, nil
 }
 
 func (r *salesTeamRepository) Update(ctx context.Context, team types.SalesTeam) (*types.SalesTeam, error) {

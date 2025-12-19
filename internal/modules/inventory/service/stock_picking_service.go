@@ -44,3 +44,8 @@ func (s *StockPickingService) Update(ctx context.Context, id uuid.UUID, req type
 func (s *StockPickingService) Delete(ctx context.Context, id uuid.UUID) error {
 	return s.repo.Delete(ctx, id)
 }
+
+// GetStockPicking retrieves a stock picking by ID (alias for GetByID for interface compatibility)
+func (s *StockPickingService) GetStockPicking(ctx context.Context, id uuid.UUID) (*types.StockPicking, error) {
+	return s.repo.GetByID(ctx, id)
+}

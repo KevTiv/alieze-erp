@@ -13,13 +13,13 @@ import (
 // GetLeadPipelineValue calculates the total pipeline value
 func (s *LeadService) GetLeadPipelineValue(ctx context.Context, orgID uuid.UUID) (float64, error) {
 	// Calculate pipeline value by summing expected revenue of all active leads
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 	active := true
 	filter.Active = &active
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get leads for pipeline calculation: %w", err)
 	}
@@ -37,7 +37,7 @@ func (s *LeadService) GetLeadPipelineValue(ctx context.Context, orgID uuid.UUID)
 // GetLeadPipelineValueByStage calculates pipeline value by stage
 func (s *LeadService) GetLeadPipelineValueByStage(ctx context.Context, orgID uuid.UUID) (map[uuid.UUID]float64, error) {
 	// Get counts by stage first (currently unused but kept for future reference)
-	counts, err := s.leadRepository.CountByStage(ctx, orgID)
+	counts, err := s.repo.CountByStage(ctx, orgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get lead counts by stage: %w", err)
 	}
@@ -46,13 +46,13 @@ func (s *LeadService) GetLeadPipelineValueByStage(ctx context.Context, orgID uui
 	}
 
 	// Get all active leads
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 	active := true
 	filter.Active = &active
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for pipeline calculation: %w", err)
 	}
@@ -71,10 +71,10 @@ func (s *LeadService) GetLeadPipelineValueByStage(ctx context.Context, orgID uui
 // GetLeadConversionRate calculates the lead conversion rate
 func (s *LeadService) GetLeadConversionRate(ctx context.Context, orgID uuid.UUID) (float64, error) {
 	// Get total leads
-	totalFilter := types.LeadEnhancedFilter{
+	totalFilter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
-	totalLeads, err := s.leadRepository.FindAll(ctx, totalFilter)
+	totalLeads, err := s.repo.FindAll(ctx, totalFilter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get total leads: %w", err)
 	}
@@ -84,12 +84,12 @@ func (s *LeadService) GetLeadConversionRate(ctx context.Context, orgID uuid.UUID
 	}
 
 	// Get converted leads (won status)
-	convertedFilter := types.LeadEnhancedFilter{
+	convertedFilter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 	wonStatus := types.LeadWonStatusWon
 	convertedFilter.WonStatus = &wonStatus
-	convertedLeads, err := s.leadRepository.FindAll(ctx, convertedFilter)
+	convertedLeads, err := s.repo.FindAll(ctx, convertedFilter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get converted leads: %w", err)
 	}
@@ -101,12 +101,12 @@ func (s *LeadService) GetLeadConversionRate(ctx context.Context, orgID uuid.UUID
 // GetLeadWinRate calculates the lead win rate
 func (s *LeadService) GetLeadWinRate(ctx context.Context, orgID uuid.UUID) (float64, error) {
 	// Get closed leads (won or lost)
-	closedFilter := types.LeadEnhancedFilter{
+	closedFilter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 	// We need to get leads that are either won or lost
 	// This is a simplified approach - in a real implementation, we'd need a more sophisticated query
-	closedLeads, err := s.leadRepository.FindAll(ctx, closedFilter)
+	closedLeads, err := s.repo.FindAll(ctx, closedFilter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get closed leads: %w", err)
 	}
@@ -130,10 +130,10 @@ func (s *LeadService) GetLeadWinRate(ctx context.Context, orgID uuid.UUID) (floa
 // GetLeadLossRate calculates the lead loss rate
 func (s *LeadService) GetLeadLossRate(ctx context.Context, orgID uuid.UUID) (float64, error) {
 	// Get closed leads (won or lost)
-	closedFilter := types.LeadEnhancedFilter{
+	closedFilter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
-	closedLeads, err := s.leadRepository.FindAll(ctx, closedFilter)
+	closedLeads, err := s.repo.FindAll(ctx, closedFilter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get closed leads: %w", err)
 	}
@@ -156,13 +156,13 @@ func (s *LeadService) GetLeadLossRate(ctx context.Context, orgID uuid.UUID) (flo
 
 // GetLeadAverageExpectedRevenue calculates the average expected revenue
 func (s *LeadService) GetLeadAverageExpectedRevenue(ctx context.Context, orgID uuid.UUID) (float64, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 	active := true
 	filter.Active = &active
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get leads for average revenue calculation: %w", err)
 	}
@@ -189,13 +189,13 @@ func (s *LeadService) GetLeadAverageExpectedRevenue(ctx context.Context, orgID u
 
 // GetLeadAverageProbability calculates the average probability
 func (s *LeadService) GetLeadAverageProbability(ctx context.Context, orgID uuid.UUID) (float64, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 	active := true
 	filter.Active = &active
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get leads for average probability calculation: %w", err)
 	}
@@ -214,13 +214,13 @@ func (s *LeadService) GetLeadAverageProbability(ctx context.Context, orgID uuid.
 
 // GetLeadTotalExpectedRevenue calculates the total expected revenue
 func (s *LeadService) GetLeadTotalExpectedRevenue(ctx context.Context, orgID uuid.UUID) (float64, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 	active := true
 	filter.Active = &active
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get leads for total revenue calculation: %w", err)
 	}
@@ -237,13 +237,13 @@ func (s *LeadService) GetLeadTotalExpectedRevenue(ctx context.Context, orgID uui
 
 // GetLeadTotalRecurringRevenue calculates the total recurring revenue
 func (s *LeadService) GetLeadTotalRecurringRevenue(ctx context.Context, orgID uuid.UUID) (float64, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 	active := true
 	filter.Active = &active
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get leads for total recurring revenue calculation: %w", err)
 	}
@@ -259,17 +259,17 @@ func (s *LeadService) GetLeadTotalRecurringRevenue(ctx context.Context, orgID uu
 }
 
 // GetLeadsBySource retrieves leads by source
-func (s *LeadService) GetLeadsBySource(ctx context.Context, orgID uuid.UUID, sourceID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsBySource(ctx context.Context, orgID uuid.UUID, sourceID uuid.UUID) ([]types.Lead, error) {
 	if sourceID == uuid.Nil {
 		return nil, fmt.Errorf("invalid source ID")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		SourceID:       &sourceID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by source: %w", err)
 	}
@@ -278,17 +278,17 @@ func (s *LeadService) GetLeadsBySource(ctx context.Context, orgID uuid.UUID, sou
 }
 
 // GetLeadsByCampaign retrieves leads by campaign
-func (s *LeadService) GetLeadsByCampaign(ctx context.Context, orgID uuid.UUID, campaignID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByCampaign(ctx context.Context, orgID uuid.UUID, campaignID uuid.UUID) ([]types.Lead, error) {
 	if campaignID == uuid.Nil {
 		return nil, fmt.Errorf("invalid campaign ID")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		CampaignID:     &campaignID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by campaign: %w", err)
 	}
@@ -297,17 +297,17 @@ func (s *LeadService) GetLeadsByCampaign(ctx context.Context, orgID uuid.UUID, c
 }
 
 // GetLeadsByMedium retrieves leads by medium
-func (s *LeadService) GetLeadsByMedium(ctx context.Context, orgID uuid.UUID, mediumID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByMedium(ctx context.Context, orgID uuid.UUID, mediumID uuid.UUID) ([]types.Lead, error) {
 	if mediumID == uuid.Nil {
 		return nil, fmt.Errorf("invalid medium ID")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		MediumID:       &mediumID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by medium: %w", err)
 	}
@@ -316,24 +316,24 @@ func (s *LeadService) GetLeadsByMedium(ctx context.Context, orgID uuid.UUID, med
 }
 
 // GetLeadsByTag retrieves leads by tag
-func (s *LeadService) GetLeadsByTag(ctx context.Context, orgID uuid.UUID, tagID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByTag(ctx context.Context, orgID uuid.UUID, tagID uuid.UUID) ([]types.Lead, error) {
 	if tagID == uuid.Nil {
 		return nil, fmt.Errorf("invalid tag ID")
 	}
 
 	// Note: This is a simplified approach. In a real implementation, we'd need
 	// to query a separate lead_tags table or use JSON functions to search within tag_ids
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for tag filtering: %w", err)
 	}
 
 	// Filter in memory (not ideal for large datasets)
-	var filteredLeads []*types.LeadEnhanced
+	var filteredLeads []types.Lead
 	for _, lead := range leads {
 		for _, id := range lead.TagIDs {
 			if id == tagID {
@@ -347,17 +347,17 @@ func (s *LeadService) GetLeadsByTag(ctx context.Context, orgID uuid.UUID, tagID 
 }
 
 // GetLeadsByCompany retrieves leads by company
-func (s *LeadService) GetLeadsByCompany(ctx context.Context, orgID uuid.UUID, companyID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByCompany(ctx context.Context, orgID uuid.UUID, companyID uuid.UUID) ([]types.Lead, error) {
 	if companyID == uuid.Nil {
 		return nil, fmt.Errorf("invalid company ID")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		CompanyID:      &companyID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by company: %w", err)
 	}
@@ -366,17 +366,17 @@ func (s *LeadService) GetLeadsByCompany(ctx context.Context, orgID uuid.UUID, co
 }
 
 // GetLeadsByCountry retrieves leads by country
-func (s *LeadService) GetLeadsByCountry(ctx context.Context, orgID uuid.UUID, countryID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByCountry(ctx context.Context, orgID uuid.UUID, countryID uuid.UUID) ([]types.Lead, error) {
 	if countryID == uuid.Nil {
 		return nil, fmt.Errorf("invalid country ID")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		CountryID:      &countryID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by country: %w", err)
 	}
@@ -385,17 +385,17 @@ func (s *LeadService) GetLeadsByCountry(ctx context.Context, orgID uuid.UUID, co
 }
 
 // GetLeadsByState retrieves leads by state
-func (s *LeadService) GetLeadsByState(ctx context.Context, orgID uuid.UUID, stateID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByState(ctx context.Context, orgID uuid.UUID, stateID uuid.UUID) ([]types.Lead, error) {
 	if stateID == uuid.Nil {
 		return nil, fmt.Errorf("invalid state ID")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		StateID:        &stateID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by state: %w", err)
 	}
@@ -404,17 +404,17 @@ func (s *LeadService) GetLeadsByState(ctx context.Context, orgID uuid.UUID, stat
 }
 
 // GetLeadsByCity retrieves leads by city
-func (s *LeadService) GetLeadsByCity(ctx context.Context, orgID uuid.UUID, city string) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByCity(ctx context.Context, orgID uuid.UUID, city string) ([]types.Lead, error) {
 	if city == "" {
 		return nil, fmt.Errorf("city cannot be empty")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		City:           &city,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by city: %w", err)
 	}
@@ -425,13 +425,13 @@ func (s *LeadService) GetLeadsByCity(ctx context.Context, orgID uuid.UUID, city 
 // GetLeadAverageConversionTime calculates the average conversion time for leads
 func (s *LeadService) GetLeadAverageConversionTime(ctx context.Context, orgID uuid.UUID) (time.Duration, error) {
 	// Get all converted leads
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 	wonStatus := types.LeadWonStatusWon
 	filter.WonStatus = &wonStatus
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get converted leads: %w", err)
 	}
@@ -462,13 +462,13 @@ func (s *LeadService) GetLeadAverageConversionTime(ctx context.Context, orgID uu
 // GetLeadAverageWinTime calculates the average win time for leads
 func (s *LeadService) GetLeadAverageWinTime(ctx context.Context, orgID uuid.UUID) (time.Duration, error) {
 	// Get all won leads
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 	wonStatus := types.LeadWonStatusWon
 	filter.WonStatus = &wonStatus
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get won leads: %w", err)
 	}
@@ -499,13 +499,13 @@ func (s *LeadService) GetLeadAverageWinTime(ctx context.Context, orgID uuid.UUID
 // GetLeadAverageLossTime calculates the average loss time for leads
 func (s *LeadService) GetLeadAverageLossTime(ctx context.Context, orgID uuid.UUID) (time.Duration, error) {
 	// Get all lost leads
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 	lostStatus := types.LeadWonStatusLost
 	filter.WonStatus = &lostStatus
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get lost leads: %w", err)
 	}
@@ -535,13 +535,13 @@ func (s *LeadService) GetLeadAverageLossTime(ctx context.Context, orgID uuid.UUI
 
 // GetLeadAverageRecurringRevenue calculates the average recurring revenue
 func (s *LeadService) GetLeadAverageRecurringRevenue(ctx context.Context, orgID uuid.UUID) (float64, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 	active := true
 	filter.Active = &active
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get leads for average recurring revenue calculation: %w", err)
 	}
@@ -567,17 +567,17 @@ func (s *LeadService) GetLeadAverageRecurringRevenue(ctx context.Context, orgID 
 }
 
 // GetLeadsByContact retrieves leads by contact
-func (s *LeadService) GetLeadsByContact(ctx context.Context, orgID uuid.UUID, contactID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByContact(ctx context.Context, orgID uuid.UUID, contactID uuid.UUID) ([]types.Lead, error) {
 	if contactID == uuid.Nil {
 		return nil, fmt.Errorf("invalid contact ID")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
-		ContactID:       &contactID,
+		ContactID:      &contactID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by contact: %w", err)
 	}
@@ -586,17 +586,17 @@ func (s *LeadService) GetLeadsByContact(ctx context.Context, orgID uuid.UUID, co
 }
 
 // GetLeadsByUser retrieves leads by user
-func (s *LeadService) GetLeadsByUser(ctx context.Context, orgID uuid.UUID, userID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByUser(ctx context.Context, orgID uuid.UUID, userID uuid.UUID) ([]types.Lead, error) {
 	if userID == uuid.Nil {
 		return nil, fmt.Errorf("invalid user ID")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		UserID:         &userID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by user: %w", err)
 	}
@@ -605,17 +605,17 @@ func (s *LeadService) GetLeadsByUser(ctx context.Context, orgID uuid.UUID, userI
 }
 
 // GetLeadsByTeam retrieves leads by team
-func (s *LeadService) GetLeadsByTeam(ctx context.Context, orgID uuid.UUID, teamID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByTeam(ctx context.Context, orgID uuid.UUID, teamID uuid.UUID) ([]types.Lead, error) {
 	if teamID == uuid.Nil {
 		return nil, fmt.Errorf("invalid team ID")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		TeamID:         &teamID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by team: %w", err)
 	}
@@ -624,17 +624,17 @@ func (s *LeadService) GetLeadsByTeam(ctx context.Context, orgID uuid.UUID, teamI
 }
 
 // GetLeadsByStage retrieves leads by stage
-func (s *LeadService) GetLeadsByStage(ctx context.Context, orgID uuid.UUID, stageID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByStage(ctx context.Context, orgID uuid.UUID, stageID uuid.UUID) ([]types.Lead, error) {
 	if stageID == uuid.Nil {
 		return nil, fmt.Errorf("invalid stage ID")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		StageID:        &stageID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by stage: %w", err)
 	}
@@ -643,17 +643,17 @@ func (s *LeadService) GetLeadsByStage(ctx context.Context, orgID uuid.UUID, stag
 }
 
 // GetLeadsByLostReason retrieves leads by lost reason
-func (s *LeadService) GetLeadsByLostReason(ctx context.Context, orgID uuid.UUID, lostReasonID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByLostReason(ctx context.Context, orgID uuid.UUID, lostReasonID uuid.UUID) ([]types.Lead, error) {
 	if lostReasonID == uuid.Nil {
 		return nil, fmt.Errorf("invalid lost reason ID")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		LostReasonID:   &lostReasonID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by lost reason: %w", err)
 	}
@@ -662,18 +662,18 @@ func (s *LeadService) GetLeadsByLostReason(ctx context.Context, orgID uuid.UUID,
 }
 
 // GetOverdueLeads retrieves overdue leads
-func (s *LeadService) GetOverdueLeads(ctx context.Context, orgID uuid.UUID) ([]*types.LeadEnhanced, error) {
-	filter := types.LeadEnhancedFilter{
+func (s *LeadService) GetOverdueLeads(ctx context.Context, orgID uuid.UUID) ([]types.Lead, error) {
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for overdue filtering: %w", err)
 	}
 
 	// Filter in memory for overdue leads
-	var overdueLeads []*types.LeadEnhanced
+	var overdueLeads []types.Lead
 	now := time.Now()
 	for _, lead := range leads {
 		if lead.DateDeadline != nil && lead.DateDeadline.Before(now) && lead.WonStatus == nil {
@@ -685,13 +685,13 @@ func (s *LeadService) GetOverdueLeads(ctx context.Context, orgID uuid.UUID) ([]*
 }
 
 // GetHighValueLeads retrieves high-value leads
-func (s *LeadService) GetHighValueLeads(ctx context.Context, orgID uuid.UUID, minExpectedRevenue float64) ([]*types.LeadEnhanced, error) {
-	filter := types.LeadEnhancedFilter{
-		OrganizationID:          orgID,
-		ExpectedRevenueMin:     &minExpectedRevenue,
+func (s *LeadService) GetHighValueLeads(ctx context.Context, orgID uuid.UUID, minExpectedRevenue float64) ([]types.Lead, error) {
+	filter := types.LeadFilter{
+		OrganizationID:     orgID,
+		ExpectedRevenueMin: &minExpectedRevenue,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get high-value leads: %w", err)
 	}
@@ -700,18 +700,18 @@ func (s *LeadService) GetHighValueLeads(ctx context.Context, orgID uuid.UUID, mi
 }
 
 // GetRecentLeads retrieves recently created/modified leads
-func (s *LeadService) GetRecentLeads(ctx context.Context, orgID uuid.UUID, days int) ([]*types.LeadEnhanced, error) {
-	filter := types.LeadEnhancedFilter{
+func (s *LeadService) GetRecentLeads(ctx context.Context, orgID uuid.UUID, days int) ([]types.Lead, error) {
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for recent filtering: %w", err)
 	}
 
 	// Filter in memory for recent leads
-	var recentLeads []*types.LeadEnhanced
+	var recentLeads []types.Lead
 	cutoff := time.Now().AddDate(0, 0, -days)
 	for _, lead := range leads {
 		if lead.CreatedAt.After(cutoff) || lead.UpdatedAt.After(cutoff) {
@@ -723,17 +723,17 @@ func (s *LeadService) GetRecentLeads(ctx context.Context, orgID uuid.UUID, days 
 }
 
 // GetLeadsByCreatedBy retrieves leads by created by user
-func (s *LeadService) GetLeadsByCreatedBy(ctx context.Context, orgID uuid.UUID, createdBy uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByCreatedBy(ctx context.Context, orgID uuid.UUID, createdBy uuid.UUID) ([]types.Lead, error) {
 	if createdBy == uuid.Nil {
 		return nil, fmt.Errorf("invalid created by ID")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		CreatedBy:      &createdBy,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by created by: %w", err)
 	}
@@ -742,17 +742,17 @@ func (s *LeadService) GetLeadsByCreatedBy(ctx context.Context, orgID uuid.UUID, 
 }
 
 // GetLeadsByUpdatedBy retrieves leads by updated by user
-func (s *LeadService) GetLeadsByUpdatedBy(ctx context.Context, orgID uuid.UUID, updatedBy uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByUpdatedBy(ctx context.Context, orgID uuid.UUID, updatedBy uuid.UUID) ([]types.Lead, error) {
 	if updatedBy == uuid.Nil {
 		return nil, fmt.Errorf("invalid updated by ID")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		UpdatedBy:      &updatedBy,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by updated by: %w", err)
 	}
@@ -761,17 +761,17 @@ func (s *LeadService) GetLeadsByUpdatedBy(ctx context.Context, orgID uuid.UUID, 
 }
 
 // GetLeadsByColor retrieves leads by color
-func (s *LeadService) GetLeadsByColor(ctx context.Context, orgID uuid.UUID, color string) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByColor(ctx context.Context, orgID uuid.UUID, color string) ([]types.Lead, error) {
 	if color == "" {
 		return nil, fmt.Errorf("color cannot be empty")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		Color:          &color,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by color: %w", err)
 	}
@@ -780,22 +780,22 @@ func (s *LeadService) GetLeadsByColor(ctx context.Context, orgID uuid.UUID, colo
 }
 
 // GetLeadsByStatus retrieves leads by status
-func (s *LeadService) GetLeadsByStatus(ctx context.Context, orgID uuid.UUID, status string) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByStatus(ctx context.Context, orgID uuid.UUID, status string) ([]types.Lead, error) {
 	if status == "" {
 		return nil, fmt.Errorf("status cannot be empty")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for status filtering: %w", err)
 	}
 
 	// Filter in memory for status (simplified approach)
-	var filteredLeads []*types.LeadEnhanced
+	var filteredLeads []types.Lead
 	for _, lead := range leads {
 		// This is a simplified approach - in a real implementation, you'd need
 		// to define what "status" means for leads (e.g., won/lost, active/inactive, etc.)
@@ -812,13 +812,13 @@ func (s *LeadService) GetLeadsByStatus(ctx context.Context, orgID uuid.UUID, sta
 }
 
 // GetLeadsByActiveStatus retrieves leads by active status
-func (s *LeadService) GetLeadsByActiveStatus(ctx context.Context, orgID uuid.UUID, active bool) ([]*types.LeadEnhanced, error) {
-	filter := types.LeadEnhancedFilter{
+func (s *LeadService) GetLeadsByActiveStatus(ctx context.Context, orgID uuid.UUID, active bool) ([]types.Lead, error) {
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		Active:         &active,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by active status: %w", err)
 	}
@@ -827,17 +827,17 @@ func (s *LeadService) GetLeadsByActiveStatus(ctx context.Context, orgID uuid.UUI
 }
 
 // GetLeadsByPriority retrieves leads by priority
-func (s *LeadService) GetLeadsByPriority(ctx context.Context, orgID uuid.UUID, priority types.LeadPriority) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByPriority(ctx context.Context, orgID uuid.UUID, priority types.LeadPriority) ([]types.Lead, error) {
 	if priority == "" {
 		return nil, fmt.Errorf("priority cannot be empty")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		Priority:       &priority,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by priority: %w", err)
 	}
@@ -846,17 +846,17 @@ func (s *LeadService) GetLeadsByPriority(ctx context.Context, orgID uuid.UUID, p
 }
 
 // GetLeadsByType retrieves leads by type
-func (s *LeadService) GetLeadsByType(ctx context.Context, orgID uuid.UUID, leadType types.LeadType) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByType(ctx context.Context, orgID uuid.UUID, leadType types.LeadType) ([]types.Lead, error) {
 	if leadType == "" {
 		return nil, fmt.Errorf("lead type cannot be empty")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		LeadType:       &leadType,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by type: %w", err)
 	}
@@ -865,17 +865,17 @@ func (s *LeadService) GetLeadsByType(ctx context.Context, orgID uuid.UUID, leadT
 }
 
 // GetLeadsByWonStatus retrieves leads by won status
-func (s *LeadService) GetLeadsByWonStatus(ctx context.Context, orgID uuid.UUID, wonStatus types.LeadWonStatus) ([]*types.LeadEnhanced, error) {
+func (s *LeadService) GetLeadsByWonStatus(ctx context.Context, orgID uuid.UUID, wonStatus types.LeadWonStatus) ([]types.Lead, error) {
 	if wonStatus == "" {
 		return nil, fmt.Errorf("won status cannot be empty")
 	}
 
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 		WonStatus:      &wonStatus,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads by won status: %w", err)
 	}
@@ -885,7 +885,7 @@ func (s *LeadService) GetLeadsByWonStatus(ctx context.Context, orgID uuid.UUID, 
 
 // CountLeadsByStage counts leads by stage
 func (s *LeadService) CountLeadsByStage(ctx context.Context, orgID uuid.UUID) (map[uuid.UUID]int, error) {
-	counts, err := s.leadRepository.CountByStage(ctx, orgID)
+	counts, err := s.repo.CountByStage(ctx, orgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to count leads by stage: %w", err)
 	}
@@ -895,11 +895,11 @@ func (s *LeadService) CountLeadsByStage(ctx context.Context, orgID uuid.UUID) (m
 
 // CountLeadsByPriority counts leads by priority
 func (s *LeadService) CountLeadsByPriority(ctx context.Context, orgID uuid.UUID) (map[types.LeadPriority]int, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for priority counting: %w", err)
 	}
@@ -914,11 +914,11 @@ func (s *LeadService) CountLeadsByPriority(ctx context.Context, orgID uuid.UUID)
 
 // CountLeadsByType counts leads by type
 func (s *LeadService) CountLeadsByType(ctx context.Context, orgID uuid.UUID) (map[types.LeadType]int, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for type counting: %w", err)
 	}
@@ -933,11 +933,11 @@ func (s *LeadService) CountLeadsByType(ctx context.Context, orgID uuid.UUID) (ma
 
 // CountLeadsBySource counts leads by source
 func (s *LeadService) CountLeadsBySource(ctx context.Context, orgID uuid.UUID) (map[uuid.UUID]int, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for source counting: %w", err)
 	}
@@ -954,11 +954,11 @@ func (s *LeadService) CountLeadsBySource(ctx context.Context, orgID uuid.UUID) (
 
 // CountLeadsByMedium counts leads by medium
 func (s *LeadService) CountLeadsByMedium(ctx context.Context, orgID uuid.UUID) (map[uuid.UUID]int, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for medium counting: %w", err)
 	}
@@ -975,11 +975,11 @@ func (s *LeadService) CountLeadsByMedium(ctx context.Context, orgID uuid.UUID) (
 
 // CountLeadsByCampaign counts leads by campaign
 func (s *LeadService) CountLeadsByCampaign(ctx context.Context, orgID uuid.UUID) (map[uuid.UUID]int, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for campaign counting: %w", err)
 	}
@@ -996,11 +996,11 @@ func (s *LeadService) CountLeadsByCampaign(ctx context.Context, orgID uuid.UUID)
 
 // CountLeadsByTeam counts leads by team
 func (s *LeadService) CountLeadsByTeam(ctx context.Context, orgID uuid.UUID) (map[uuid.UUID]int, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for team counting: %w", err)
 	}
@@ -1017,11 +1017,11 @@ func (s *LeadService) CountLeadsByTeam(ctx context.Context, orgID uuid.UUID) (ma
 
 // CountLeadsByUser counts leads by user
 func (s *LeadService) CountLeadsByUser(ctx context.Context, orgID uuid.UUID) (map[uuid.UUID]int, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for user counting: %w", err)
 	}
@@ -1038,11 +1038,11 @@ func (s *LeadService) CountLeadsByUser(ctx context.Context, orgID uuid.UUID) (ma
 
 // CountLeadsByLostReason counts leads by lost reason
 func (s *LeadService) CountLeadsByLostReason(ctx context.Context, orgID uuid.UUID) (map[uuid.UUID]int, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for lost reason counting: %w", err)
 	}
@@ -1059,11 +1059,11 @@ func (s *LeadService) CountLeadsByLostReason(ctx context.Context, orgID uuid.UUI
 
 // CountLeadsByWonStatus counts leads by won status
 func (s *LeadService) CountLeadsByWonStatus(ctx context.Context, orgID uuid.UUID) (map[types.LeadWonStatus]int, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for won status counting: %w", err)
 	}
@@ -1080,11 +1080,11 @@ func (s *LeadService) CountLeadsByWonStatus(ctx context.Context, orgID uuid.UUID
 
 // CountLeadsByCountry counts leads by country
 func (s *LeadService) CountLeadsByCountry(ctx context.Context, orgID uuid.UUID) (map[uuid.UUID]int, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for country counting: %w", err)
 	}
@@ -1101,11 +1101,11 @@ func (s *LeadService) CountLeadsByCountry(ctx context.Context, orgID uuid.UUID) 
 
 // CountLeadsByState counts leads by state
 func (s *LeadService) CountLeadsByState(ctx context.Context, orgID uuid.UUID) (map[uuid.UUID]int, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for state counting: %w", err)
 	}
@@ -1122,11 +1122,11 @@ func (s *LeadService) CountLeadsByState(ctx context.Context, orgID uuid.UUID) (m
 
 // CountLeadsByCity counts leads by city
 func (s *LeadService) CountLeadsByCity(ctx context.Context, orgID uuid.UUID) (map[string]int, error) {
-	filter := types.LeadEnhancedFilter{
+	filter := types.LeadFilter{
 		OrganizationID: orgID,
 	}
 
-	leads, err := s.leadRepository.FindAll(ctx, filter)
+	leads, err := s.repo.FindAll(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leads for city counting: %w", err)
 	}

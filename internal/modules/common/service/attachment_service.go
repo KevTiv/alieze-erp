@@ -10,15 +10,16 @@ import (
 
 	"alieze-erp/internal/modules/common/repository"
 	"alieze-erp/internal/modules/common/types"
+	"alieze-erp/pkg/events"
 	"alieze-erp/pkg/storage"
 
 	"github.com/google/uuid"
 )
 
 type AttachmentService struct {
-	repo      repository.AttachmentRepository
-	storage   storage.Storage
-	eventBus  interface{}
+	repo     repository.AttachmentRepository
+	storage  storage.Storage
+	eventBus *events.Bus
 }
 
 func NewAttachmentService(repo repository.AttachmentRepository, storage storage.Storage) *AttachmentService {
@@ -28,7 +29,7 @@ func NewAttachmentService(repo repository.AttachmentRepository, storage storage.
 	}
 }
 
-func NewAttachmentServiceWithEventBus(repo repository.AttachmentRepository, storage storage.Storage, eventBus interface{}) *AttachmentService {
+func NewAttachmentServiceWithEventBus(repo repository.AttachmentRepository, storage storage.Storage, eventBus *events.Bus) *AttachmentService {
 	service := NewAttachmentService(repo, storage)
 	service.eventBus = eventBus
 	return service
@@ -363,12 +364,8 @@ func calculateChecksum(data []byte) string {
 
 func (s *AttachmentService) publishEvent(ctx context.Context, eventType string, payload interface{}) {
 	if s.eventBus != nil {
-		if bus, ok := s.eventBus.(interface {
-			Publish(ctx context.Context, eventType string, payload interface{}) error
-		}); ok {
-			if err := bus.Publish(ctx, eventType, payload); err != nil {
-				fmt.Printf("Failed to publish event %s: %v\n", eventType, err)
-			}
+		if err := s.eventBus.Publish(ctx, eventType, payload); err != nil {
+			fmt.Printf("Failed to publish event %s: %v\n", eventType, err)
 		}
 	}
 }

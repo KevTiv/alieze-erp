@@ -6,15 +6,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"alieze-erp/internal/modules/crm/types"
+	"github.com/google/uuid"
 )
 
 type contactTagRepository struct {
 	db *sql.DB
 }
 
-func NewContactTagRepository(db *sql.DB) ContactTagRepository {
+func NewContactTagRepository(db *sql.DB) types.ContactTagRepository {
 	return &contactTagRepository{db: db}
 }
 
@@ -136,4 +136,24 @@ func (r *contactTagRepository) FindByContact(ctx context.Context, contactID uuid
 	// This would require a contact_tags_contacts junction table
 	// For now, return empty slice as the junction table doesn't exist yet
 	return []types.ContactTag{}, nil
+}
+
+func (r *contactTagRepository) Count(ctx context.Context, filter types.ContactTagFilter) (int, error) {
+	query := `SELECT COUNT(*) FROM contact_tags WHERE organization_id = $1`
+
+	var args []interface{}
+	args = append(args, filter.OrganizationID)
+
+	if filter.Name != nil {
+		query += " AND name LIKE $2"
+		args = append(args, "%"+*filter.Name+"%")
+	}
+
+	var count int
+	err := r.db.QueryRowContext(ctx, query, args...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count contact tags: %w", err)
+	}
+
+	return count, nil
 }

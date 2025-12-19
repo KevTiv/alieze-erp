@@ -6,6 +6,7 @@ import (
 
 	"alieze-erp/internal/modules/common/repository"
 	"alieze-erp/internal/modules/common/types"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -48,7 +49,7 @@ func (m *MockCurrencyRepository) Delete(ctx context.Context, id uuid.UUID) error
 
 func TestCurrencyService_Create(t *testing.T) {
 	// Setup
-	mockRepo := new(MockCurrencyRepository)
+	_ := new(MockCurrencyRepository)
 	service := NewCurrencyService(&repository.CurrencyRepository{})
 
 	// Replace the repository with mock
@@ -57,8 +58,8 @@ func TestCurrencyService_Create(t *testing.T) {
 	// For now, we'll test the business logic that doesn't require the repository.
 
 	t.Run("should return error when name is empty", func(t *testing.T) {
-		req := types.CurrencyCreateRequest{
-			Name: "",
+		req :=   types.CurrencyCreateRequest{
+			Name:   "",
 			Code: "USD",
 			Symbol: "$",
 		}
@@ -69,8 +70,8 @@ func TestCurrencyService_Create(t *testing.T) {
 	})
 
 	t.Run("should return error when code is empty", func(t *testing.T) {
-		req := types.CurrencyCreateRequest{
-			Name: "US Dollar",
+		req :=   types.CurrencyCreateRequest{
+			Name:   "US Dollar",
 			Code: "",
 			Symbol: "$",
 		}
@@ -81,8 +82,8 @@ func TestCurrencyService_Create(t *testing.T) {
 	})
 
 	t.Run("should return error when symbol is empty", func(t *testing.T) {
-		req := types.CurrencyCreateRequest{
-			Name: "US Dollar",
+		req :=   types.CurrencyCreateRequest{
+			Name:   "US Dollar",
 			Code: "USD",
 			Symbol: "",
 		}
@@ -114,7 +115,7 @@ func TestCurrencyService_FormatAmount(t *testing.T) {
 
 	// Create service with mock repository
 	// Note: This would require modifying the service to accept an interface
-	service := NewCurrencyService(&repository.CurrencyRepository{})
+	_ := NewCurrencyService(&repository.CurrencyRepository{})
 
 	// Test the FormatAmount method
 	// Since we can't easily mock the repository, we'll test the logic directly

@@ -7,21 +7,21 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/google/uuid"
-	"alieze-erp/internal/modules/crm/repository"
 	"alieze-erp/internal/modules/crm/types"
 	"alieze-erp/pkg/events"
+
+	"github.com/google/uuid"
 )
 
 // LeadSourceService handles lead source business logic
 type LeadSourceService struct {
-	repo        repository.LeadSourceRepository
+	repo        types.LeadSourceRepository
 	authService AuthService
 	eventBus    *events.Bus
 	logger      *slog.Logger
 }
 
-func NewLeadSourceService(repo repository.LeadSourceRepository, authService AuthService, eventBus *events.Bus) *LeadSourceService {
+func NewLeadSourceService(repo types.LeadSourceRepository, authService AuthService, eventBus *events.Bus) *LeadSourceService {
 	return &LeadSourceService{
 		repo:        repo,
 		authService: authService,
@@ -52,10 +52,10 @@ func (s *LeadSourceService) CreateLeadSource(ctx context.Context, req types.Lead
 
 	// Create source
 	source := types.LeadSource{
-		ID:            sourceID,
+		ID:             sourceID,
 		OrganizationID: orgID,
-		Name:          req.Name,
-		CreatedAt:     time.Now(),
+		Name:           req.Name,
+		CreatedAt:      time.Now(),
 	}
 
 	created, err := s.repo.Create(ctx, source)
@@ -147,10 +147,10 @@ func (s *LeadSourceService) UpdateLeadSource(ctx context.Context, id uuid.UUID, 
 
 	// Build update
 	source := types.LeadSource{
-		ID:            id,
+		ID:             id,
 		OrganizationID: orgID,
-		Name:          *req.Name,
-		CreatedAt:     existing.CreatedAt, // Keep original created date
+		Name:           *req.Name,
+		CreatedAt:      existing.CreatedAt, // Keep original created date
 	}
 
 	// Update

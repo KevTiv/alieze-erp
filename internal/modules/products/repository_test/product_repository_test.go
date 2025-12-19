@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"alieze-erp/internal/modules/products/domain"
 	"alieze-erp/internal/modules/products/repository"
+	"alieze-erp/internal/modules/products/types"
 	"alieze-erp/internal/testutils"
 )
 

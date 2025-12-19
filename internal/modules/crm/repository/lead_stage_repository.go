@@ -6,15 +6,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"alieze-erp/internal/modules/crm/types"
+
+	"github.com/google/uuid"
 )
 
 type leadStageRepository struct {
 	db *sql.DB
 }
 
-func NewLeadStageRepository(db *sql.DB) LeadStageRepository {
+func NewLeadStageRepository(db *sql.DB) types.LeadStageRepository {
 	return &leadStageRepository{db: db}
 }
 
@@ -148,4 +149,31 @@ func (r *leadStageRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+// Count counts lead stages matching the filter criteria
+func (r *leadStageRepository) Count(ctx context.Context, filter types.LeadStageFilter) (int, error) {
+	// Get organization ID from context for security
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return 0, errors.New("organization ID not found in context")
+	}
+
+	query := `SELECT COUNT(*) FROM lead_stages WHERE organization_id = $1`
+	args := []interface{}{orgID}
+	argIndex := 2
+
+	if filter.Name != nil && *filter.Name != "" {
+		query += fmt.Sprintf(" AND name ILIKE $%d", argIndex)
+		args = append(args, "%"+*filter.Name+"%")
+		argIndex++
+	}
+
+	var count int
+	err := r.db.QueryRowContext(ctx, query, args...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count lead stages: %w", err)
+	}
+
+	return count, nil
 }

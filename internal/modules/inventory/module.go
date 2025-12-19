@@ -30,6 +30,7 @@ type InventoryModule struct {
 	stockPickingTypeHandler *handler.StockPickingTypeHandler
 	stockPickingHandler     *handler.StockPickingHandler
 	stockMoveHandler        *handler.StockMoveHandler
+	integrationService      *service.InventoryIntegrationService
 	logger                 *slog.Logger
 }
 
@@ -106,6 +107,9 @@ func (m *InventoryModule) Init(ctx context.Context, deps registry.Dependencies) 
 	stockPickingTypeService := service.NewStockPickingTypeService(stockPickingTypeRepo)
 	stockPickingService := service.NewStockPickingService(stockPickingRepo)
 	stockMoveService := service.NewStockMoveService(stockMoveRepo)
+
+	// Create integration service for other modules
+	m.integrationService = service.NewInventoryIntegrationService(stockMoveService, stockPickingService)
 
 	// Create handlers
 	m.inventoryHandler = handler.NewInventoryHandler(inventoryService)
@@ -188,4 +192,9 @@ func (m *InventoryModule) RegisterEventHandlers(bus interface{}) {
 // Health checks the health of the Inventory module
 func (m *InventoryModule) Health() error {
 	return nil
+}
+
+// GetIntegrationService returns the integration service for use by other modules
+func (m *InventoryModule) GetIntegrationService() *service.InventoryIntegrationService {
+	return m.integrationService
 }

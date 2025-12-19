@@ -1,4 +1,4 @@
-package service
+package service_test
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"alieze-erp/internal/modules/crm/service"
 	"alieze-erp/internal/modules/crm/types"
 	"alieze-erp/pkg/events"
 )
@@ -48,6 +49,11 @@ func (m *MockContactTagRepository) FindByContact(ctx context.Context, contactID 
 	return args.Get(0).([]types.ContactTag), args.Error(1)
 }
 
+func (m *MockContactTagRepository) Count(ctx context.Context, filter types.ContactTagFilter) (int, error) {
+	args := m.Called(ctx, filter)
+	return args.Get(0).(int), args.Error(1)
+}
+
 // MockAuthService is a mock implementation of AuthService
 type MockAuthService struct {
 	mock.Mock
@@ -74,7 +80,7 @@ func TestContactTagService_CreateContactTag(t *testing.T) {
 	mockAuth := new(MockAuthService)
 	eventBus := events.NewBus(false)
 
-	service := NewContactTagService(mockRepo, mockAuth, eventBus)
+	service := service.NewContactTagService(mockRepo, mockAuth, eventBus)
 
 	orgID := uuid.New()
 	tag := types.ContactTag{
@@ -118,7 +124,7 @@ func TestContactTagService_CreateContactTag_ValidationError(t *testing.T) {
 	mockAuth := new(MockAuthService)
 	eventBus := events.NewBus(false)
 
-	service := NewContactTagService(mockRepo, mockAuth, eventBus)
+	service := service.NewContactTagService(mockRepo, mockAuth, eventBus)
 
 	// Test with empty name
 	tag := types.ContactTag{
@@ -144,7 +150,7 @@ func TestContactTagService_GetContactTag(t *testing.T) {
 	mockAuth := new(MockAuthService)
 	eventBus := events.NewBus(false)
 
-	service := NewContactTagService(mockRepo, mockAuth, eventBus)
+	service := service.NewContactTagService(mockRepo, mockAuth, eventBus)
 
 	orgID := uuid.New()
 	tagID := uuid.New()
@@ -180,7 +186,7 @@ func TestContactTagService_ListContactTags(t *testing.T) {
 	mockAuth := new(MockAuthService)
 	eventBus := events.NewBus(false)
 
-	service := NewContactTagService(mockRepo, mockAuth, eventBus)
+	service := service.NewContactTagService(mockRepo, mockAuth, eventBus)
 
 	orgID := uuid.New()
 	tags := []types.ContactTag{
@@ -215,7 +221,7 @@ func TestContactTagService_UpdateContactTag(t *testing.T) {
 	mockAuth := new(MockAuthService)
 	eventBus := events.NewBus(false)
 
-	service := NewContactTagService(mockRepo, mockAuth, eventBus)
+	service := service.NewContactTagService(mockRepo, mockAuth, eventBus)
 
 	orgID := uuid.New()
 	tagID := uuid.New()
@@ -261,7 +267,7 @@ func TestContactTagService_DeleteContactTag(t *testing.T) {
 	mockAuth := new(MockAuthService)
 	eventBus := events.NewBus(false)
 
-	service := NewContactTagService(mockRepo, mockAuth, eventBus)
+	service := service.NewContactTagService(mockRepo, mockAuth, eventBus)
 
 	orgID := uuid.New()
 	tagID := uuid.New()
@@ -296,7 +302,7 @@ func TestContactTagService_OrganizationAccessControl(t *testing.T) {
 	mockAuth := new(MockAuthService)
 	eventBus := events.NewBus(false)
 
-	service := NewContactTagService(mockRepo, mockAuth, eventBus)
+	service := service.NewContactTagService(mockRepo, mockAuth, eventBus)
 
 	orgID := uuid.New()
 	otherOrgID := uuid.New()
@@ -331,7 +337,7 @@ func TestContactTagService_Validation(t *testing.T) {
 	mockAuth := new(MockAuthService)
 	eventBus := events.NewBus(false)
 
-	service := NewContactTagService(mockRepo, mockAuth, eventBus)
+	service := service.NewContactTagService(mockRepo, mockAuth, eventBus)
 
 	testCases := []struct {
 		name        string

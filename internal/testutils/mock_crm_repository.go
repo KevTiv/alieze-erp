@@ -104,3 +104,4 @@ func (m *MockContactRepository) WithCountFunc(f func(ctx context.Context, filter
 	m.countFunc = f
 	return m
 }
+

@@ -14,16 +14,16 @@ import (
 	"github.com/google/uuid"
 )
 
-// ContactRepository handles contact data operations
-type ContactRepository struct {
+// contactRepository handles contact data operations
+type contactRepository struct {
 	db *sql.DB
 }
 
-func NewContactRepository(db *sql.DB) *ContactRepository {
-	return &ContactRepository{db: db}
+func NewContactRepository(db *sql.DB) types.ContactRepository {
+	return &contactRepository{db: db}
 }
 
-func (r *ContactRepository) Create(ctx context.Context, contact types.Contact) (*types.Contact, error) {
+func (r *contactRepository) Create(ctx context.Context, contact types.Contact) (*types.Contact, error) {
 	if contact.ID == uuid.Nil {
 		contact.ID = uuid.New()
 	}
@@ -90,7 +90,7 @@ func (r *ContactRepository) Create(ctx context.Context, contact types.Contact) (
 	return &created, nil
 }
 
-func (r *ContactRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Contact, error) {
+func (r *contactRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Contact, error) {
 	if id == uuid.Nil {
 		return nil, errors.New("invalid contact id")
 	}
@@ -130,7 +130,7 @@ func (r *ContactRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.
 	return &contact, nil
 }
 
-func (r *ContactRepository) FindAll(ctx context.Context, filter types.ContactFilter) ([]types.Contact, error) {
+func (r *contactRepository) FindAll(ctx context.Context, filter types.ContactFilter) ([]types.Contact, error) {
 	query := `SELECT id, organization_id, name, email, phone, is_customer, is_vendor,
 		street, city, state_id, country_id, created_at, updated_at, deleted_at
 		FROM contacts WHERE deleted_at IS NULL`
@@ -225,7 +225,7 @@ func (r *ContactRepository) FindAll(ctx context.Context, filter types.ContactFil
 	return contacts, nil
 }
 
-func (r *ContactRepository) Update(ctx context.Context, contact types.Contact) (*types.Contact, error) {
+func (r *contactRepository) Update(ctx context.Context, contact types.Contact) (*types.Contact, error) {
 	if contact.ID == uuid.Nil {
 		return nil, errors.New("contact id is required")
 	}
@@ -298,7 +298,7 @@ func (r *ContactRepository) Update(ctx context.Context, contact types.Contact) (
 	return &updated, nil
 }
 
-func (r *ContactRepository) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *contactRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	if id == uuid.Nil {
 		return errors.New("invalid contact id")
 	}
@@ -331,7 +331,7 @@ func (r *ContactRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 // ContactRelationship methods
 
-func (r *ContactRepository) CreateRelationship(ctx context.Context, relationship *types.ContactRelationship) error {
+func (r *contactRepository) CreateRelationship(ctx context.Context, relationship *types.ContactRelationship) error {
 	if relationship.ID == uuid.Nil {
 		relationship.ID = uuid.New()
 	}
@@ -382,7 +382,7 @@ func (r *ContactRepository) CreateRelationship(ctx context.Context, relationship
 	return err
 }
 
-func (r *ContactRepository) FindRelationships(
+func (r *contactRepository) FindRelationships(
 	ctx context.Context,
 	orgID uuid.UUID,
 	contactID uuid.UUID,
@@ -453,7 +453,7 @@ func (r *ContactRepository) FindRelationships(
 	return relationships, nil
 }
 
-func (r *ContactRepository) ContactExists(ctx context.Context, orgID uuid.UUID, contactID uuid.UUID) (bool, error) {
+func (r *contactRepository) ContactExists(ctx context.Context, orgID uuid.UUID, contactID uuid.UUID) (bool, error) {
 	if orgID == uuid.Nil {
 		return false, errors.New("organization_id is required")
 	}
@@ -476,7 +476,7 @@ func (r *ContactRepository) ContactExists(ctx context.Context, orgID uuid.UUID, 
 	return exists, nil
 }
 
-func (r *ContactRepository) AddContactToSegments(
+func (r *contactRepository) AddContactToSegments(
 	ctx context.Context,
 	orgID uuid.UUID,
 	contactID uuid.UUID,
@@ -526,7 +526,7 @@ func (r *ContactRepository) AddContactToSegments(
 	return nil
 }
 
-func (r *ContactRepository) AddContactTags(
+func (r *contactRepository) AddContactTags(
 	ctx context.Context,
 	orgID uuid.UUID,
 	contactID uuid.UUID,
@@ -584,7 +584,7 @@ func (r *ContactRepository) AddContactTags(
 	return nil
 }
 
-func (r *ContactRepository) Count(ctx context.Context, filter types.ContactFilter) (int, error) {
+func (r *contactRepository) Count(ctx context.Context, filter types.ContactFilter) (int, error) {
 	query := `SELECT COUNT(*) FROM contacts WHERE deleted_at IS NULL`
 
 	var conditions []string

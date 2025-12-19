@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"time"
 
+	"alieze-erp/internal/modules/crm/types"
+
 	"github.com/google/uuid"
-	"github.com/alieze-erp/internal/modules/crm/types"
-	"github.com/alieze-erp/pkg/database"
 )
 
 // AssignmentRuleRepositoryPostgres implements AssignmentRuleRepository for PostgreSQL
@@ -18,7 +18,7 @@ type AssignmentRuleRepositoryPostgres struct {
 	db *sql.DB
 }
 
-func NewAssignmentRuleRepository(db *sql.DB) AssignmentRuleRepository {
+func NewAssignmentRuleRepository(db *sql.DB) types.AssignmentRuleRepository {
 	return &AssignmentRuleRepositoryPostgres{db: db}
 }
 
@@ -80,6 +80,253 @@ func (r *AssignmentRuleRepositoryPostgres) CreateAssignmentRule(ctx context.Cont
 	return nil
 }
 
+// Create implements the repository interface
+func (r *AssignmentRuleRepositoryPostgres) Create(ctx context.Context, rule types.AssignmentRule) (*types.AssignmentRule, error) {
+	// Generate ID if not provided
+	if rule.ID == uuid.Nil {
+		rule.ID = uuid.New()
+	}
+
+	// Get organization ID from context
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
+	// Marshal JSON fields
+	conditionsJSON, err := json.Marshal(rule.Conditions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal conditions: %w", err)
+	}
+
+	assignmentConfigJSON, err := json.Marshal(rule.AssignmentConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal assignment config: %w", err)
+	}
+
+	activeDaysJSON, err := json.Marshal(rule.ActiveDays)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal active days: %w", err)
+	}
+
+	query := `
+		INSERT INTO assignment_rules (
+			id, organization_id, name, description, rule_type, target_model,
+			priority, is_active, conditions, assignment_config, assign_to_type,
+			max_assignments_per_user, assignment_window_start, assignment_window_end,
+			active_days, created_by, updated_by, created_at, updated_at
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW()
+		) RETURNING id, created_at, updated_at
+	`
+
+	err = r.db.QueryRowContext(ctx, query,
+		rule.ID,
+		orgID,
+		rule.Name,
+		rule.Description,
+		rule.RuleType,
+		rule.TargetModel,
+		rule.Priority,
+		rule.IsActive,
+		conditionsJSON,
+		assignmentConfigJSON,
+		rule.AssignToType,
+		rule.MaxAssignmentsPerUser,
+		rule.AssignmentWindowStart,
+		rule.AssignmentWindowEnd,
+		activeDaysJSON,
+		rule.CreatedBy,
+		rule.UpdatedBy,
+	).Scan(&rule.ID, &rule.CreatedAt, &rule.UpdatedAt)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create assignment rule: %w", err)
+	}
+
+	return &rule, nil
+}
+
+// FindByTargetModel finds assignment rules by target model
+func (r *AssignmentRuleRepositoryPostgres) FindByTargetModel(ctx context.Context, targetModel types.AssignmentTargetModel) ([]types.AssignmentRule, error) {
+	// Get organization ID from context for security
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
+	query := `
+		SELECT id, organization_id, name, description, rule_type, target_model,
+			priority, is_active, conditions, assignment_config, assign_to_type,
+			max_assignments_per_user, assignment_window_start, assignment_window_end,
+			active_days, created_by, updated_by, created_at, updated_at
+		FROM assignment_rules
+		WHERE target_model = $1 AND organization_id = $2
+		ORDER BY priority ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, targetModel, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query assignment rules: %w", err)
+	}
+	defer rows.Close()
+
+	var rules []types.AssignmentRule
+
+	for rows.Next() {
+		var rule types.AssignmentRule
+		var conditionsJSON, assignmentConfigJSON, activeDaysJSON []byte
+
+		err := rows.Scan(
+			&rule.ID,
+			&rule.OrganizationID,
+			&rule.Name,
+			&rule.Description,
+			&rule.RuleType,
+			&rule.TargetModel,
+			&rule.Priority,
+			&rule.IsActive,
+			&conditionsJSON,
+			&assignmentConfigJSON,
+			&rule.AssignToType,
+			&rule.MaxAssignmentsPerUser,
+			&rule.AssignmentWindowStart,
+			&rule.AssignmentWindowEnd,
+			&activeDaysJSON,
+			&rule.CreatedBy,
+			&rule.UpdatedBy,
+			&rule.CreatedAt,
+			&rule.UpdatedAt,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan assignment rule: %w", err)
+		}
+
+		// Unmarshal JSON fields
+		if err := json.Unmarshal(conditionsJSON, &rule.Conditions); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal conditions: %w", err)
+		}
+
+		if err := json.Unmarshal(assignmentConfigJSON, &rule.AssignmentConfig); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal assignment config: %w", err)
+		}
+
+		if err := json.Unmarshal(activeDaysJSON, &rule.ActiveDays); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal active days: %w", err)
+		}
+
+		rules = append(rules, rule)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating assignment rules: %w", err)
+	}
+
+	return rules, nil
+}
+
+// Update updates an existing assignment rule
+func (r *AssignmentRuleRepositoryPostgres) Update(ctx context.Context, rule types.AssignmentRule) (*types.AssignmentRule, error) {
+	// Get organization ID from context for security
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
+	// Verify the rule belongs to the organization
+	if rule.OrganizationID != orgID {
+		return nil, fmt.Errorf("assignment rule does not belong to organization")
+	}
+
+	// Marshal JSON fields
+	conditionsJSON, err := json.Marshal(rule.Conditions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal conditions: %w", err)
+	}
+
+	assignmentConfigJSON, err := json.Marshal(rule.AssignmentConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal assignment config: %w", err)
+	}
+
+	activeDaysJSON, err := json.Marshal(rule.ActiveDays)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal active days: %w", err)
+	}
+
+	query := `
+		UPDATE assignment_rules SET
+			name = $1,
+			description = $2,
+			rule_type = $3,
+			target_model = $4,
+			priority = $5,
+			is_active = $6,
+			conditions = $7,
+			assignment_config = $8,
+			assign_to_type = $9,
+			max_assignments_per_user = $10,
+			assignment_window_start = $11,
+			assignment_window_end = $12,
+			active_days = $13,
+			updated_by = $14,
+			updated_at = NOW()
+		WHERE id = $15 AND organization_id = $16
+		RETURNING updated_at
+	`
+
+	var updatedAt time.Time
+	err = r.db.QueryRowContext(ctx, query,
+		rule.Name,
+		rule.Description,
+		rule.RuleType,
+		rule.TargetModel,
+		rule.Priority,
+		rule.IsActive,
+		conditionsJSON,
+		assignmentConfigJSON,
+		rule.AssignToType,
+		rule.MaxAssignmentsPerUser,
+		rule.AssignmentWindowStart,
+		rule.AssignmentWindowEnd,
+		activeDaysJSON,
+		rule.UpdatedBy,
+		rule.ID,
+		orgID,
+	).Scan(&updatedAt)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to update assignment rule: %w", err)
+	}
+
+	// Set the updated timestamp
+	rule.UpdatedAt = updatedAt
+
+	return &rule, nil
+}
+
+// Count counts assignment rules matching the filter criteria
+func (r *AssignmentRuleRepositoryPostgres) Count(ctx context.Context, filter types.AssignmentRuleFilter) (int, error) {
+	query := `SELECT COUNT(*) FROM assignment_rules WHERE target_model = $1`
+	args := []interface{}{filter.TargetModel}
+	argIndex := 2
+
+	if filter.IsActive != nil {
+		query += fmt.Sprintf(" AND is_active = $%d", argIndex)
+		args = append(args, *filter.IsActive)
+		argIndex++
+	}
+
+	var count int
+	err := r.db.QueryRowContext(ctx, query, args...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count assignment rules: %w", err)
+	}
+
+	return count, nil
+}
+
 // GetAssignmentRule retrieves an assignment rule by ID
 func (r *AssignmentRuleRepositoryPostgres) GetAssignmentRule(ctx context.Context, id uuid.UUID) (*types.AssignmentRule, error) {
 	query := `
@@ -119,7 +366,7 @@ func (r *AssignmentRuleRepositoryPostgres) GetAssignmentRule(ctx context.Context
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, database.ErrNotFound
+			return nil, sql.ErrNoRows
 		}
 		return nil, fmt.Errorf("failed to get assignment rule: %w", err)
 	}
@@ -212,6 +459,13 @@ func (r *AssignmentRuleRepositoryPostgres) DeleteAssignmentRule(ctx context.Cont
 	return err
 }
 
+// Delete implements the repository interface
+func (r *AssignmentRuleRepositoryPostgres) Delete(ctx context.Context, id uuid.UUID) error {
+	query := `DELETE FROM assignment_rules WHERE id = $1`
+	_, err := r.db.ExecContext(ctx, query, id)
+	return err
+}
+
 // ListAssignmentRules lists assignment rules with filters
 func (r *AssignmentRuleRepositoryPostgres) ListAssignmentRules(ctx context.Context, orgID uuid.UUID, targetModel string, activeOnly bool) ([]*types.AssignmentRule, error) {
 	query := `
@@ -293,6 +547,147 @@ func (r *AssignmentRuleRepositoryPostgres) ListAssignmentRules(ctx context.Conte
 	return rules, nil
 }
 
+// FindAll finds all assignment rules with pagination
+func (r *AssignmentRuleRepositoryPostgres) FindAll(ctx context.Context, limit, offset int) ([]types.AssignmentRule, error) {
+	// Get organization ID from context for security
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
+	query := `
+		SELECT id, organization_id, name, description, rule_type, target_model,
+			priority, is_active, conditions, assignment_config, assign_to_type,
+			max_assignments_per_user, assignment_window_start, assignment_window_end,
+			active_days, created_by, updated_by, created_at, updated_at
+		FROM assignment_rules
+		WHERE organization_id = $1
+		ORDER BY priority ASC
+		LIMIT $2 OFFSET $3
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, orgID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find assignment rules: %w", err)
+	}
+	defer rows.Close()
+
+	var rules []types.AssignmentRule
+	for rows.Next() {
+		var rule types.AssignmentRule
+		var conditionsJSON, assignmentConfigJSON, activeDaysJSON []byte
+
+		err := rows.Scan(
+			&rule.ID,
+			&rule.OrganizationID,
+			&rule.Name,
+			&rule.Description,
+			&rule.RuleType,
+			&rule.TargetModel,
+			&rule.Priority,
+			&rule.IsActive,
+			&conditionsJSON,
+			&assignmentConfigJSON,
+			&rule.AssignToType,
+			&rule.MaxAssignmentsPerUser,
+			&rule.AssignmentWindowStart,
+			&rule.AssignmentWindowEnd,
+			&activeDaysJSON,
+			&rule.CreatedBy,
+			&rule.UpdatedBy,
+			&rule.CreatedAt,
+			&rule.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan assignment rule: %w", err)
+		}
+
+		// Unmarshal JSON fields
+		if err := json.Unmarshal(conditionsJSON, &rule.Conditions); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal conditions: %w", err)
+		}
+		if err := json.Unmarshal(assignmentConfigJSON, &rule.AssignmentConfig); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal assignment config: %w", err)
+		}
+		if err := json.Unmarshal(activeDaysJSON, &rule.ActiveDays); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal active days: %w", err)
+		}
+
+		rules = append(rules, rule)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating assignment rules: %w", err)
+	}
+
+	return rules, nil
+}
+
+// FindByID finds an assignment rule by ID
+func (r *AssignmentRuleRepositoryPostgres) FindByID(ctx context.Context, id uuid.UUID) (*types.AssignmentRule, error) {
+	// Get organization ID from context for security
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
+	query := `
+		SELECT id, organization_id, name, description, rule_type, target_model,
+			priority, is_active, conditions, assignment_config, assign_to_type,
+			max_assignments_per_user, assignment_window_start, assignment_window_end,
+			active_days, created_by, updated_by, created_at, updated_at
+		FROM assignment_rules
+		WHERE id = $1 AND organization_id = $2
+	`
+
+	var rule types.AssignmentRule
+	var conditionsJSON, assignmentConfigJSON, activeDaysJSON []byte
+
+	err := r.db.QueryRowContext(ctx, query, id, orgID).Scan(
+		&rule.ID,
+		&rule.OrganizationID,
+		&rule.Name,
+		&rule.Description,
+		&rule.RuleType,
+		&rule.TargetModel,
+		&rule.Priority,
+		&rule.IsActive,
+		&conditionsJSON,
+		&assignmentConfigJSON,
+		&rule.AssignToType,
+		&rule.MaxAssignmentsPerUser,
+		&rule.AssignmentWindowStart,
+		&rule.AssignmentWindowEnd,
+		&activeDaysJSON,
+		&rule.CreatedBy,
+		&rule.UpdatedBy,
+		&rule.CreatedAt,
+		&rule.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("assignment rule not found: %w", err)
+		}
+		return nil, fmt.Errorf("failed to find assignment rule: %w", err)
+	}
+
+	// Unmarshal JSON fields
+	if err := json.Unmarshal(conditionsJSON, &rule.Conditions); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal conditions: %w", err)
+	}
+
+	if err := json.Unmarshal(assignmentConfigJSON, &rule.AssignmentConfig); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal assignment config: %w", err)
+	}
+
+	if err := json.Unmarshal(activeDaysJSON, &rule.ActiveDays); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal active days: %w", err)
+	}
+
+	return &rule, nil
+}
+
 // CreateAssignmentHistory creates a new assignment history record
 func (r *AssignmentRuleRepositoryPostgres) CreateAssignmentHistory(ctx context.Context, history *types.AssignmentHistory) error {
 	query := `
@@ -371,7 +766,7 @@ func (r *AssignmentRuleRepositoryPostgres) GetAssignmentHistory(ctx context.Cont
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, database.ErrNotFound
+			return nil, sql.ErrNoRows
 		}
 		return nil, fmt.Errorf("failed to get assignment history: %w", err)
 	}
@@ -530,7 +925,7 @@ func (r *AssignmentRuleRepositoryPostgres) UpdateUserAssignmentLoad(ctx context.
 		unavailableUntil = &load.UnavailableUntil
 	}
 
-	err = r.db.QueryRowContext(ctx, query,
+	err := r.db.QueryRowContext(ctx, query,
 		load.ID,
 		load.OrganizationID,
 		load.UserID,
@@ -611,6 +1006,65 @@ func (r *AssignmentRuleRepositoryPostgres) ListUserAssignmentLoads(ctx context.C
 	return loads, nil
 }
 
+// GetLead retrieves a lead by ID for assignment purposes
+func (r *AssignmentRuleRepositoryPostgres) GetLead(ctx context.Context, leadID uuid.UUID) (*types.Lead, error) {
+	query := `
+		SELECT id, organization_id, name, email, phone, stage_id, status, assigned_to, active, created_at, updated_at, deleted_at
+		FROM leads
+		WHERE id = $1
+	`
+
+	var lead types.Lead
+	var email, phone, stageID, deletedAt interface{}
+	var assignedTo sql.NullString
+
+	err := r.db.QueryRowContext(ctx, query, leadID).Scan(
+		&lead.ID,
+		&lead.OrganizationID,
+		&lead.Name,
+		&email,
+		&phone,
+		&stageID,
+		&lead.Status,
+		&assignedTo,
+		&lead.Active,
+		&lead.CreatedAt,
+		&lead.UpdatedAt,
+		&deletedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, sql.ErrNoRows
+		}
+		return nil, fmt.Errorf("failed to get lead: %w", err)
+	}
+
+	// Handle nullable fields
+	if email != nil {
+		emailStr := email.(string)
+		lead.Email = &emailStr
+	}
+	if phone != nil {
+		phoneStr := phone.(string)
+		lead.Phone = &phoneStr
+	}
+	if stageID != nil {
+		stageUUID := stageID.(uuid.UUID)
+		lead.StageID = &stageUUID
+	}
+	if assignedTo.Valid {
+		assignedUUID := uuid.Must(uuid.Parse(assignedTo.String))
+		lead.AssignedTo = &assignedUUID
+	}
+	if deletedAt != nil {
+		deletedTime := deletedAt.(time.Time)
+		lead.DeletedAt = &deletedTime
+	}
+
+	return &lead, nil
+}
+
 // CreateTerritory creates a new territory
 func (r *AssignmentRuleRepositoryPostgres) CreateTerritory(ctx context.Context, territory *types.Territory) error {
 	query := `
@@ -682,7 +1136,7 @@ func (r *AssignmentRuleRepositoryPostgres) GetTerritory(ctx context.Context, id 
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, database.ErrNotFound
+			return nil, sql.ErrNoRows
 		}
 		return nil, fmt.Errorf("failed to get territory: %w", err)
 	}
@@ -756,7 +1210,7 @@ func (r *AssignmentRuleRepositoryPostgres) ListTerritories(ctx context.Context, 
 	`
 
 	params := []interface{}{orgID}
-	paramIndex := 2
+	// paramIndex := 2
 
 	if activeOnly {
 		query += fmt.Sprintf(" AND is_active = true")
@@ -823,11 +1277,11 @@ func (r *AssignmentRuleRepositoryPostgres) AssignLead(ctx context.Context, leadI
 
 	// Record assignment history
 	history := &types.AssignmentHistory{
-		ID:             uuid.New(),
-		TargetModel:    "leads",
-		TargetID:       leadID,
-		AssignedToType: "user",
-		AssignedToID:   userID,
+		ID:               uuid.New(),
+		TargetModel:      "leads",
+		TargetID:         leadID,
+		AssignedToType:   "user",
+		AssignedToID:     userID,
 		AssignmentReason: reason,
 	}
 
@@ -1034,4 +1488,79 @@ func (r *AssignmentRuleRepositoryPostgres) GetAssignmentRuleEffectiveness(ctx co
 	}
 
 	return effectiveness, nil
+}
+
+// FindActiveRules finds active assignment rules by target model
+func (r *AssignmentRuleRepositoryPostgres) FindActiveRules(ctx context.Context, targetModel types.AssignmentTargetModel) ([]types.AssignmentRule, error) {
+	// Get organization ID from context for security
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
+	query := `
+		SELECT id, organization_id, name, description, rule_type, target_model,
+			priority, is_active, conditions, assignment_config, assign_to_type,
+			max_assignments_per_user, assignment_window_start, assignment_window_end,
+			active_days, created_by, updated_by, created_at, updated_at
+		FROM assignment_rules
+		WHERE organization_id = $1 AND target_model = $2 AND is_active = true
+		ORDER BY priority ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, orgID, targetModel)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find active assignment rules: %w", err)
+	}
+	defer rows.Close()
+
+	var rules []types.AssignmentRule
+	for rows.Next() {
+		var rule types.AssignmentRule
+		var conditionsJSON, assignmentConfigJSON, activeDaysJSON []byte
+
+		err := rows.Scan(
+			&rule.ID,
+			&rule.OrganizationID,
+			&rule.Name,
+			&rule.Description,
+			&rule.RuleType,
+			&rule.TargetModel,
+			&rule.Priority,
+			&rule.IsActive,
+			&conditionsJSON,
+			&assignmentConfigJSON,
+			&rule.AssignToType,
+			&rule.MaxAssignmentsPerUser,
+			&rule.AssignmentWindowStart,
+			&rule.AssignmentWindowEnd,
+			&activeDaysJSON,
+			&rule.CreatedBy,
+			&rule.UpdatedBy,
+			&rule.CreatedAt,
+			&rule.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan assignment rule: %w", err)
+		}
+
+		// Unmarshal JSON fields
+		if err := json.Unmarshal(conditionsJSON, &rule.Conditions); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal conditions: %w", err)
+		}
+		if err := json.Unmarshal(assignmentConfigJSON, &rule.AssignmentConfig); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal assignment config: %w", err)
+		}
+		if err := json.Unmarshal(activeDaysJSON, &rule.ActiveDays); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal active days: %w", err)
+		}
+
+		rules = append(rules, rule)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating assignment rules: %w", err)
+	}
+
+	return rules, nil
 }

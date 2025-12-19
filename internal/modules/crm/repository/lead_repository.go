@@ -8,32 +8,32 @@ import (
 	"strings"
 	"time"
 
-	"alieze-erp/internal/modules/crm/types"
+	types "alieze-erp/internal/modules/crm/types"
 
 	"github.com/google/uuid"
 )
 
-// LeadRepository handles enhanced lead data operations
+// leadRepository handles lead data operations and implements base.Repository
 type LeadRepository struct {
 	db *sql.DB
 }
 
-func NewLeadRepository(db *sql.DB) *LeadRepository {
+func NewLeadRepository(db *sql.DB) types.LeadRepository {
 	return &LeadRepository{db: db}
 }
 
-// Create inserts a new enhanced lead
-func (r *LeadRepository) Create(ctx context.Context, lead *types.LeadEnhanced) error {
+// Create implements base.Repository.Create
+func (r *LeadRepository) Create(ctx context.Context, lead types.Lead) (*types.Lead, error) {
 	if lead.ID == uuid.Nil {
 		lead.ID = uuid.New()
 	}
 
 	if lead.OrganizationID == uuid.Nil {
-		return errors.New("organization_id is required")
+		return nil, errors.New("organization_id is required")
 	}
 
 	if lead.Name == "" {
-		return errors.New("name is required")
+		return nil, errors.New("name is required")
 	}
 
 	if lead.LeadType == "" {
@@ -61,19 +61,19 @@ func (r *LeadRepository) Create(ctx context.Context, lead *types.LeadEnhanced) e
 	}
 
 	query := `
-		INSERT INTO leads_enhanced (
+		INSERT INTO leads (
 			id, organization_id, company_id, name, contact_name, email, phone, mobile,
 			contact_id, user_id, team_id, lead_type, stage_id, priority, source_id,
 			medium_id, campaign_id, expected_revenue, probability, recurring_revenue,
 			recurring_plan, date_open, date_closed, date_deadline, date_last_stage_update,
-			active, won_status, lost_reason_id, street, street2, city, state_id, zip,
+			active, status, assigned_to, won_status, lost_reason_id, street, street2, city, state_id, zip,
 			country_id, website, description, tag_ids, color, created_at, updated_at,
 			created_by, updated_by, deleted_at, custom_fields, metadata
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
 			$16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28,
-			$29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41,
-			$42, $43, $44, $45, $46, $47, $48, $49, $50
+			$29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40,
+			$41, $42, $43, $44, $45, $46, $47, $48, $49, $50
 		)
 	`
 
@@ -104,6 +104,8 @@ func (r *LeadRepository) Create(ctx context.Context, lead *types.LeadEnhanced) e
 		lead.DateDeadline,
 		lead.DateLastStageUpdate,
 		lead.Active,
+		lead.Status,
+		lead.AssignedTo,
 		lead.WonStatus,
 		lead.LostReasonID,
 		lead.Street,
@@ -126,16 +128,16 @@ func (r *LeadRepository) Create(ctx context.Context, lead *types.LeadEnhanced) e
 	)
 
 	if err != nil {
-		return fmt.Errorf("failed to create enhanced lead: %w", err)
+		return nil, fmt.Errorf("failed to create enhanced lead: %w", err)
 	}
 
-	return nil
+	return &lead, nil
 }
 
-// FindByID retrieves an enhanced lead by its ID
-func (r *LeadRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.LeadEnhanced, error) {
+func (r *LeadRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Lead, error) {
 	if id == uuid.Nil {
-		return nil, errors.New("invalid lead id")
+		var emptyLead types.Lead
+		return &emptyLead, errors.New("invalid lead id")
 	}
 
 	query := `
@@ -150,7 +152,7 @@ func (r *LeadRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Lea
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	var lead types.LeadEnhanced
+	var lead types.Lead
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&lead.ID,
 		&lead.OrganizationID,
@@ -178,6 +180,8 @@ func (r *LeadRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Lea
 		&lead.DateDeadline,
 		&lead.DateLastStageUpdate,
 		&lead.Active,
+		&lead.Status,
+		&lead.AssignedTo,
 		&lead.WonStatus,
 		&lead.LostReasonID,
 		&lead.Street,
@@ -210,7 +214,7 @@ func (r *LeadRepository) FindByID(ctx context.Context, id uuid.UUID) (*types.Lea
 }
 
 // FindAll retrieves all enhanced leads with optional filters
-func (r *LeadRepository) FindAll(ctx context.Context, filter types.LeadEnhancedFilter) ([]*types.LeadEnhanced, error) {
+func (r *LeadRepository) FindAll(ctx context.Context, filter types.LeadFilter) ([]types.Lead, error) {
 	query := `SELECT id, organization_id, company_id, name, contact_name, email, phone, mobile,
 		contact_id, user_id, team_id, lead_type, stage_id, priority, source_id,
 		medium_id, campaign_id, expected_revenue, probability, recurring_revenue,
@@ -422,9 +426,9 @@ func (r *LeadRepository) FindAll(ctx context.Context, filter types.LeadEnhancedF
 	}
 	defer rows.Close()
 
-	var leads []*types.LeadEnhanced
+	var leads []types.Lead
 	for rows.Next() {
-		var lead types.LeadEnhanced
+		var lead types.Lead
 		err := rows.Scan(
 			&lead.ID,
 			&lead.OrganizationID,
@@ -475,7 +479,7 @@ func (r *LeadRepository) FindAll(ctx context.Context, filter types.LeadEnhancedF
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan enhanced lead: %w", err)
 		}
-		leads = append(leads, &lead)
+		leads = append(leads, lead)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -485,18 +489,658 @@ func (r *LeadRepository) FindAll(ctx context.Context, filter types.LeadEnhancedF
 	return leads, nil
 }
 
+// FindByStatus retrieves leads by status
+func (r *LeadRepository) FindByStatus(ctx context.Context, status string) ([]types.Lead, error) {
+	// Get organization ID from context
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
+	query := `
+		SELECT id, organization_id, company_id, name, contact_name, email, phone, mobile,
+			contact_id, user_id, team_id, lead_type, stage_id, priority, source_id,
+			medium_id, campaign_id, expected_revenue, probability, recurring_revenue,
+			recurring_plan, date_open, date_closed, date_deadline, date_last_stage_update,
+			active, won_status, lost_reason_id, street, street2, city, state_id, zip,
+			country_id, website, description, tag_ids, color, created_at, updated_at,
+			created_by, updated_by, deleted_at, custom_fields, metadata
+		FROM leads_enhanced
+		WHERE organization_id = $1 AND active = $2 AND deleted_at IS NULL
+		ORDER BY name ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, orgID, status == "active")
+	if err != nil {
+		return nil, fmt.Errorf("failed to find leads by status: %w", err)
+	}
+	defer rows.Close()
+
+	var leads []types.Lead
+	for rows.Next() {
+		var lead types.Lead
+		err := rows.Scan(
+			&lead.ID,
+			&lead.OrganizationID,
+			&lead.CompanyID,
+			&lead.Name,
+			&lead.ContactName,
+			&lead.Email,
+			&lead.Phone,
+			&lead.Mobile,
+			&lead.ContactID,
+			&lead.UserID,
+			&lead.TeamID,
+			&lead.LeadType,
+			&lead.StageID,
+			&lead.Priority,
+			&lead.SourceID,
+			&lead.MediumID,
+			&lead.CampaignID,
+			&lead.ExpectedRevenue,
+			&lead.Probability,
+			&lead.RecurringRevenue,
+			&lead.RecurringPlan,
+			&lead.DateOpen,
+			&lead.DateClosed,
+			&lead.DateDeadline,
+			&lead.DateLastStageUpdate,
+			&lead.Active,
+			&lead.WonStatus,
+			&lead.LostReasonID,
+			&lead.Street,
+			&lead.Street2,
+			&lead.City,
+			&lead.StateID,
+			&lead.Zip,
+			&lead.CountryID,
+			&lead.Website,
+			&lead.Description,
+			&lead.TagIDs,
+			&lead.Color,
+			&lead.CreatedAt,
+			&lead.UpdatedAt,
+			&lead.CreatedBy,
+			&lead.UpdatedBy,
+			&lead.DeletedAt,
+			&lead.CustomFields,
+			&lead.Metadata,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan lead: %w", err)
+		}
+		leads = append(leads, lead)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during lead iteration: %w", err)
+	}
+
+	return leads, nil
+}
+
+// FindByPriority retrieves leads by priority
+func (r *LeadRepository) FindByPriority(ctx context.Context, priority types.LeadPriority) ([]types.Lead, error) {
+	// Get organization ID from context
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
+	query := `
+		SELECT id, organization_id, company_id, name, contact_name, email, phone, mobile,
+			contact_id, user_id, team_id, lead_type, stage_id, priority, source_id,
+			medium_id, campaign_id, expected_revenue, probability, recurring_revenue,
+			recurring_plan, date_open, date_closed, date_deadline, date_last_stage_update,
+			active, won_status, lost_reason_id, street, street2, city, state_id, zip,
+			country_id, website, description, tag_ids, color, created_at, updated_at,
+			created_by, updated_by, deleted_at, custom_fields, metadata
+		FROM leads_enhanced
+		WHERE organization_id = $1 AND priority = $2 AND deleted_at IS NULL
+		ORDER BY name ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, orgID, priority)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find leads by priority: %w", err)
+	}
+	defer rows.Close()
+
+	var leads []types.Lead
+	for rows.Next() {
+		var lead types.Lead
+		err := rows.Scan(
+			&lead.ID,
+			&lead.OrganizationID,
+			&lead.CompanyID,
+			&lead.Name,
+			&lead.ContactName,
+			&lead.Email,
+			&lead.Phone,
+			&lead.Mobile,
+			&lead.ContactID,
+			&lead.UserID,
+			&lead.TeamID,
+			&lead.LeadType,
+			&lead.StageID,
+			&lead.Priority,
+			&lead.SourceID,
+			&lead.MediumID,
+			&lead.CampaignID,
+			&lead.ExpectedRevenue,
+			&lead.Probability,
+			&lead.RecurringRevenue,
+			&lead.RecurringPlan,
+			&lead.DateOpen,
+			&lead.DateClosed,
+			&lead.DateDeadline,
+			&lead.DateLastStageUpdate,
+			&lead.Active,
+			&lead.WonStatus,
+			&lead.LostReasonID,
+			&lead.Street,
+			&lead.Street2,
+			&lead.City,
+			&lead.StateID,
+			&lead.Zip,
+			&lead.CountryID,
+			&lead.Website,
+			&lead.Description,
+			&lead.TagIDs,
+			&lead.Color,
+			&lead.CreatedAt,
+			&lead.UpdatedAt,
+			&lead.CreatedBy,
+			&lead.UpdatedBy,
+			&lead.DeletedAt,
+			&lead.CustomFields,
+			&lead.Metadata,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan lead: %w", err)
+		}
+		leads = append(leads, lead)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during lead iteration: %w", err)
+	}
+
+	return leads, nil
+}
+
+// FindByType retrieves leads by type
+func (r *LeadRepository) FindByType(ctx context.Context, leadType types.LeadType) ([]types.Lead, error) {
+	// Get organization ID from context
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
+	query := `
+		SELECT id, organization_id, company_id, name, contact_name, email, phone, mobile,
+			contact_id, user_id, team_id, lead_type, stage_id, priority, source_id,
+			medium_id, campaign_id, expected_revenue, probability, recurring_revenue,
+			recurring_plan, date_open, date_closed, date_deadline, date_last_stage_update,
+			active, won_status, lost_reason_id, street, street2, city, state_id, zip,
+			country_id, website, description, tag_ids, color, created_at, updated_at,
+			created_by, updated_by, deleted_at, custom_fields, metadata
+		FROM leads_enhanced
+		WHERE organization_id = $1 AND lead_type = $2 AND deleted_at IS NULL
+		ORDER BY name ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, orgID, leadType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find leads by type: %w", err)
+	}
+	defer rows.Close()
+
+	var leads []types.Lead
+	for rows.Next() {
+		var lead types.Lead
+		err := rows.Scan(
+			&lead.ID,
+			&lead.OrganizationID,
+			&lead.CompanyID,
+			&lead.Name,
+			&lead.ContactName,
+			&lead.Email,
+			&lead.Phone,
+			&lead.Mobile,
+			&lead.ContactID,
+			&lead.UserID,
+			&lead.TeamID,
+			&lead.LeadType,
+			&lead.StageID,
+			&lead.Priority,
+			&lead.SourceID,
+			&lead.MediumID,
+			&lead.CampaignID,
+			&lead.ExpectedRevenue,
+			&lead.Probability,
+			&lead.RecurringRevenue,
+			&lead.RecurringPlan,
+			&lead.DateOpen,
+			&lead.DateClosed,
+			&lead.DateDeadline,
+			&lead.DateLastStageUpdate,
+			&lead.Active,
+			&lead.WonStatus,
+			&lead.LostReasonID,
+			&lead.Street,
+			&lead.Street2,
+			&lead.City,
+			&lead.StateID,
+			&lead.Zip,
+			&lead.CountryID,
+			&lead.Website,
+			&lead.Description,
+			&lead.TagIDs,
+			&lead.Color,
+			&lead.CreatedAt,
+			&lead.UpdatedAt,
+			&lead.CreatedBy,
+			&lead.UpdatedBy,
+			&lead.DeletedAt,
+			&lead.CustomFields,
+			&lead.Metadata,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan lead: %w", err)
+		}
+		leads = append(leads, lead)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during lead iteration: %w", err)
+	}
+
+	return leads, nil
+}
+
+// FindByWonStatus retrieves leads by won status
+func (r *LeadRepository) FindByWonStatus(ctx context.Context, wonStatus types.LeadWonStatus) ([]types.Lead, error) {
+	// Get organization ID from context
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
+	query := `
+		SELECT id, organization_id, company_id, name, contact_name, email, phone, mobile,
+			contact_id, user_id, team_id, lead_type, stage_id, priority, source_id,
+			medium_id, campaign_id, expected_revenue, probability, recurring_revenue,
+			recurring_plan, date_open, date_closed, date_deadline, date_last_stage_update,
+			active, won_status, lost_reason_id, street, street2, city, state_id, zip,
+			country_id, website, description, tag_ids, color, created_at, updated_at,
+			created_by, updated_by, deleted_at, custom_fields, metadata
+		FROM leads_enhanced
+		WHERE organization_id = $1 AND won_status = $2 AND deleted_at IS NULL
+		ORDER BY name ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, orgID, wonStatus)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find leads by won status: %w", err)
+	}
+	defer rows.Close()
+
+	var leads []types.Lead
+	for rows.Next() {
+		var lead types.Lead
+		err := rows.Scan(
+			&lead.ID,
+			&lead.OrganizationID,
+			&lead.CompanyID,
+			&lead.Name,
+			&lead.ContactName,
+			&lead.Email,
+			&lead.Phone,
+			&lead.Mobile,
+			&lead.ContactID,
+			&lead.UserID,
+			&lead.TeamID,
+			&lead.LeadType,
+			&lead.StageID,
+			&lead.Priority,
+			&lead.SourceID,
+			&lead.MediumID,
+			&lead.CampaignID,
+			&lead.ExpectedRevenue,
+			&lead.Probability,
+			&lead.RecurringRevenue,
+			&lead.RecurringPlan,
+			&lead.DateOpen,
+			&lead.DateClosed,
+			&lead.DateDeadline,
+			&lead.DateLastStageUpdate,
+			&lead.Active,
+			&lead.WonStatus,
+			&lead.LostReasonID,
+			&lead.Street,
+			&lead.Street2,
+			&lead.City,
+			&lead.StateID,
+			&lead.Zip,
+			&lead.CountryID,
+			&lead.Website,
+			&lead.Description,
+			&lead.TagIDs,
+			&lead.Color,
+			&lead.CreatedAt,
+			&lead.UpdatedAt,
+			&lead.CreatedBy,
+			&lead.UpdatedBy,
+			&lead.DeletedAt,
+			&lead.CustomFields,
+			&lead.Metadata,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan lead: %w", err)
+		}
+		leads = append(leads, lead)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during lead iteration: %w", err)
+	}
+
+	return leads, nil
+}
+
+// FindOverdue retrieves overdue leads
+func (r *LeadRepository) FindOverdue(ctx context.Context) ([]types.Lead, error) {
+	// Get organization ID from context
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
+	query := `
+		SELECT id, organization_id, company_id, name, contact_name, email, phone, mobile,
+			contact_id, user_id, team_id, lead_type, stage_id, priority, source_id,
+			medium_id, campaign_id, expected_revenue, probability, recurring_revenue,
+			recurring_plan, date_open, date_closed, date_deadline, date_last_stage_update,
+			active, won_status, lost_reason_id, street, street2, city, state_id, zip,
+			country_id, website, description, tag_ids, color, created_at, updated_at,
+			created_by, updated_by, deleted_at, custom_fields, metadata
+		FROM leads_enhanced
+		WHERE organization_id = $1 AND date_deadline < NOW() AND date_deadline IS NOT NULL AND won_status IS NULL AND deleted_at IS NULL
+		ORDER BY date_deadline ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find overdue leads: %w", err)
+	}
+	defer rows.Close()
+
+	var leads []types.Lead
+	for rows.Next() {
+		var lead types.Lead
+		err := rows.Scan(
+			&lead.ID,
+			&lead.OrganizationID,
+			&lead.CompanyID,
+			&lead.Name,
+			&lead.ContactName,
+			&lead.Email,
+			&lead.Phone,
+			&lead.Mobile,
+			&lead.ContactID,
+			&lead.UserID,
+			&lead.TeamID,
+			&lead.LeadType,
+			&lead.StageID,
+			&lead.Priority,
+			&lead.SourceID,
+			&lead.MediumID,
+			&lead.CampaignID,
+			&lead.ExpectedRevenue,
+			&lead.Probability,
+			&lead.RecurringRevenue,
+			&lead.RecurringPlan,
+			&lead.DateOpen,
+			&lead.DateClosed,
+			&lead.DateDeadline,
+			&lead.DateLastStageUpdate,
+			&lead.Active,
+			&lead.WonStatus,
+			&lead.LostReasonID,
+			&lead.Street,
+			&lead.Street2,
+			&lead.City,
+			&lead.StateID,
+			&lead.Zip,
+			&lead.CountryID,
+			&lead.Website,
+			&lead.Description,
+			&lead.TagIDs,
+			&lead.Color,
+			&lead.CreatedAt,
+			&lead.UpdatedAt,
+			&lead.CreatedBy,
+			&lead.UpdatedBy,
+			&lead.DeletedAt,
+			&lead.CustomFields,
+			&lead.Metadata,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan lead: %w", err)
+		}
+		leads = append(leads, lead)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during lead iteration: %w", err)
+	}
+
+	return leads, nil
+}
+
+// FindHighValue retrieves high-value leads
+func (r *LeadRepository) FindHighValue(ctx context.Context, minValue float64) ([]types.Lead, error) {
+	// Get organization ID from context
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
+	query := `
+		SELECT id, organization_id, company_id, name, contact_name, email, phone, mobile,
+			contact_id, user_id, team_id, lead_type, stage_id, priority, source_id,
+			medium_id, campaign_id, expected_revenue, probability, recurring_revenue,
+			recurring_plan, date_open, date_closed, date_deadline, date_last_stage_update,
+			active, won_status, lost_reason_id, street, street2, city, state_id, zip,
+			country_id, website, description, tag_ids, color, created_at, updated_at,
+			created_by, updated_by, deleted_at, custom_fields, metadata
+		FROM leads_enhanced
+		WHERE organization_id = $1 AND expected_revenue >= $2 AND deleted_at IS NULL
+		ORDER BY expected_revenue DESC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, orgID, minValue)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find high-value leads: %w", err)
+	}
+	defer rows.Close()
+
+	var leads []types.Lead
+	for rows.Next() {
+		var lead types.Lead
+		err := rows.Scan(
+			&lead.ID,
+			&lead.OrganizationID,
+			&lead.CompanyID,
+			&lead.Name,
+			&lead.ContactName,
+			&lead.Email,
+			&lead.Phone,
+			&lead.Mobile,
+			&lead.ContactID,
+			&lead.UserID,
+			&lead.TeamID,
+			&lead.LeadType,
+			&lead.StageID,
+			&lead.Priority,
+			&lead.SourceID,
+			&lead.MediumID,
+			&lead.CampaignID,
+			&lead.ExpectedRevenue,
+			&lead.Probability,
+			&lead.RecurringRevenue,
+			&lead.RecurringPlan,
+			&lead.DateOpen,
+			&lead.DateClosed,
+			&lead.DateDeadline,
+			&lead.DateLastStageUpdate,
+			&lead.Active,
+			&lead.WonStatus,
+			&lead.LostReasonID,
+			&lead.Street,
+			&lead.Street2,
+			&lead.City,
+			&lead.StateID,
+			&lead.Zip,
+			&lead.CountryID,
+			&lead.Website,
+			&lead.Description,
+			&lead.TagIDs,
+			&lead.Color,
+			&lead.CreatedAt,
+			&lead.UpdatedAt,
+			&lead.CreatedBy,
+			&lead.UpdatedBy,
+			&lead.DeletedAt,
+			&lead.CustomFields,
+			&lead.Metadata,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan lead: %w", err)
+		}
+		leads = append(leads, lead)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during lead iteration: %w", err)
+	}
+
+	return leads, nil
+}
+
+// FindBySearchTerm retrieves leads matching a search term
+func (r *LeadRepository) FindBySearchTerm(ctx context.Context, searchTerm string) ([]types.Lead, error) {
+	// Get organization ID from context
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
+	query := `
+		SELECT id, organization_id, company_id, name, contact_name, email, phone, mobile,
+			contact_id, user_id, team_id, lead_type, stage_id, priority, source_id,
+			medium_id, campaign_id, expected_revenue, probability, recurring_revenue,
+			recurring_plan, date_open, date_closed, date_deadline, date_last_stage_update,
+			active, won_status, lost_reason_id, street, street2, city, state_id, zip,
+			country_id, website, description, tag_ids, color, created_at, updated_at,
+			created_by, updated_by, deleted_at, custom_fields, metadata
+		FROM leads_enhanced
+		WHERE organization_id = $1 AND (
+			name ILIKE $2 OR
+			contact_name ILIKE $2 OR
+			email ILIKE $2 OR
+			phone ILIKE $2 OR
+			mobile ILIKE $2 OR
+			website ILIKE $2 OR
+			description ILIKE $2
+		) AND deleted_at IS NULL
+		ORDER BY name ASC
+	`
+
+	searchPattern := "%" + searchTerm + "%"
+	rows, err := r.db.QueryContext(ctx, query, orgID, searchPattern)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find leads by search term: %w", err)
+	}
+	defer rows.Close()
+
+	var leads []types.Lead
+	for rows.Next() {
+		var lead types.Lead
+		err := rows.Scan(
+			&lead.ID,
+			&lead.OrganizationID,
+			&lead.CompanyID,
+			&lead.Name,
+			&lead.ContactName,
+			&lead.Email,
+			&lead.Phone,
+			&lead.Mobile,
+			&lead.ContactID,
+			&lead.UserID,
+			&lead.TeamID,
+			&lead.LeadType,
+			&lead.StageID,
+			&lead.Priority,
+			&lead.SourceID,
+			&lead.MediumID,
+			&lead.CampaignID,
+			&lead.ExpectedRevenue,
+			&lead.Probability,
+			&lead.RecurringRevenue,
+			&lead.RecurringPlan,
+			&lead.DateOpen,
+			&lead.DateClosed,
+			&lead.DateDeadline,
+			&lead.DateLastStageUpdate,
+			&lead.Active,
+			&lead.WonStatus,
+			&lead.LostReasonID,
+			&lead.Street,
+			&lead.Street2,
+			&lead.City,
+			&lead.StateID,
+			&lead.Zip,
+			&lead.CountryID,
+			&lead.Website,
+			&lead.Description,
+			&lead.TagIDs,
+			&lead.Color,
+			&lead.CreatedAt,
+			&lead.UpdatedAt,
+			&lead.CreatedBy,
+			&lead.UpdatedBy,
+			&lead.DeletedAt,
+			&lead.CustomFields,
+			&lead.Metadata,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan lead: %w", err)
+		}
+		leads = append(leads, lead)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during lead iteration: %w", err)
+	}
+
+	return leads, nil
+}
+
 // Update modifies an existing enhanced lead
-func (r *LeadRepository) Update(ctx context.Context, lead *types.LeadEnhanced) error {
+func (r *LeadRepository) Update(ctx context.Context, lead types.Lead) (*types.Lead, error) {
+
 	if lead.ID == uuid.Nil {
-		return errors.New("lead id is required")
+		return nil, errors.New("lead id is required")
 	}
 
 	if lead.OrganizationID == uuid.Nil {
-		return errors.New("organization_id is required")
+		return nil, errors.New("organization_id is required")
 	}
 
 	if lead.Name == "" {
-		return errors.New("name is required")
+		return nil, errors.New("name is required")
 	}
 
 	lead.UpdatedAt = time.Now()
@@ -589,10 +1233,10 @@ func (r *LeadRepository) Update(ctx context.Context, lead *types.LeadEnhanced) e
 	)
 
 	if err != nil {
-		return fmt.Errorf("failed to update enhanced lead: %w", err)
+		return nil, fmt.Errorf("failed to update enhanced lead: %w", err)
 	}
 
-	return nil
+	return &lead, nil
 }
 
 // Delete removes an enhanced lead (soft delete)
@@ -628,8 +1272,8 @@ func (r *LeadRepository) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 // Count counts enhanced leads matching the filter criteria
-func (r *LeadRepository) Count(ctx context.Context, filter types.LeadEnhancedFilter) (int, error) {
-	query := `SELECT COUNT(*) FROM leads_enhanced WHERE deleted_at IS NULL`
+func (r *LeadRepository) Count(ctx context.Context, filter types.LeadFilter) (int, error) {
+	query := `SELECT COUNT(*) FROM leads WHERE deleted_at IS NULL`
 
 	var conditions []string
 	var args []interface{}
@@ -826,9 +1470,15 @@ func (r *LeadRepository) Count(ctx context.Context, filter types.LeadEnhancedFil
 }
 
 // FindByContact retrieves leads associated with a contact
-func (r *LeadRepository) FindByContact(ctx context.Context, orgID uuid.UUID, contactID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (r *LeadRepository) FindByContact(ctx context.Context, contactID uuid.UUID) ([]types.Lead, error) {
 	if contactID == uuid.Nil {
 		return nil, errors.New("invalid contact ID")
+	}
+
+	// Get organization ID from context
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
 	}
 
 	query := `
@@ -850,9 +1500,9 @@ func (r *LeadRepository) FindByContact(ctx context.Context, orgID uuid.UUID, con
 	}
 	defer rows.Close()
 
-	var leads []*types.LeadEnhanced
+	var leads []types.Lead
 	for rows.Next() {
-		var lead types.LeadEnhanced
+		var lead types.Lead
 		err := rows.Scan(
 			&lead.ID,
 			&lead.OrganizationID,
@@ -903,7 +1553,7 @@ func (r *LeadRepository) FindByContact(ctx context.Context, orgID uuid.UUID, con
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan lead: %w", err)
 		}
-		leads = append(leads, &lead)
+		leads = append(leads, lead)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -914,9 +1564,15 @@ func (r *LeadRepository) FindByContact(ctx context.Context, orgID uuid.UUID, con
 }
 
 // FindByUser retrieves leads assigned to a user
-func (r *LeadRepository) FindByUser(ctx context.Context, orgID uuid.UUID, userID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (r *LeadRepository) FindByUser(ctx context.Context, userID uuid.UUID) ([]types.Lead, error) {
 	if userID == uuid.Nil {
 		return nil, errors.New("invalid user ID")
+	}
+
+	// Get organization ID from context
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
 	}
 
 	query := `
@@ -938,9 +1594,9 @@ func (r *LeadRepository) FindByUser(ctx context.Context, orgID uuid.UUID, userID
 	}
 	defer rows.Close()
 
-	var leads []*types.LeadEnhanced
+	var leads []types.Lead
 	for rows.Next() {
-		var lead types.LeadEnhanced
+		var lead types.Lead
 		err := rows.Scan(
 			&lead.ID,
 			&lead.OrganizationID,
@@ -991,7 +1647,7 @@ func (r *LeadRepository) FindByUser(ctx context.Context, orgID uuid.UUID, userID
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan lead: %w", err)
 		}
-		leads = append(leads, &lead)
+		leads = append(leads, lead)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -1002,9 +1658,15 @@ func (r *LeadRepository) FindByUser(ctx context.Context, orgID uuid.UUID, userID
 }
 
 // FindByTeam retrieves leads assigned to a team
-func (r *LeadRepository) FindByTeam(ctx context.Context, orgID uuid.UUID, teamID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (r *LeadRepository) FindByTeam(ctx context.Context, teamID uuid.UUID) ([]types.Lead, error) {
 	if teamID == uuid.Nil {
 		return nil, errors.New("invalid team ID")
+	}
+
+	// Get organization ID from context
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
 	}
 
 	query := `
@@ -1026,9 +1688,9 @@ func (r *LeadRepository) FindByTeam(ctx context.Context, orgID uuid.UUID, teamID
 	}
 	defer rows.Close()
 
-	var leads []*types.LeadEnhanced
+	var leads []types.Lead
 	for rows.Next() {
-		var lead types.LeadEnhanced
+		var lead types.Lead
 		err := rows.Scan(
 			&lead.ID,
 			&lead.OrganizationID,
@@ -1079,7 +1741,7 @@ func (r *LeadRepository) FindByTeam(ctx context.Context, orgID uuid.UUID, teamID
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan lead: %w", err)
 		}
-		leads = append(leads, &lead)
+		leads = append(leads, lead)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -1090,9 +1752,15 @@ func (r *LeadRepository) FindByTeam(ctx context.Context, orgID uuid.UUID, teamID
 }
 
 // FindByStage retrieves leads in a specific stage
-func (r *LeadRepository) FindByStage(ctx context.Context, orgID uuid.UUID, stageID uuid.UUID) ([]*types.LeadEnhanced, error) {
+func (r *LeadRepository) FindByStage(ctx context.Context, stageID uuid.UUID) ([]types.Lead, error) {
 	if stageID == uuid.Nil {
 		return nil, errors.New("invalid stage ID")
+	}
+
+	// Get organization ID from context
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
 	}
 
 	query := `
@@ -1114,9 +1782,9 @@ func (r *LeadRepository) FindByStage(ctx context.Context, orgID uuid.UUID, stage
 	}
 	defer rows.Close()
 
-	var leads []*types.LeadEnhanced
+	var leads []types.Lead
 	for rows.Next() {
-		var lead types.LeadEnhanced
+		var lead types.Lead
 		err := rows.Scan(
 			&lead.ID,
 			&lead.OrganizationID,
@@ -1167,7 +1835,7 @@ func (r *LeadRepository) FindByStage(ctx context.Context, orgID uuid.UUID, stage
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan lead: %w", err)
 		}
-		leads = append(leads, &lead)
+		leads = append(leads, lead)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -1178,7 +1846,13 @@ func (r *LeadRepository) FindByStage(ctx context.Context, orgID uuid.UUID, stage
 }
 
 // CountByStage counts leads by stage for pipeline analytics
-func (r *LeadRepository) CountByStage(ctx context.Context, orgID uuid.UUID) (map[uuid.UUID]int, error) {
+func (r *LeadRepository) CountByStage(ctx context.Context) (map[uuid.UUID]int, error) {
+	// Get organization ID from context
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
 	query := `
 		SELECT stage_id, COUNT(*)
 		FROM leads_enhanced
@@ -1207,4 +1881,184 @@ func (r *LeadRepository) CountByStage(ctx context.Context, orgID uuid.UUID) (map
 	}
 
 	return counts, nil
+}
+
+// FindByDateRange retrieves leads created within a date range
+func (r *LeadRepository) FindByDateRange(ctx context.Context, startDate, endDate time.Time) ([]types.Lead, error) {
+	// Get organization ID from context
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
+	query := `
+		SELECT id, organization_id, company_id, name, contact_name, email, phone, mobile,
+			contact_id, user_id, team_id, lead_type, stage_id, priority, source_id,
+			medium_id, campaign_id, expected_revenue, probability, recurring_revenue,
+			recurring_plan, date_open, date_closed, date_deadline, date_last_stage_update,
+			active, won_status, lost_reason_id, street, street2, city, state_id, zip,
+			country_id, website, description, tag_ids, color, created_at, updated_at,
+			created_by, updated_by, deleted_at, custom_fields, metadata
+		FROM leads_enhanced
+		WHERE organization_id = $1 AND created_at BETWEEN $2 AND $3 AND deleted_at IS NULL
+		ORDER BY created_at DESC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, orgID, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find leads by date range: %w", err)
+	}
+	defer rows.Close()
+
+	var leads []types.Lead
+	for rows.Next() {
+		var lead types.Lead
+		err := rows.Scan(
+			&lead.ID,
+			&lead.OrganizationID,
+			&lead.CompanyID,
+			&lead.Name,
+			&lead.ContactName,
+			&lead.Email,
+			&lead.Phone,
+			&lead.Mobile,
+			&lead.ContactID,
+			&lead.UserID,
+			&lead.TeamID,
+			&lead.LeadType,
+			&lead.StageID,
+			&lead.Priority,
+			&lead.SourceID,
+			&lead.MediumID,
+			&lead.CampaignID,
+			&lead.ExpectedRevenue,
+			&lead.Probability,
+			&lead.RecurringRevenue,
+			&lead.RecurringPlan,
+			&lead.DateOpen,
+			&lead.DateClosed,
+			&lead.DateDeadline,
+			&lead.DateLastStageUpdate,
+			&lead.Active,
+			&lead.WonStatus,
+			&lead.LostReasonID,
+			&lead.Street,
+			&lead.Street2,
+			&lead.City,
+			&lead.StateID,
+			&lead.Zip,
+			&lead.CountryID,
+			&lead.Website,
+			&lead.Description,
+			&lead.TagIDs,
+			&lead.Color,
+			&lead.CreatedAt,
+			&lead.UpdatedAt,
+			&lead.CreatedBy,
+			&lead.UpdatedBy,
+			&lead.DeletedAt,
+			&lead.CustomFields,
+			&lead.Metadata,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan lead: %w", err)
+		}
+		leads = append(leads, lead)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during lead iteration: %w", err)
+	}
+
+	return leads, nil
+}
+
+// FindByDeadlineRange retrieves leads with deadlines within a date range
+func (r *LeadRepository) FindByDeadlineRange(ctx context.Context, startDate, endDate time.Time) ([]types.Lead, error) {
+	// Get organization ID from context
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return nil, errors.New("organization ID not found in context")
+	}
+
+	query := `
+		SELECT id, organization_id, company_id, name, contact_name, email, phone, mobile,
+			contact_id, user_id, team_id, lead_type, stage_id, priority, source_id,
+			medium_id, campaign_id, expected_revenue, probability, recurring_revenue,
+			recurring_plan, date_open, date_closed, date_deadline, date_last_stage_update,
+			active, won_status, lost_reason_id, street, street2, city, state_id, zip,
+			country_id, website, description, tag_ids, color, created_at, updated_at,
+			created_by, updated_by, deleted_at, custom_fields, metadata
+		FROM leads_enhanced
+		WHERE organization_id = $1 AND date_deadline BETWEEN $2 AND $3 AND deleted_at IS NULL
+		ORDER BY date_deadline ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, orgID, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find leads by deadline range: %w", err)
+	}
+	defer rows.Close()
+
+	var leads []types.Lead
+	for rows.Next() {
+		var lead types.Lead
+		err := rows.Scan(
+			&lead.ID,
+			&lead.OrganizationID,
+			&lead.CompanyID,
+			&lead.Name,
+			&lead.ContactName,
+			&lead.Email,
+			&lead.Phone,
+			&lead.Mobile,
+			&lead.ContactID,
+			&lead.UserID,
+			&lead.TeamID,
+			&lead.LeadType,
+			&lead.StageID,
+			&lead.Priority,
+			&lead.SourceID,
+			&lead.MediumID,
+			&lead.CampaignID,
+			&lead.ExpectedRevenue,
+			&lead.Probability,
+			&lead.RecurringRevenue,
+			&lead.RecurringPlan,
+			&lead.DateOpen,
+			&lead.DateClosed,
+			&lead.DateDeadline,
+			&lead.DateLastStageUpdate,
+			&lead.Active,
+			&lead.WonStatus,
+			&lead.LostReasonID,
+			&lead.Street,
+			&lead.Street2,
+			&lead.City,
+			&lead.StateID,
+			&lead.Zip,
+			&lead.CountryID,
+			&lead.Website,
+			&lead.Description,
+			&lead.TagIDs,
+			&lead.Color,
+			&lead.CreatedAt,
+			&lead.UpdatedAt,
+			&lead.CreatedBy,
+			&lead.UpdatedBy,
+			&lead.DeletedAt,
+			&lead.CustomFields,
+			&lead.Metadata,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan lead: %w", err)
+		}
+		leads = append(leads, lead)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during lead iteration: %w", err)
+	}
+
+	return leads, nil
 }

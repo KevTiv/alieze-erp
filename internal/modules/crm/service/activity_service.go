@@ -7,21 +7,21 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/google/uuid"
-	"alieze-erp/internal/modules/crm/repository"
 	"alieze-erp/internal/modules/crm/types"
 	"alieze-erp/pkg/events"
+
+	"github.com/google/uuid"
 )
 
 // ActivityService handles activity business logic
 type ActivityService struct {
-	repo        repository.ActivityRepository
+	repo        types.ActivityRepository
 	authService AuthService
 	eventBus    *events.Bus
 	logger      *slog.Logger
 }
 
-func NewActivityService(repo repository.ActivityRepository, authService AuthService, eventBus *events.Bus) *ActivityService {
+func NewActivityService(repo types.ActivityRepository, authService AuthService, eventBus *events.Bus) *ActivityService {
 	return &ActivityService{
 		repo:        repo,
 		authService: authService,
@@ -58,22 +58,22 @@ func (s *ActivityService) CreateActivity(ctx context.Context, req types.Activity
 
 	// Create activity
 	activity := types.Activity{
-		ID:           activityID,
+		ID:             activityID,
 		OrganizationID: orgID,
-		ActivityType: req.ActivityType,
-		Summary:      req.Summary,
-		Note:         req.Note,
-		DateDeadline: req.DateDeadline,
-		UserID:       req.UserID,
-		AssignedTo:   req.AssignedTo,
-		ResModel:     req.ResModel,
-		ResID:        req.ResID,
-		State:        req.State,
-		DoneDate:     req.DoneDate,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
-		CreatedBy:    &userID,
-		UpdatedBy:    &userID,
+		ActivityType:   req.ActivityType,
+		Summary:        req.Summary,
+		Note:           req.Note,
+		DateDeadline:   req.DateDeadline,
+		UserID:         req.UserID,
+		AssignedTo:     req.AssignedTo,
+		ResModel:       req.ResModel,
+		ResID:          req.ResID,
+		State:          req.State,
+		DoneDate:       req.DoneDate,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		CreatedBy:      &userID,
+		UpdatedBy:      &userID,
 	}
 
 	created, err := s.repo.Create(ctx, activity)
@@ -171,20 +171,20 @@ func (s *ActivityService) UpdateActivity(ctx context.Context, id uuid.UUID, req 
 
 	// Build update
 	activity := types.Activity{
-		ID:           id,
+		ID:             id,
 		OrganizationID: orgID,
-		ActivityType: *req.ActivityType,
-		Summary:      *req.Summary,
-		Note:         req.Note,
-		DateDeadline: req.DateDeadline,
-		UserID:       req.UserID,
-		AssignedTo:   req.AssignedTo,
-		ResModel:     req.ResModel,
-		ResID:        req.ResID,
-		State:        *req.State,
-		DoneDate:     req.DoneDate,
-		UpdatedAt:    time.Now(),
-		UpdatedBy:    &userID,
+		ActivityType:   *req.ActivityType,
+		Summary:        *req.Summary,
+		Note:           req.Note,
+		DateDeadline:   req.DateDeadline,
+		UserID:         req.UserID,
+		AssignedTo:     req.AssignedTo,
+		ResModel:       req.ResModel,
+		ResID:          req.ResID,
+		State:          *req.State,
+		DoneDate:       req.DoneDate,
+		UpdatedAt:      time.Now(),
+		UpdatedBy:      &userID,
 	}
 
 	// Update

@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"alieze-erp/internal/modules/sales/types"
 	"alieze-erp/internal/modules/sales/repository"
+	"alieze-erp/internal/modules/sales/types"
+	"alieze-erp/pkg/events"
 	"alieze-erp/pkg/tax"
 
 	"github.com/google/uuid"
@@ -15,7 +16,7 @@ import (
 type SalesOrderService struct {
 	repo          repository.SalesOrderRepository
 	pricelistRepo repository.PricelistRepository
-	eventBus      interface{} // Event bus for publishing domain events
+	eventBus      *events.Bus
 	taxCalc       *tax.Calculator
 }
 
@@ -28,7 +29,7 @@ func NewSalesOrderService(repo repository.SalesOrderRepository, pricelistRepo re
 }
 
 // NewSalesOrderServiceWithEventBus creates a sales order service with event bus support
-func NewSalesOrderServiceWithEventBus(repo repository.SalesOrderRepository, pricelistRepo repository.PricelistRepository, taxCalc *tax.Calculator, eventBus interface{}) *SalesOrderService {
+func NewSalesOrderServiceWithEventBus(repo repository.SalesOrderRepository, pricelistRepo repository.PricelistRepository, taxCalc *tax.Calculator, eventBus *events.Bus) *SalesOrderService {
 	service := NewSalesOrderService(repo, pricelistRepo, taxCalc)
 	service.eventBus = eventBus
 	return service
@@ -313,13 +314,9 @@ func (s *SalesOrderService) calculateOrderAmounts(ctx context.Context, order *ty
 // publishEvent publishes an event to the event bus if available
 func (s *SalesOrderService) publishEvent(ctx context.Context, eventType string, payload interface{}) {
 	if s.eventBus != nil {
-		if bus, ok := s.eventBus.(interface {
-			Publish(ctx context.Context, eventType string, payload interface{}) error
-		}); ok {
-			if err := bus.Publish(ctx, eventType, payload); err != nil {
-				// Log error but don't fail the operation
-				fmt.Printf("Failed to publish event %s: %v\n", eventType, err)
-			}
+		if err := s.eventBus.Publish(ctx, eventType, payload); err != nil {
+			// Log error but don't fail the operation
+			fmt.Printf("Failed to publish event %s: %v\n", eventType, err)
 		}
 	}
 }

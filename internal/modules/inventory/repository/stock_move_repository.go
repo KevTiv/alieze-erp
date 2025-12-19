@@ -19,6 +19,7 @@ type StockMoveRepository interface {
 	BulkCreate(ctx context.Context, orgID uuid.UUID, reqs []types.StockMoveCreateRequest) ([]types.StockMove, error)
 	BulkCreateWithTx(ctx context.Context, tx *sql.Tx, orgID uuid.UUID, reqs []types.StockMoveCreateRequest) ([]types.StockMove, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*types.StockMove, error)
+	GetByPickingID(ctx context.Context, pickingID uuid.UUID) ([]types.StockMove, error)
 	List(ctx context.Context, orgID uuid.UUID) ([]types.StockMove, error)
 	Update(ctx context.Context, id uuid.UUID, req types.StockMoveUpdateRequest) (*types.StockMove, error)
 	UpdateWithTx(ctx context.Context, tx *sql.Tx, id uuid.UUID, req types.StockMoveUpdateRequest) (*types.StockMove, error)
@@ -96,6 +97,38 @@ func (r *stockMoveRepository) GetByID(ctx context.Context, id uuid.UUID) (*types
 	}
 
 	return &move, nil
+}
+
+// GetByPickingID retrieves all stock moves for a given picking ID
+func (r *stockMoveRepository) GetByPickingID(ctx context.Context, pickingID uuid.UUID) ([]types.StockMove, error) {
+	query := `
+		SELECT id, organization_id, company_id, name, sequence, priority, date, scheduled_date, state, product_id, product_uom_id, location_id, location_dest_id, picking_id, quantity, reserved_quantity, note, created_at, updated_at
+		FROM stock_moves
+		WHERE picking_id = $1
+		ORDER BY sequence ASC, created_at ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, pickingID)
+	if err != nil {
+		r.logger.Error("Failed to get stock moves by picking ID", "error", err, "picking_id", pickingID)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var moves []types.StockMove
+	for rows.Next() {
+		var move types.StockMove
+		err := rows.Scan(
+			&move.ID, &move.OrganizationID, &move.CompanyID, &move.Name, &move.Sequence, &move.Priority, &move.Date, &move.ScheduledDate, &move.State, &move.ProductID, &move.ProductUOM, &move.LocationID, &move.LocationDestID, &move.PickingID, &move.Quantity, &move.ReservedQuantity, &move.Note, &move.CreatedAt, &move.UpdatedAt,
+		)
+		if err != nil {
+			r.logger.Error("Failed to scan stock move", "error", err)
+			return nil, err
+		}
+		moves = append(moves, move)
+	}
+
+	return moves, nil
 }
 
 // List retrieves all stock moves for an organization

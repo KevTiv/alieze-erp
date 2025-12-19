@@ -16,6 +16,7 @@ import (
 type AuthModule struct {
 	authHandler    *handler.AuthHandler
 	authMiddleware *middleware.AuthMiddleware
+	authService    *service.AuthService
 	logger         *slog.Logger
 }
 
@@ -39,10 +40,10 @@ func (m *AuthModule) Init(ctx context.Context, deps registry.Dependencies) error
 	authRepo := repository.NewAuthRepository(deps.DB)
 
 	// Create services
-	authService := service.NewAuthService(authRepo)
+	m.authService = service.NewAuthService(authRepo)
 
 	// Create handlers
-	m.authHandler = handler.NewAuthHandler(authService)
+	m.authHandler = handler.NewAuthHandler(m.authService)
 	m.authMiddleware = middleware.NewAuthMiddleware()
 
 	m.logger.Info("Auth module initialized successfully")
@@ -71,4 +72,9 @@ func (m *AuthModule) Health() error {
 // GetMiddleware returns the auth middleware for use in the server
 func (m *AuthModule) GetMiddleware() *middleware.AuthMiddleware {
 	return m.authMiddleware
+}
+
+// GetAuthService returns the auth service for use by other modules
+func (m *AuthModule) GetAuthService() *service.AuthService {
+	return m.authService
 }

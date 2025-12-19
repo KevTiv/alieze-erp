@@ -6,15 +6,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"alieze-erp/internal/modules/crm/types"
+
+	"github.com/google/uuid"
 )
 
 type leadSourceRepository struct {
 	db *sql.DB
 }
 
-func NewLeadSourceRepository(db *sql.DB) LeadSourceRepository {
+func NewLeadSourceRepository(db *sql.DB) types.LeadSourceRepository {
 	return &leadSourceRepository{db: db}
 }
 
@@ -130,4 +131,31 @@ func (r *leadSourceRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+// Count counts lead sources matching the filter criteria
+func (r *leadSourceRepository) Count(ctx context.Context, filter types.LeadSourceFilter) (int, error) {
+	// Get organization ID from context for security
+	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
+	if !ok {
+		return 0, errors.New("organization ID not found in context")
+	}
+
+	query := `SELECT COUNT(*) FROM lead_sources WHERE organization_id = $1`
+	args := []interface{}{orgID}
+	argIndex := 2
+
+	if filter.Name != nil && *filter.Name != "" {
+		query += fmt.Sprintf(" AND name ILIKE $%d", argIndex)
+		args = append(args, "%"+*filter.Name+"%")
+		argIndex++
+	}
+
+	var count int
+	err := r.db.QueryRowContext(ctx, query, args...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count lead sources: %w", err)
+	}
+
+	return count, nil
 }

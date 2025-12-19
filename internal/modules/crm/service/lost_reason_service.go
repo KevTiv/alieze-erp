@@ -7,21 +7,21 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/google/uuid"
-	"alieze-erp/internal/modules/crm/repository"
 	"alieze-erp/internal/modules/crm/types"
 	"alieze-erp/pkg/events"
+
+	"github.com/google/uuid"
 )
 
 // LostReasonService handles lost reason business logic
 type LostReasonService struct {
-	repo        repository.LostReasonRepository
+	repo        types.LostReasonRepository
 	authService AuthService
 	eventBus    *events.Bus
 	logger      *slog.Logger
 }
 
-func NewLostReasonService(repo repository.LostReasonRepository, authService AuthService, eventBus *events.Bus) *LostReasonService {
+func NewLostReasonService(repo types.LostReasonRepository, authService AuthService, eventBus *events.Bus) *LostReasonService {
 	return &LostReasonService{
 		repo:        repo,
 		authService: authService,
@@ -52,11 +52,11 @@ func (s *LostReasonService) CreateLostReason(ctx context.Context, req types.Lost
 
 	// Create reason
 	reason := types.LostReason{
-		ID:            reasonID,
+		ID:             reasonID,
 		OrganizationID: orgID,
-		Name:          req.Name,
-		Active:        req.Active,
-		CreatedAt:     time.Now(),
+		Name:           req.Name,
+		Active:         req.Active,
+		CreatedAt:      time.Now(),
 	}
 
 	created, err := s.repo.Create(ctx, reason)
@@ -148,11 +148,11 @@ func (s *LostReasonService) UpdateLostReason(ctx context.Context, id uuid.UUID, 
 
 	// Build update
 	reason := types.LostReason{
-		ID:            id,
+		ID:             id,
 		OrganizationID: orgID,
-		Name:          *req.Name,
-		Active:        *req.Active,
-		CreatedAt:     existing.CreatedAt, // Keep original created date
+		Name:           *req.Name,
+		Active:         *req.Active,
+		CreatedAt:      existing.CreatedAt, // Keep original created date
 	}
 
 	// Update

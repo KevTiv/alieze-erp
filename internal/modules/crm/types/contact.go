@@ -45,7 +45,7 @@ const (
 	ContactRelationshipTypeFamily    ContactRelationshipType = "family"
 	ContactRelationshipTypePartner   ContactRelationshipType = "partner"
 	ContactRelationshipTypeReferral  ContactRelationshipType = "referral"
-	ContactRelationshipTypeOther    ContactRelationshipType = "other"
+	ContactRelationshipTypeOther     ContactRelationshipType = "other"
 )
 
 func IsValidRelationshipType(relType ContactRelationshipType) bool {
@@ -61,34 +61,38 @@ func IsValidRelationshipType(relType ContactRelationshipType) bool {
 
 // ContactRelationship represents a relationship between two contacts
 type ContactRelationship struct {
-	ID              uuid.UUID              `json:"id" db:"id"`
-	OrganizationID  uuid.UUID              `json:"organization_id" db:"organization_id"`
-	ContactID       uuid.UUID              `json:"contact_id" db:"contact_id"`
-	RelatedContactID uuid.UUID              `json:"related_contact_id" db:"related_contact_id"`
-	Type            ContactRelationshipType `json:"type" db:"type"`
-	Notes           *string                `json:"notes,omitempty" db:"notes"`
-	CreatedAt       time.Time              `json:"created_at" db:"created_at"`
-	UpdatedAt       time.Time              `json:"updated_at" db:"updated_at"`
-}
-
-// ContactRelationshipCreateRequest represents a request to create a contact relationship
-type ContactRelationshipCreateRequest struct {
-	RelatedContactID uuid.UUID              `json:"related_contact_id"`
-	Type            ContactRelationshipType `json:"type"`
-	Notes           *string                `json:"notes,omitempty"`
-}
-
-// ContactSegmentationRequest represents a request to add a contact to segments/tags
-type ContactSegmentationRequest struct {
-	SegmentIDs  []string `json:"segment_ids,omitempty"`
-	CustomTags  []string `json:"custom_tags,omitempty"`
+	ID               uuid.UUID               `json:"id" db:"id"`
+	OrganizationID   uuid.UUID               `json:"organization_id" db:"organization_id"`
+	ContactID        uuid.UUID               `json:"contact_id" db:"contact_id"`
+	RelatedContactID uuid.UUID               `json:"related_contact_id" db:"related_contact_id"`
+	Type             ContactRelationshipType `json:"type" db:"type"`
+	Notes            *string                 `json:"notes,omitempty" db:"notes"`
+	CreatedAt        time.Time               `json:"created_at" db:"created_at"`
+	UpdatedAt        time.Time               `json:"updated_at" db:"updated_at"`
 }
 
 // ContactScore represents engagement and lead scores for a contact
 type ContactScore struct {
-	EngagementScore   int                     `json:"engagement_score"`
-	LeadScore         int                     `json:"lead_score"`
-	EngagementFactors map[string]interface{}  `json:"engagement_factors"`
-	LeadFactors       map[string]interface{}  `json:"lead_factors"`
-	LastUpdated       time.Time               `json:"last_updated"`
+	EngagementScore   int                    `json:"engagement_score"`
+	LeadScore         int                    `json:"lead_score"`
+	EngagementFactors map[string]interface{} `json:"engagement_factors"`
+	LeadFactors       map[string]interface{} `json:"lead_factors"`
+	LastUpdated       time.Time              `json:"last_updated"`
+}
+
+// ContactTag represents a tag that can be applied to contacts
+type ContactTag struct {
+	ID             uuid.UUID `json:"id" db:"id"`
+	OrganizationID uuid.UUID `json:"organization_id" db:"organization_id"`
+	Name           string    `json:"name" db:"name"`
+	Color          int       `json:"color" db:"color"`
+	CreatedAt      time.Time `json:"created_at" db:"created_at"`
+}
+
+// ContactTagFilter represents filtering criteria for contact tags
+type ContactTagFilter struct {
+	OrganizationID uuid.UUID
+	Name           *string
+	Limit          int
+	Offset         int
 }

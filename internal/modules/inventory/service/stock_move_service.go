@@ -44,3 +44,8 @@ func (s *StockMoveService) Update(ctx context.Context, id uuid.UUID, req types.S
 func (s *StockMoveService) Delete(ctx context.Context, id uuid.UUID) error {
 	return s.repo.Delete(ctx, id)
 }
+
+// GetStockMovesByPickingID retrieves all stock moves for a given picking ID
+func (s *StockMoveService) GetStockMovesByPickingID(ctx context.Context, pickingID uuid.UUID) ([]types.StockMove, error) {
+	return s.repo.GetByPickingID(ctx, pickingID)
+}

@@ -28,22 +28,22 @@ const (
 
 // Activity represents a CRM activity
 type Activity struct {
-	ID           uuid.UUID    `json:"id" db:"id"`
-	OrganizationID uuid.UUID    `json:"organization_id" db:"organization_id"`
-	ActivityType ActivityType  `json:"activity_type" db:"activity_type"`
-	Summary      string        `json:"summary" db:"summary"`
-	Note         *string       `json:"note,omitempty" db:"note"`
-	DateDeadline *time.Time    `json:"date_deadline,omitempty" db:"date_deadline"`
-	UserID       *uuid.UUID    `json:"user_id,omitempty" db:"user_id"`
-	AssignedTo   *uuid.UUID    `json:"assigned_to,omitempty" db:"assigned_to"`
-	ResModel     *string       `json:"res_model,omitempty" db:"res_model"`
-	ResID        *uuid.UUID    `json:"res_id,omitempty" db:"res_id"`
-	State        ActivityState `json:"state" db:"state"`
-	DoneDate     *time.Time    `json:"done_date,omitempty" db:"done_date"`
-	CreatedAt    time.Time     `json:"created_at" db:"created_at"`
-	UpdatedAt    time.Time     `json:"updated_at" db:"updated_at"`
-	CreatedBy    *uuid.UUID    `json:"created_by,omitempty" db:"created_by"`
-	UpdatedBy    *uuid.UUID    `json:"updated_by,omitempty" db:"updated_by"`
+	ID             uuid.UUID     `json:"id" db:"id"`
+	OrganizationID uuid.UUID     `json:"organization_id" db:"organization_id"`
+	ActivityType   ActivityType  `json:"activity_type" db:"activity_type"`
+	Summary        string        `json:"summary" db:"summary"`
+	Note           *string       `json:"note,omitempty" db:"note"`
+	DateDeadline   *time.Time    `json:"date_deadline,omitempty" db:"date_deadline"`
+	UserID         *uuid.UUID    `json:"user_id,omitempty" db:"user_id"`
+	AssignedTo     *uuid.UUID    `json:"assigned_to,omitempty" db:"assigned_to"`
+	ResModel       *string       `json:"res_model,omitempty" db:"res_model"`
+	ResID          *uuid.UUID    `json:"res_id,omitempty" db:"res_id"`
+	State          ActivityState `json:"state" db:"state"`
+	DoneDate       *time.Time    `json:"done_date,omitempty" db:"done_date"`
+	CreatedAt      time.Time     `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time     `json:"updated_at" db:"updated_at"`
+	CreatedBy      *uuid.UUID    `json:"created_by,omitempty" db:"created_by"`
+	UpdatedBy      *uuid.UUID    `json:"updated_by,omitempty" db:"updated_by"`
 }
 
 // ActivityFilter represents filtering criteria for activities

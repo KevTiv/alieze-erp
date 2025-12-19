@@ -7,21 +7,21 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/google/uuid"
-	"alieze-erp/internal/modules/crm/repository"
 	"alieze-erp/internal/modules/crm/types"
 	"alieze-erp/pkg/events"
+
+	"github.com/google/uuid"
 )
 
 // SalesTeamService handles sales team business logic
 type SalesTeamService struct {
-	repo        repository.SalesTeamRepository
+	repo        types.SalesTeamRepository
 	authService AuthService
 	eventBus    *events.Bus
 	logger      *slog.Logger
 }
 
-func NewSalesTeamService(repo repository.SalesTeamRepository, authService AuthService, eventBus *events.Bus) *SalesTeamService {
+func NewSalesTeamService(repo types.SalesTeamRepository, authService AuthService, eventBus *events.Bus) *SalesTeamService {
 	return &SalesTeamService{
 		repo:        repo,
 		authService: authService,
@@ -58,18 +58,18 @@ func (s *SalesTeamService) CreateSalesTeam(ctx context.Context, req types.SalesT
 
 	// Create team
 	team := types.SalesTeam{
-		ID:            teamID,
+		ID:             teamID,
 		OrganizationID: orgID,
 		CompanyID:      req.CompanyID,
-		Name:          req.Name,
-		Code:          req.Code,
+		Name:           req.Name,
+		Code:           req.Code,
 		TeamLeaderID:   req.TeamLeaderID,
-		MemberIDs:     req.MemberIDs,
-		IsActive:      req.IsActive,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		CreatedBy:     &userID,
-		UpdatedBy:     &userID,
+		MemberIDs:      req.MemberIDs,
+		IsActive:       req.IsActive,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		CreatedBy:      &userID,
+		UpdatedBy:      &userID,
 	}
 
 	created, err := s.repo.Create(ctx, team)
@@ -167,16 +167,16 @@ func (s *SalesTeamService) UpdateSalesTeam(ctx context.Context, id uuid.UUID, re
 
 	// Build update
 	team := types.SalesTeam{
-		ID:            id,
+		ID:             id,
 		OrganizationID: orgID,
 		CompanyID:      req.CompanyID,
-		Name:          *req.Name,
-		Code:          req.Code,
+		Name:           *req.Name,
+		Code:           req.Code,
 		TeamLeaderID:   req.TeamLeaderID,
-		MemberIDs:     *req.MemberIDs,
-		IsActive:      *req.IsActive,
-		UpdatedAt:     time.Now(),
-		UpdatedBy:     &userID,
+		MemberIDs:      *req.MemberIDs,
+		IsActive:       *req.IsActive,
+		UpdatedAt:      time.Now(),
+		UpdatedBy:      &userID,
 	}
 
 	// Update

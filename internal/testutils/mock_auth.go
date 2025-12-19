@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	authTypes "alieze-erp/internal/modules/auth/types"
+	"alieze-erp/pkg/crm/errors"
 	"github.com/google/uuid"
 )
 
@@ -77,4 +79,46 @@ func (m *MockAuthService) CheckPermission(ctx context.Context, permission string
 
 	// Default: allow all permissions for testing
 	return nil
+}
+
+func (m *MockAuthService) CheckOrganizationAccess(ctx context.Context, orgID uuid.UUID) error {
+	if err, ok := m.Errors["CheckOrganizationAccess"]; ok {
+		return err
+	}
+
+	if m.OrganizationID != orgID {
+		return errors.ErrOrganizationAccess
+	}
+
+	return nil
+}
+
+func (m *MockAuthService) CheckUserPermission(ctx context.Context, userID, orgID uuid.UUID, permission string) error {
+	if err, ok := m.Errors["CheckUserPermission"]; ok {
+		return err
+	}
+
+	if m.UserID != userID {
+		return errors.ErrUnauthorized
+	}
+
+	if m.OrganizationID != orgID {
+		return errors.ErrOrganizationAccess
+	}
+
+	if allowed, ok := m.Permissions[permission]; ok && !allowed {
+		return errors.ErrPermissionDenied
+	}
+
+	return nil
+}
+
+func (m *MockAuthService) GetCurrentUser(ctx context.Context) (*authTypes.User, error) {
+	if err, ok := m.Errors["GetCurrentUser"]; ok {
+		return nil, err
+	}
+
+	return &authTypes.User{
+		ID: m.UserID,
+	}, nil
 }

@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"alieze-erp/internal/modules/accounting/types"
 	"alieze-erp/internal/modules/accounting/repository"
+	"alieze-erp/internal/modules/accounting/types"
+	"alieze-erp/pkg/events"
 	"alieze-erp/pkg/tax"
+	"alieze-erp/pkg/workflow"
 
 	"github.com/google/uuid"
 )
@@ -15,8 +17,8 @@ import (
 type InvoiceService struct {
 	repo         repository.InvoiceRepository
 	paymentRepo  repository.PaymentRepository
-	stateMachine interface{} // State machine for invoice workflow
-	eventBus     interface{} // Event bus for publishing domain events
+	stateMachine *workflow.StateMachine
+	eventBus     *events.Bus
 	taxCalc      *tax.Calculator
 }
 
@@ -29,14 +31,14 @@ func NewInvoiceService(repo repository.InvoiceRepository, paymentRepo repository
 }
 
 // NewInvoiceServiceWithStateMachine creates an invoice service with state machine support
-func NewInvoiceServiceWithStateMachine(repo repository.InvoiceRepository, paymentRepo repository.PaymentRepository, taxCalc *tax.Calculator, stateMachine interface{}) *InvoiceService {
+func NewInvoiceServiceWithStateMachine(repo repository.InvoiceRepository, paymentRepo repository.PaymentRepository, taxCalc *tax.Calculator, stateMachine *workflow.StateMachine) *InvoiceService {
 	service := NewInvoiceService(repo, paymentRepo, taxCalc)
 	service.stateMachine = stateMachine
 	return service
 }
 
 // NewInvoiceServiceWithDependencies creates an invoice service with all dependencies
-func NewInvoiceServiceWithDependencies(repo repository.InvoiceRepository, paymentRepo repository.PaymentRepository, taxCalc *tax.Calculator, stateMachine interface{}, eventBus interface{}) *InvoiceService {
+func NewInvoiceServiceWithDependencies(repo repository.InvoiceRepository, paymentRepo repository.PaymentRepository, taxCalc *tax.Calculator, stateMachine *workflow.StateMachine, eventBus *events.Bus) *InvoiceService {
 	service := NewInvoiceService(repo, paymentRepo, taxCalc)
 	service.stateMachine = stateMachine
 	service.eventBus = eventBus
@@ -168,26 +170,10 @@ func (s *InvoiceService) ConfirmInvoice(ctx context.Context, id uuid.UUID) (*typ
 
 	// Use state machine for validation and transition if available
 	if s.stateMachine != nil {
-		if sm, ok := s.stateMachine.(interface{
-			Transition(ctx context.Context, transitionName string, entity interface{}) error
-		}); ok {
-			if err := sm.Transition(ctx, "confirm", invoice); err != nil {
-				return nil, fmt.Errorf("failed to confirm invoice: %w", err)
-			}
-			// State machine has updated the status
-		} else {
-			// Fallback to hardcoded validation
-			if invoice.Status != types.InvoiceStatusDraft {
-				return nil, fmt.Errorf("only draft invoices can be confirmed")
-			}
-
-			if len(invoice.Lines) == 0 {
-				return nil, fmt.Errorf("invoice must have at least one line to be confirmed")
-			}
-
-			// Update status to open
-			invoice.Status = types.InvoiceStatusOpen
+		if err := s.stateMachine.Transition(ctx, "confirm", invoice); err != nil {
+			return nil, fmt.Errorf("failed to confirm invoice: %w", err)
 		}
+		// State machine has updated the status
 	} else {
 		// Fallback to hardcoded validation
 		if invoice.Status != types.InvoiceStatusDraft {
@@ -433,13 +419,9 @@ func (s *InvoiceService) calculateInvoiceAmounts(ctx context.Context, invoice *t
 // publishEvent publishes an event to the event bus if available
 func (s *InvoiceService) publishEvent(ctx context.Context, eventType string, payload interface{}) {
 	if s.eventBus != nil {
-		if bus, ok := s.eventBus.(interface {
-			Publish(ctx context.Context, eventType string, payload interface{}) error
-		}); ok {
-			if err := bus.Publish(ctx, eventType, payload); err != nil {
-				// Log error but don't fail the operation
-				fmt.Printf("Failed to publish event %s: %v\n", eventType, err)
-			}
+		if err := s.eventBus.Publish(ctx, eventType, payload); err != nil {
+			// Log error but don't fail the operation
+			fmt.Printf("Failed to publish event %s: %v\n", eventType, err)
 		}
 	}
 }

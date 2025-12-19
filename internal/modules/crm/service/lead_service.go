@@ -3,355 +3,298 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log/slog"
 	"time"
 
-	"alieze-erp/internal/modules/crm/repository"
 	"alieze-erp/internal/modules/crm/types"
 	"alieze-erp/pkg/rules"
 
 	"github.com/google/uuid"
 )
 
-// LeadService handles business logic for leads
-type LeadService struct {
-	leadRepository *repository.LeadRepository
-	ruleEngine     *rules.RuleEngine
-	logger         *slog.Logger
+// LeadServiceOptions contains the dependencies for the LeadService
+type LeadServiceOptions struct {
+	LeadRepository types.LeadRepository
+	RuleEngine     *rules.RuleEngine
 }
 
 // NewLeadService creates a new LeadService
 type NewLeadServiceOptions struct {
-	LeadRepository *repository.LeadRepository
+	LeadRepository types.LeadRepository
 	RuleEngine     *rules.RuleEngine
-	Logger         *slog.Logger
 }
 
-func NewLeadService(options NewLeadServiceOptions) *LeadService {
-	if options.Logger == nil {
-		options.Logger = slog.Default().With("service", "lead")
-	}
+// LeadService provides lead management functionality
+type LeadService struct {
+	repo       types.LeadRepository
+	ruleEngine *rules.RuleEngine
+}
 
+// NewLeadService creates a new LeadService instance
+func NewLeadService(opts NewLeadServiceOptions) *LeadService {
 	return &LeadService{
-		leadRepository: options.LeadRepository,
-		ruleEngine:     options.RuleEngine,
-		logger:         options.Logger,
+		repo:       opts.LeadRepository,
+		ruleEngine: opts.RuleEngine,
 	}
 }
 
 // CreateLead creates a new lead
-func (s *LeadService) CreateLead(ctx context.Context, orgID uuid.UUID, lead types.LeadEnhancedCreateRequest) (*types.LeadEnhanced, error) {
-	// Validate input
-	if lead.Name == "" {
-		return nil, errors.New("lead name is required")
+func (s *LeadService) CreateLead(ctx context.Context, orgID uuid.UUID, req types.LeadCreateRequest) (types.Lead, error) {
+	// Validate the request
+	if req.Name == "" {
+		return types.Lead{}, errors.New("lead name is required")
 	}
-
-	// Remove organization ID extraction since it's now passed as parameter
 
 	// Set default values
-	if lead.LeadType == "" {
-		lead.LeadType = types.LeadTypeLead
+	if req.LeadType == "" {
+		req.LeadType = types.LeadTypeLead
+	}
+	if req.Priority == "" {
+		req.Priority = types.LeadPriorityMedium
+	}
+	if req.Probability == 0 {
+		req.Probability = 10
 	}
 
-	if lead.Priority == "" {
-		lead.Priority = types.LeadPriorityMedium
+	// Create the lead entity
+	lead := types.Lead{
+		ID:               uuid.Must(uuid.NewV7()),
+		OrganizationID:   orgID,
+		CompanyID:        req.CompanyID,
+		Name:             req.Name,
+		ContactName:      req.ContactName,
+		Email:            req.Email,
+		Phone:            req.Phone,
+		Mobile:           req.Mobile,
+		ContactID:        req.ContactID,
+		UserID:           req.UserID,
+		TeamID:           req.TeamID,
+		LeadType:         req.LeadType,
+		StageID:          req.StageID,
+		Priority:         req.Priority,
+		SourceID:         req.SourceID,
+		MediumID:         req.MediumID,
+		CampaignID:       req.CampaignID,
+		ExpectedRevenue:  req.ExpectedRevenue,
+		Probability:      req.Probability,
+		RecurringRevenue: req.RecurringRevenue,
+		RecurringPlan:    req.RecurringPlan,
+		DateOpen:         req.DateOpen,
+		DateClosed:       req.DateClosed,
+		DateDeadline:     req.DateDeadline,
+		Active:           req.Active,
+		Status:           req.Status,
+		AssignedTo:       req.AssignedTo,
+		WonStatus:        req.WonStatus,
+		LostReasonID:     req.LostReasonID,
+		Street:           req.Street,
+		Street2:          req.Street2,
+		City:             req.City,
+		StateID:          req.StateID,
+		Zip:              req.Zip,
+		CountryID:        req.CountryID,
+		Website:          req.Website,
+		Description:      req.Description,
+		TagIDs:           req.TagIDs,
+		Color:            req.Color,
+		CustomFields:     req.CustomFields,
+		Metadata:         req.Metadata,
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
 	}
 
-	if lead.Active == false {
-		lead.Active = true
-	}
-
-	if lead.Probability == 0 {
-		lead.Probability = 10 // Default 10% probability
-	}
-
-	// Set timestamps
-	now := time.Now()
-
-	// Create the lead in database
-	createdLead := &types.LeadEnhanced{
-		ID:              uuid.New(),
-		OrganizationID:  orgID,
-		CompanyID:       lead.CompanyID,
-		Name:            lead.Name,
-		ContactName:     lead.ContactName,
-		Email:           lead.Email,
-		Phone:           lead.Phone,
-		Mobile:          lead.Mobile,
-		ContactID:       lead.ContactID,
-		UserID:          lead.UserID,
-		TeamID:          lead.TeamID,
-		LeadType:        lead.LeadType,
-		StageID:         lead.StageID,
-		Priority:        lead.Priority,
-		SourceID:        lead.SourceID,
-		MediumID:        lead.MediumID,
-		CampaignID:      lead.CampaignID,
-		ExpectedRevenue: lead.ExpectedRevenue,
-		Probability:     lead.Probability,
-		RecurringRevenue: lead.RecurringRevenue,
-		RecurringPlan:   lead.RecurringPlan,
-		DateOpen:        lead.DateOpen,
-		DateClosed:      lead.DateClosed,
-		DateDeadline:    lead.DateDeadline,
-		DateLastStageUpdate: lead.DateLastStageUpdate,
-		Active:          lead.Active,
-		WonStatus:       lead.WonStatus,
-		LostReasonID:    lead.LostReasonID,
-		Street:          lead.Street,
-		Street2:         lead.Street2,
-		City:            lead.City,
-		StateID:         lead.StateID,
-		Zip:             lead.Zip,
-		CountryID:       lead.CountryID,
-		Website:         lead.Website,
-		Description:     lead.Description,
-		TagIDs:          lead.TagIDs,
-		Color:           lead.Color,
-		CreatedAt:       now,
-		UpdatedAt:       now,
-		CreatedBy:       nil, // Will be set by auth middleware in real implementation
-		UpdatedBy:       nil, // Will be set by auth middleware in real implementation
-		CustomFields:    lead.CustomFields,
-		Metadata:        lead.Metadata,
-	}
-
-	// Apply business rules
-	var err error
+	// Apply assignment rules if available
 	if s.ruleEngine != nil {
-		err = s.ruleEngine.Validate(ctx, "lead", createdLead)
-		if err != nil {
-			return nil, fmt.Errorf("failed to apply business rules: %w", err)
-		}
-		s.logger.Info("Applied business rules")
+		// TODO: Implement assignment rule logic
 	}
 
-	// Create lead in database
-	err = s.leadRepository.Create(ctx, createdLead)
+	// Create the lead in the repository
+	createdLead, err := s.repo.Create(ctx, lead)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create lead: %w", err)
+		return types.Lead{}, err
 	}
 
-	s.logger.Info("Lead created successfully", "lead_id", createdLead.ID, "name", createdLead.Name)
-
-	return createdLead, nil
+	return *createdLead, nil
 }
 
 // GetLead retrieves a lead by ID
-func (s *LeadService) GetLead(ctx context.Context, orgID uuid.UUID, id uuid.UUID) (*types.LeadEnhanced, error) {
-	if id == uuid.Nil {
-		return nil, errors.New("invalid lead ID")
-	}
-
-	lead, err := s.leadRepository.FindByID(ctx, id)
+func (s *LeadService) GetLead(ctx context.Context, orgID uuid.UUID, id uuid.UUID) (types.Lead, error) {
+	lead, err := s.repo.FindByID(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get lead: %w", err)
-	}
-	if lead == nil {
-		return nil, fmt.Errorf("lead not found")
+		return types.Lead{}, err
 	}
 
-	// Check organization access using the provided orgID parameter
+	// Verify organization ownership
 	if lead.OrganizationID != orgID {
-		return nil, fmt.Errorf("lead does not belong to organization")
+		return types.Lead{}, errors.New("lead not found or access denied")
 	}
 
-	return lead, nil
+	return *lead, nil
 }
 
 // UpdateLead updates an existing lead
-func (s *LeadService) UpdateLead(ctx context.Context, orgID uuid.UUID, id uuid.UUID, update types.LeadEnhancedUpdateRequest) (*types.LeadEnhanced, error) {
-	if id == uuid.Nil {
-		return nil, errors.New("invalid lead ID")
+func (s *LeadService) UpdateLead(ctx context.Context, orgID uuid.UUID, id uuid.UUID, req types.LeadUpdateRequest) (types.Lead, error) {
+	// Get the existing lead
+	existingLead, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return types.Lead{}, err
 	}
 
-	// Get existing lead
-	existingLead, err := s.GetLead(ctx, orgID, id)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get existing lead: %w", err)
+	// Verify organization ownership
+	if existingLead.OrganizationID != orgID {
+		return types.Lead{}, errors.New("lead not found or access denied")
 	}
 
 	// Apply updates
-	if update.Name != nil && *update.Name != "" {
-		existingLead.Name = *update.Name
+	if req.Name != nil {
+		existingLead.Name = *req.Name
 	}
-	if update.ContactName != nil {
-		existingLead.ContactName = update.ContactName
+	if req.ContactName != nil {
+		existingLead.ContactName = req.ContactName
 	}
-	if update.Email != nil {
-		existingLead.Email = update.Email
+	if req.Email != nil {
+		existingLead.Email = req.Email
 	}
-	if update.Phone != nil {
-		existingLead.Phone = update.Phone
+	if req.Phone != nil {
+		existingLead.Phone = req.Phone
 	}
-	if update.Mobile != nil {
-		existingLead.Mobile = update.Mobile
+	if req.Mobile != nil {
+		existingLead.Mobile = req.Mobile
 	}
-	if update.ContactID != nil {
-		existingLead.ContactID = update.ContactID
+	if req.ContactID != nil {
+		existingLead.ContactID = req.ContactID
 	}
-	if update.UserID != nil {
-		existingLead.UserID = update.UserID
+	if req.UserID != nil {
+		existingLead.UserID = req.UserID
 	}
-	if update.TeamID != nil {
-		existingLead.TeamID = update.TeamID
+	if req.TeamID != nil {
+		existingLead.TeamID = req.TeamID
 	}
-	if update.LeadType != nil && *update.LeadType != "" {
-		existingLead.LeadType = *update.LeadType
+	if req.LeadType != nil {
+		existingLead.LeadType = *req.LeadType
 	}
-	if update.StageID != nil {
-		existingLead.StageID = update.StageID
+	if req.StageID != nil {
+		existingLead.StageID = req.StageID
 	}
-	if update.Priority != nil && *update.Priority != "" {
-		existingLead.Priority = *update.Priority
+	if req.Priority != nil {
+		existingLead.Priority = *req.Priority
 	}
-	if update.SourceID != nil {
-		existingLead.SourceID = update.SourceID
+	if req.SourceID != nil {
+		existingLead.SourceID = req.SourceID
 	}
-	if update.MediumID != nil {
-		existingLead.MediumID = update.MediumID
+	if req.MediumID != nil {
+		existingLead.MediumID = req.MediumID
 	}
-	if update.CampaignID != nil {
-		existingLead.CampaignID = update.CampaignID
+	if req.CampaignID != nil {
+		existingLead.CampaignID = req.CampaignID
 	}
-	if update.ExpectedRevenue != nil {
-		existingLead.ExpectedRevenue = update.ExpectedRevenue
+	if req.ExpectedRevenue != nil {
+		existingLead.ExpectedRevenue = req.ExpectedRevenue
 	}
-	if update.Probability != nil {
-		existingLead.Probability = *update.Probability
+	if req.Probability != nil {
+		existingLead.Probability = *req.Probability
 	}
-	if update.RecurringRevenue != nil {
-		existingLead.RecurringRevenue = update.RecurringRevenue
+	if req.RecurringRevenue != nil {
+		existingLead.RecurringRevenue = req.RecurringRevenue
 	}
-	if update.RecurringPlan != nil {
-		existingLead.RecurringPlan = update.RecurringPlan
+	if req.RecurringPlan != nil {
+		existingLead.RecurringPlan = req.RecurringPlan
 	}
-	if update.DateOpen != nil {
-		existingLead.DateOpen = update.DateOpen
+	if req.DateOpen != nil {
+		existingLead.DateOpen = req.DateOpen
 	}
-	if update.DateClosed != nil {
-		existingLead.DateClosed = update.DateClosed
+	if req.DateClosed != nil {
+		existingLead.DateClosed = req.DateClosed
 	}
-	if update.DateDeadline != nil {
-		existingLead.DateDeadline = update.DateDeadline
+	if req.DateDeadline != nil {
+		existingLead.DateDeadline = req.DateDeadline
 	}
-	if update.DateLastStageUpdate != nil {
-		existingLead.DateLastStageUpdate = update.DateLastStageUpdate
+	if req.Active != nil {
+		existingLead.Active = *req.Active
 	}
-	if update.Active != nil {
-		existingLead.Active = *update.Active
+	if req.Status != nil {
+		existingLead.Status = req.Status
 	}
-	if update.WonStatus != nil {
-		existingLead.WonStatus = update.WonStatus
+	if req.AssignedTo != nil {
+		existingLead.AssignedTo = req.AssignedTo
 	}
-	if update.LostReasonID != nil {
-		existingLead.LostReasonID = update.LostReasonID
+	if req.WonStatus != nil {
+		existingLead.WonStatus = req.WonStatus
 	}
-	if update.Street != nil {
-		existingLead.Street = update.Street
+	if req.LostReasonID != nil {
+		existingLead.LostReasonID = req.LostReasonID
 	}
-	if update.Street2 != nil {
-		existingLead.Street2 = update.Street2
+	if req.Street != nil {
+		existingLead.Street = req.Street
 	}
-	if update.City != nil {
-		existingLead.City = update.City
+	if req.Street2 != nil {
+		existingLead.Street2 = req.Street2
 	}
-	if update.StateID != nil {
-		existingLead.StateID = update.StateID
+	if req.City != nil {
+		existingLead.City = req.City
 	}
-	if update.Zip != nil {
-		existingLead.Zip = update.Zip
+	if req.StateID != nil {
+		existingLead.StateID = req.StateID
 	}
-	if update.CountryID != nil {
-		existingLead.CountryID = update.CountryID
+	if req.Zip != nil {
+		existingLead.Zip = req.Zip
 	}
-	if update.Website != nil {
-		existingLead.Website = update.Website
+	if req.CountryID != nil {
+		existingLead.CountryID = req.CountryID
 	}
-	if update.Description != nil {
-		existingLead.Description = update.Description
+	if req.Website != nil {
+		existingLead.Website = req.Website
 	}
-	if update.TagIDs != nil {
-		existingLead.TagIDs = *update.TagIDs
+	if req.Description != nil {
+		existingLead.Description = req.Description
 	}
-	if update.Color != nil {
-		existingLead.Color = update.Color
+	if req.TagIDs != nil {
+		existingLead.TagIDs = *req.TagIDs
 	}
-	if update.CustomFields != nil {
-		existingLead.CustomFields = update.CustomFields
+	if req.Color != nil {
+		existingLead.Color = req.Color
 	}
-	if update.Metadata != nil {
-		existingLead.Metadata = update.Metadata
+	if req.CustomFields != nil {
+		existingLead.CustomFields = req.CustomFields
+	}
+	if req.Metadata != nil {
+		existingLead.Metadata = req.Metadata
 	}
 
 	existingLead.UpdatedAt = time.Now()
 
-	// Apply business rules
-	if s.ruleEngine != nil {
-		err := s.ruleEngine.Validate(ctx, "lead", existingLead)
-		if err != nil {
-			return nil, fmt.Errorf("failed to apply business rules: %w", err)
-		}
-		s.logger.Info("Applied business rules")
-	}
-
-	// Update lead in database
-	err = s.leadRepository.Update(ctx, existingLead)
+	// Update the lead in the repository
+	updatedLead, err := s.repo.Update(ctx, *existingLead)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update lead: %w", err)
+		return types.Lead{}, err
 	}
 
-	s.logger.Info("Lead updated successfully", "lead_id", existingLead.ID, "name", existingLead.Name)
-
-	return existingLead, nil
+	return *updatedLead, nil
 }
 
 // DeleteLead deletes a lead
 func (s *LeadService) DeleteLead(ctx context.Context, orgID uuid.UUID, id uuid.UUID) error {
-	if id == uuid.Nil {
-		return errors.New("invalid lead ID")
-	}
-
-	// Get existing lead to check organization access
-	existingLead, err := s.GetLead(ctx, orgID, id)
+	// Get the existing lead to verify ownership
+	lead, err := s.repo.FindByID(ctx, id)
 	if err != nil {
-		return fmt.Errorf("failed to get existing lead: %w", err)
+		return err
 	}
 
-	// Delete lead from database
-	err = s.leadRepository.Delete(ctx, id)
-	if err != nil {
-		return fmt.Errorf("failed to delete lead: %w", err)
+	// Verify organization ownership
+	if lead.OrganizationID != orgID {
+		return errors.New("lead not found or access denied")
 	}
 
-	s.logger.Info("Lead deleted successfully", "lead_id", id, "name", existingLead.Name)
-
-	return nil
+	return s.repo.Delete(ctx, id)
 }
 
-// ListLeads retrieves a list of leads with filtering
-func (s *LeadService) ListLeads(ctx context.Context, orgID uuid.UUID, filter types.LeadEnhancedFilter) ([]*types.LeadEnhanced, error) {
-	// Set organization filter
+// ListLeads lists leads with filtering
+func (s *LeadService) ListLeads(ctx context.Context, orgID uuid.UUID, filter types.LeadFilter) ([]types.Lead, error) {
 	filter.OrganizationID = orgID
-
-	leads, err := s.leadRepository.FindAll(ctx, filter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list leads: %w", err)
-	}
-
-	return leads, nil
+	return s.repo.FindAll(ctx, filter)
 }
 
-// CountLeads counts leads matching the filter criteria
-func (s *LeadService) CountLeads(ctx context.Context, orgID uuid.UUID, filter types.LeadEnhancedFilter) (int, error) {
-	// Set organization filter
+// CountLeads counts leads with filtering
+func (s *LeadService) CountLeads(ctx context.Context, orgID uuid.UUID, filter types.LeadFilter) (int, error) {
 	filter.OrganizationID = orgID
-
-	count, err := s.leadRepository.Count(ctx, filter)
-	if err != nil {
-		return 0, fmt.Errorf("failed to count leads: %w", err)
-	}
-
-	return count, nil
+	return s.repo.Count(ctx, filter)
 }

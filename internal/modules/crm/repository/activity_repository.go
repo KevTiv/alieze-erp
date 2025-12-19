@@ -6,15 +6,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"alieze-erp/internal/modules/crm/types"
+
+	"github.com/google/uuid"
 )
 
 type activityRepository struct {
 	db *sql.DB
 }
 
-func NewActivityRepository(db *sql.DB) ActivityRepository {
+func NewActivityRepository(db *sql.DB) types.ActivityRepository {
 	return &activityRepository{db: db}
 }
 
@@ -126,6 +127,57 @@ func (r *activityRepository) FindAll(ctx context.Context, filter types.ActivityF
 	}
 
 	return activities, nil
+}
+
+// Count counts activities matching the filter criteria
+func (r *activityRepository) Count(ctx context.Context, filter types.ActivityFilter) (int, error) {
+	query := `SELECT COUNT(*) FROM activities WHERE organization_id = $1`
+	args := []interface{}{filter.OrganizationID}
+	argIndex := 2
+
+	if filter.ActivityType != nil && *filter.ActivityType != "" {
+		query += fmt.Sprintf(" AND activity_type = $%d", argIndex)
+		args = append(args, *filter.ActivityType)
+		argIndex++
+	}
+
+	if filter.State != nil && *filter.State != "" {
+		query += fmt.Sprintf(" AND state = $%d", argIndex)
+		args = append(args, *filter.State)
+		argIndex++
+	}
+
+	if filter.UserID != nil {
+		query += fmt.Sprintf(" AND user_id = $%d", argIndex)
+		args = append(args, *filter.UserID)
+		argIndex++
+	}
+
+	if filter.AssignedTo != nil {
+		query += fmt.Sprintf(" AND assigned_to = $%d", argIndex)
+		args = append(args, *filter.AssignedTo)
+		argIndex++
+	}
+
+	if filter.ResModel != nil && *filter.ResModel != "" {
+		query += fmt.Sprintf(" AND res_model = $%d", argIndex)
+		args = append(args, *filter.ResModel)
+		argIndex++
+	}
+
+	if filter.ResID != nil {
+		query += fmt.Sprintf(" AND res_id = $%d", argIndex)
+		args = append(args, *filter.ResID)
+		argIndex++
+	}
+
+	var count int
+	err := r.db.QueryRowContext(ctx, query, args...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count activities: %w", err)
+	}
+
+	return count, nil
 }
 
 func (r *activityRepository) Update(ctx context.Context, activity types.Activity) (*types.Activity, error) {

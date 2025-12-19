@@ -60,3 +60,8 @@ func (r *Registry) RegisterAllEventHandlers(bus interface{}) {
 		module.RegisterEventHandlers(bus)
 	}
 }
+
+// UpdateDependencies updates the dependencies for all modules
+func (r *Registry) UpdateDependencies(deps Dependencies) {
+	r.deps = deps
+}

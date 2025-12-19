@@ -3,26 +3,37 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
+	"alieze-erp/internal/modules/crm/types"
+	"alieze-erp/pkg/events"
+
 	"github.com/google/uuid"
-	"github.com/alieze-erp/internal/modules/crm/repository"
-	"github.com/alieze-erp/internal/modules/crm/types"
-	"github.com/alieze-erp/pkg/auth"
 )
 
 // AssignmentRuleService handles business logic for assignment rules
 type AssignmentRuleService struct {
-	repo repository.AssignmentRuleRepository
-	authService auth.Service
+	repo        types.AssignmentRuleRepository
+	authService AuthService
+	eventBus    *events.Bus
+	logger      *log.Logger
 }
 
 // NewAssignmentRuleService creates a new assignment rule service
-func NewAssignmentRuleService(repo repository.AssignmentRuleRepository, authService auth.Service) *AssignmentRuleService {
+func NewAssignmentRuleService(repo types.AssignmentRuleRepository, authService AuthService) *AssignmentRuleService {
 	return &AssignmentRuleService{
-		repo:       repo,
+		repo:        repo,
 		authService: authService,
+		logger:      log.New(log.Writer(), "assignment-rule-service: ", log.LstdFlags),
 	}
+}
+
+// NewAssignmentRuleServiceWithEventBus creates an assignment rule service with event bus support
+func NewAssignmentRuleServiceWithEventBus(repo types.AssignmentRuleRepository, authService AuthService, eventBus *events.Bus) *AssignmentRuleService {
+	service := NewAssignmentRuleService(repo, authService)
+	service.eventBus = eventBus
+	return service
 }
 
 // CreateAssignmentRule creates a new assignment rule
@@ -53,42 +64,42 @@ func (s *AssignmentRuleService) CreateAssignmentRule(ctx context.Context, req *t
 
 	// Create assignment rule
 	rule := &types.AssignmentRule{
-		ID:            uuid.New(),
-		OrganizationID: orgID,
-		Name:          req.Name,
-		Description:   req.Description,
-		RuleType:      types.AssignmentRuleType(req.RuleType),
-		TargetModel:   types.AssignmentTargetModel(req.TargetModel),
-		Priority:      req.Priority,
-		IsActive:      req.IsActive,
-		Conditions:    req.Conditions,
-		AssignmentConfig: req.AssignmentConfig,
-		AssignToType:  req.AssignToType,
+		ID:                    uuid.New(),
+		OrganizationID:        orgID,
+		Name:                  req.Name,
+		Description:           req.Description,
+		RuleType:              types.AssignmentRuleType(req.RuleType),
+		TargetModel:           types.AssignmentTargetModel(req.TargetModel),
+		Priority:              req.Priority,
+		IsActive:              req.IsActive,
+		Conditions:            req.Conditions,
+		AssignmentConfig:      req.AssignmentConfig,
+		AssignToType:          req.AssignToType,
 		MaxAssignmentsPerUser: req.MaxAssignmentsPerUser,
 		AssignmentWindowStart: req.AssignmentWindowStart,
 		AssignmentWindowEnd:   req.AssignmentWindowEnd,
-		ActiveDays:    req.ActiveDays,
-		CreatedBy:     userID,
-		UpdatedBy:     userID,
+		ActiveDays:            req.ActiveDays,
+		CreatedBy:             userID,
+		UpdatedBy:             userID,
 	}
 
-	err = s.repo.CreateAssignmentRule(ctx, rule)
+	createdRule, err := s.repo.Create(ctx, *rule)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create assignment rule: %w", err)
 	}
 
-	return rule, nil
+	return createdRule, nil
 }
 
 // GetAssignmentRule retrieves an assignment rule by ID
 func (s *AssignmentRuleService) GetAssignmentRule(ctx context.Context, id uuid.UUID) (*types.AssignmentRule, error) {
-	return s.repo.GetAssignmentRule(ctx, id)
+	return s.repo.FindByID(ctx, id)
 }
 
 // UpdateAssignmentRule updates an existing assignment rule
 func (s *AssignmentRuleService) UpdateAssignmentRule(ctx context.Context, id uuid.UUID, req *types.UpdateAssignmentRuleRequest) (*types.AssignmentRule, error) {
 	// Get existing rule
-	existingRule, err := s.repo.GetAssignmentRule(ctx, id)
+	existingRule, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing rule: %w", err)
 	}
@@ -100,35 +111,35 @@ func (s *AssignmentRuleService) UpdateAssignmentRule(ctx context.Context, id uui
 	}
 
 	// Update fields
-	if req.Name != "" {
-		existingRule.Name = req.Name
+	if req.Name != nil && *req.Name != "" {
+		existingRule.Name = *req.Name
 	}
-	if req.Description != "" {
-		existingRule.Description = req.Description
+	if req.Description != nil && *req.Description != "" {
+		existingRule.Description = *req.Description
 	}
-	if req.RuleType != "" {
-		existingRule.RuleType = types.AssignmentRuleType(req.RuleType)
+	if req.RuleType != nil && *req.RuleType != "" {
+		existingRule.RuleType = types.AssignmentRuleType(*req.RuleType)
 	}
-	if req.TargetModel != "" {
-		existingRule.TargetModel = types.AssignmentTargetModel(req.TargetModel)
+	if req.TargetModel != nil && *req.TargetModel != "" {
+		existingRule.TargetModel = types.AssignmentTargetModel(*req.TargetModel)
 	}
-	if req.Priority != 0 {
-		existingRule.Priority = req.Priority
+	if req.Priority != nil && *req.Priority != 0 {
+		existingRule.Priority = *req.Priority
 	}
 	if req.IsActive != nil {
 		existingRule.IsActive = *req.IsActive
 	}
 	if req.Conditions != nil {
-		existingRule.Conditions = req.Conditions
+		existingRule.Conditions = *req.Conditions
 	}
 	if req.AssignmentConfig != nil {
-		existingRule.AssignmentConfig = req.AssignmentConfig
+		existingRule.AssignmentConfig = *req.AssignmentConfig
 	}
-	if req.AssignToType != "" {
-		existingRule.AssignToType = req.AssignToType
+	if req.AssignToType != nil && *req.AssignToType != "" {
+		existingRule.AssignToType = *req.AssignToType
 	}
-	if req.MaxAssignmentsPerUser != 0 {
-		existingRule.MaxAssignmentsPerUser = req.MaxAssignmentsPerUser
+	if req.MaxAssignmentsPerUser != nil && *req.MaxAssignmentsPerUser != 0 {
+		existingRule.MaxAssignmentsPerUser = *req.MaxAssignmentsPerUser
 	}
 	if req.AssignmentWindowStart != nil {
 		existingRule.AssignmentWindowStart = req.AssignmentWindowStart
@@ -137,7 +148,7 @@ func (s *AssignmentRuleService) UpdateAssignmentRule(ctx context.Context, id uui
 		existingRule.AssignmentWindowEnd = req.AssignmentWindowEnd
 	}
 	if req.ActiveDays != nil {
-		existingRule.ActiveDays = req.ActiveDays
+		existingRule.ActiveDays = *req.ActiveDays
 	}
 	existingRule.UpdatedBy = userID
 	existingRule.UpdatedAt = time.Now()
@@ -163,7 +174,7 @@ func (s *AssignmentRuleService) ListAssignmentRules(ctx context.Context, orgID u
 // CreateTerritory creates a new territory
 func (s *AssignmentRuleService) CreateTerritory(ctx context.Context, req *types.CreateTerritoryRequest) (*types.Territory, error) {
 	// Validate request
-	if req.Name == "" {
+	if &req.Name != nil {
 		return nil, fmt.Errorf("name is required")
 	}
 
@@ -180,18 +191,18 @@ func (s *AssignmentRuleService) CreateTerritory(ctx context.Context, req *types.
 
 	// Create territory
 	territory := &types.Territory{
-		ID:            uuid.New(),
+		ID:             uuid.New(),
 		OrganizationID: orgID,
-		Name:          req.Name,
-		Description:   req.Description,
-		TerritoryType: req.TerritoryType,
-		Conditions:    req.Conditions,
-		AssignedUsers: req.AssignedUsers,
-		AssignedTeams: req.AssignedTeams,
-		Priority:      req.Priority,
-		IsActive:      req.IsActive,
-		CreatedBy:     userID,
-		UpdatedBy:     userID,
+		Name:           req.Name,
+		Description:    req.Description,
+		TerritoryType:  req.TerritoryType,
+		Conditions:     req.Conditions,
+		AssignedUsers:  req.AssignedUsers,
+		AssignedTeams:  req.AssignedTeams,
+		Priority:       req.Priority,
+		IsActive:       req.IsActive,
+		CreatedBy:      userID,
+		UpdatedBy:      userID,
 	}
 
 	err = s.repo.CreateTerritory(ctx, territory)
@@ -222,26 +233,26 @@ func (s *AssignmentRuleService) UpdateTerritory(ctx context.Context, id uuid.UUI
 	}
 
 	// Update fields
-	if req.Name != "" {
-		existingTerritory.Name = req.Name
+	if req.Name != nil && *req.Name != "" {
+		existingTerritory.Name = *req.Name
 	}
-	if req.Description != "" {
-		existingTerritory.Description = req.Description
+	if req.Description != nil && *req.Description != "" {
+		existingTerritory.Description = *req.Description
 	}
-	if req.TerritoryType != "" {
-		existingTerritory.TerritoryType = req.TerritoryType
+	if req.TerritoryType != nil && *req.TerritoryType != "" {
+		existingTerritory.TerritoryType = *req.TerritoryType
 	}
 	if req.Conditions != nil {
-		existingTerritory.Conditions = req.Conditions
+		existingTerritory.Conditions = *req.Conditions
 	}
 	if req.AssignedUsers != nil {
-		existingTerritory.AssignedUsers = req.AssignedUsers
+		existingTerritory.AssignedUsers = *req.AssignedUsers
 	}
 	if req.AssignedTeams != nil {
-		existingTerritory.AssignedTeams = req.AssignedTeams
+		existingTerritory.AssignedTeams = *req.AssignedTeams
 	}
-	if req.Priority != 0 {
-		existingTerritory.Priority = req.Priority
+	if req.Priority != nil && *req.Priority != 0 {
+		existingTerritory.Priority = *req.Priority
 	}
 	if req.IsActive != nil {
 		existingTerritory.IsActive = *req.IsActive
@@ -286,19 +297,19 @@ func (s *AssignmentRuleService) AssignLead(ctx context.Context, leadID uuid.UUID
 	}
 
 	// Check if assignment is needed
-	if lead.AssignedTo != uuid.Nil && lead.AssignedTo == assigneeID {
+	if lead.AssignedTo != nil && *lead.AssignedTo == assigneeID {
 		return &types.AssignmentResult{
-			LeadID:        leadID,
-			AssignedToID:  assigneeID,
+			LeadID:         leadID,
+			AssignedToID:   assigneeID,
 			AssignedToName: assigneeName,
-			Reason:        "already_assigned",
-			Changed:       false,
+			Reason:         "already_assigned",
+			Changed:        false,
 		}, nil
 	}
 
-	// Assign lead
+	// Determine assignment reason
 	reason := "auto_assignment"
-	if lead.AssignedTo != uuid.Nil {
+	if lead.AssignedTo != nil {
 		reason = "reassignment"
 	}
 
@@ -308,22 +319,18 @@ func (s *AssignmentRuleService) AssignLead(ctx context.Context, leadID uuid.UUID
 	}
 
 	return &types.AssignmentResult{
-		LeadID:        leadID,
-		AssignedToID:  assigneeID,
+		LeadID:         leadID,
+		AssignedToID:   assigneeID,
 		AssignedToName: assigneeName,
-		Reason:        reason,
-		Changed:       true,
+		Reason:         reason,
+		Changed:        true,
 	}, nil
 }
 
 // getLead is a helper function to get lead details
 func (s *AssignmentRuleService) getLead(ctx context.Context, leadID uuid.UUID) (*types.Lead, error) {
-	// This would be implemented with the actual lead repository
-	// For now, we'll return a mock structure
-	return &types.Lead{
-		ID:        leadID,
-		AssignedTo: uuid.Nil, // This would be the actual assigned user
-	}, nil
+	// Use the repository to get the actual lead data
+	return s.repo.GetLead(ctx, leadID)
 }
 
 // GetAssignmentStatsByUser retrieves assignment statistics by user
@@ -334,4 +341,13 @@ func (s *AssignmentRuleService) GetAssignmentStatsByUser(ctx context.Context, or
 // GetAssignmentRuleEffectiveness retrieves effectiveness metrics for assignment rules
 func (s *AssignmentRuleService) GetAssignmentRuleEffectiveness(ctx context.Context, orgID uuid.UUID) ([]*types.AssignmentRuleEffectiveness, error) {
 	return s.repo.GetAssignmentRuleEffectiveness(ctx, orgID)
+}
+
+// publishEvent publishes an event to the event bus if available
+func (s *AssignmentRuleService) publishEvent(ctx context.Context, eventType string, payload interface{}) {
+	if s.eventBus != nil {
+		if err := s.eventBus.Publish(ctx, eventType, payload); err != nil {
+			s.logger.Printf("Failed to publish event %s: %v", eventType, err)
+		}
+	}
 }

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"alieze-erp/internal/modules/sales/domain"
 	"alieze-erp/internal/modules/sales/repository"
+	"alieze-erp/internal/modules/sales/types"
 	"alieze-erp/internal/testutils"
 
 	"github.com/google/uuid"
