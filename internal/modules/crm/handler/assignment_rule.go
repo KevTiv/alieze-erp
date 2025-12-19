@@ -1,299 +1,331 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"alieze-erp/internal/modules/crm/service"
+	"alieze-erp/internal/modules/crm/types"
+	auth "alieze-erp/pkg/auth"
+
 	"github.com/google/uuid"
-	"github.com/alieze-erp/internal/modules/crm/service"
-	"github.com/alieze-erp/internal/modules/crm/types"
-	"github.com/alieze-erp/pkg/auth"
-	"github.com/alieze-erp/pkg/response"
+	"github.com/julienschmidt/httprouter"
 )
 
 // AssignmentRuleHandler handles HTTP requests for assignment rules
 type AssignmentRuleHandler struct {
-	service *service.AssignmentRuleService
+	service     *service.AssignmentRuleService
 	authService auth.Service
 }
 
 // NewAssignmentRuleHandler creates a new assignment rule handler
 func NewAssignmentRuleHandler(service *service.AssignmentRuleService, authService auth.Service) *AssignmentRuleHandler {
 	return &AssignmentRuleHandler{
-		service:    service,
+		service:     service,
 		authService: authService,
 	}
 }
 
+// respondWithJSON sends a JSON response with the given status code, message, and data
+func respondWithJSON(w http.ResponseWriter, statusCode int, message string, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": message,
+		"data":    data,
+	})
+}
+
+// respondWithError sends an error response with the given status code and message
+func respondWithError(w http.ResponseWriter, statusCode int, message string, err error) {
+	if err != nil {
+		http.Error(w, message+": "+err.Error(), statusCode)
+	} else {
+		http.Error(w, message, statusCode)
+	}
+}
+
 // RegisterRoutes registers assignment rule routes
-func (h *AssignmentRuleHandler) RegisterRoutes(router *gin.RouterGroup) {
-	assignmentRoutes := router.Group("/assignment-rules") {
-		assignmentRoutes.POST("", h.CreateAssignmentRule)
-		assignmentRoutes.GET("/:id", h.GetAssignmentRule)
-		assignmentRoutes.PUT("/:id", h.UpdateAssignmentRule)
-		assignmentRoutes.DELETE("/:id", h.DeleteAssignmentRule)
-		assignmentRoutes.GET("", h.ListAssignmentRules)
-	}
+func (h *AssignmentRuleHandler) RegisterRoutes(router *httprouter.Router) {
+	// Assignment Rule routes
+	router.POST("/assignment-rules", h.CreateAssignmentRule)
+	router.GET("/assignment-rules/:id", h.GetAssignmentRule)
+	router.PUT("/assignment-rules/:id", h.UpdateAssignmentRule)
+	router.DELETE("/assignment-rules/:id", h.DeleteAssignmentRule)
+	router.GET("/assignment-rules", h.ListAssignmentRules)
+	router.POST("/assignment-rules/:id/assign", h.AssignLead)
+	router.GET("/assignment-rules/stats/users", h.GetAssignmentStatsByUser)
+	router.GET("/assignment-rules/stats/rules", h.GetAssignmentRuleEffectiveness)
 
-	territoryRoutes := router.Group("/territories") {
-		territoryRoutes.POST("", h.CreateTerritory)
-		territoryRoutes.GET("/:id", h.GetTerritory)
-		territoryRoutes.PUT("/:id", h.UpdateTerritory)
-		territoryRoutes.DELETE("/:id", h.DeleteTerritory)
-		territoryRoutes.GET("", h.ListTerritories)
-	}
-
-	assignmentRoutes.POST("/:id/assign", h.AssignLead)
-	assignmentRoutes.GET("/stats/users", h.GetAssignmentStatsByUser)
-	assignmentRoutes.GET("/stats/rules", h.GetAssignmentRuleEffectiveness)
+	// Territory routes
+	router.POST("/territories", h.CreateTerritory)
+	router.GET("/territories/:id", h.GetTerritory)
+	router.PUT("/territories/:id", h.UpdateTerritory)
+	router.DELETE("/territories/:id", h.DeleteTerritory)
+	router.GET("/territories", h.ListTerritories)
 }
 
 // CreateAssignmentRule handles POST /assignment-rules
-func (h *AssignmentRuleHandler) CreateAssignmentRule(c *gin.Context) {
+func (h *AssignmentRuleHandler) CreateAssignmentRule(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var req types.CreateAssignmentRuleRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request payload", err)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	rule, err := h.service.CreateAssignmentRule(c.Request.Context(), &req)
+	rule, err := h.service.CreateAssignmentRule(r.Context(), &req)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to create assignment rule", err)
+		http.Error(w, "Failed to create assignment rule: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "Assignment rule created successfully", rule)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Assignment rule created successfully",
+		"data":    rule,
+	})
 }
 
 // GetAssignmentRule handles GET /assignment-rules/:id
-func (h *AssignmentRuleHandler) GetAssignmentRule(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+func (h *AssignmentRuleHandler) GetAssignmentRule(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id, err := uuid.Parse(ps.ByName("id"))
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid assignment rule ID", err)
+		http.Error(w, "Invalid assignment rule ID: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	rule, err := h.service.GetAssignmentRule(c.Request.Context(), id)
+	rule, err := h.service.GetAssignmentRule(r.Context(), id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Assignment rule not found", err)
+		http.Error(w, "Assignment rule not found: "+err.Error(), http.StatusNotFound)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Assignment rule retrieved successfully", rule)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Assignment rule retrieved successfully",
+		"data":    rule,
+	})
 }
 
 // UpdateAssignmentRule handles PUT /assignment-rules/:id
-func (h *AssignmentRuleHandler) UpdateAssignmentRule(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+func (h *AssignmentRuleHandler) UpdateAssignmentRule(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id, err := uuid.Parse(ps.ByName("id"))
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid assignment rule ID", err)
+		http.Error(w, "Invalid assignment rule ID: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	var req types.UpdateAssignmentRuleRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request payload", err)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	rule, err := h.service.UpdateAssignmentRule(c.Request.Context(), id, &req)
+	rule, err := h.service.UpdateAssignmentRule(r.Context(), id, &req)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to update assignment rule", err)
+		http.Error(w, "Failed to update assignment rule: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Assignment rule updated successfully", rule)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Assignment rule updated successfully",
+		"data":    rule,
+	})
 }
 
 // DeleteAssignmentRule handles DELETE /assignment-rules/:id
-func (h *AssignmentRuleHandler) DeleteAssignmentRule(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+func (h *AssignmentRuleHandler) DeleteAssignmentRule(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id, err := uuid.Parse(ps.ByName("id"))
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid assignment rule ID", err)
+		respondWithError(w, http.StatusBadRequest, "Invalid assignment rule ID", err)
 		return
 	}
 
-	err := h.service.DeleteAssignmentRule(c.Request.Context(), id)
+	err = h.service.DeleteAssignmentRule(r.Context(), id)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to delete assignment rule", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to delete assignment rule", err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Assignment rule deleted successfully", nil)
+	respondWithJSON(w, http.StatusOK, "Assignment rule deleted successfully", nil)
 }
 
 // ListAssignmentRules handles GET /assignment-rules
-func (h *AssignmentRuleHandler) ListAssignmentRules(c *gin.Context) {
+func (h *AssignmentRuleHandler) ListAssignmentRules(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Get organization ID from context
-	orgID, err := h.authService.GetOrganizationID(c.Request.Context())
+	orgID, err := h.authService.GetOrganizationID(r.Context())
 	if err != nil {
-		response.Error(c, http.StatusUnauthorized, "Unauthorized", err)
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
 		return
 	}
 
-	targetModel := c.Query("target_model")
-	activeOnly := c.Query("active_only") == "true"
+	targetModel := r.URL.Query().Get("target_model")
+	activeOnly := r.URL.Query().Get("active_only") == "true"
 
-	rules, err := h.service.ListAssignmentRules(c.Request.Context(), orgID, targetModel, activeOnly)
+	rules, err := h.service.ListAssignmentRules(r.Context(), orgID, targetModel, activeOnly)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to list assignment rules", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to list assignment rules", err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Assignment rules retrieved successfully", rules)
+	respondWithJSON(w, http.StatusOK, "Assignment rules retrieved successfully", rules)
 }
 
 // CreateTerritory handles POST /territories
-func (h *AssignmentRuleHandler) CreateTerritory(c *gin.Context) {
+func (h *AssignmentRuleHandler) CreateTerritory(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var req types.CreateTerritoryRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request payload", err)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload", err)
 		return
 	}
 
-	territory, err := h.service.CreateTerritory(c.Request.Context(), &req)
+	territory, err := h.service.CreateTerritory(r.Context(), &req)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to create territory", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to create territory", err)
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "Territory created successfully", territory)
+	respondWithJSON(w, http.StatusCreated, "Territory created successfully", territory)
 }
 
 // GetTerritory handles GET /territories/:id
-func (h *AssignmentRuleHandler) GetTerritory(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+func (h *AssignmentRuleHandler) GetTerritory(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id, err := uuid.Parse(ps.ByName("id"))
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid territory ID", err)
+		respondWithError(w, http.StatusBadRequest, "Invalid territory ID", err)
 		return
 	}
 
-	territory, err := h.service.GetTerritory(c.Request.Context(), id)
+	territory, err := h.service.GetTerritory(r.Context(), id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Territory not found", err)
+		respondWithError(w, http.StatusNotFound, "Territory not found", err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Territory retrieved successfully", territory)
+	respondWithJSON(w, http.StatusOK, "Territory retrieved successfully", territory)
 }
 
 // UpdateTerritory handles PUT /territories/:id
-func (h *AssignmentRuleHandler) UpdateTerritory(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+func (h *AssignmentRuleHandler) UpdateTerritory(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id, err := uuid.Parse(ps.ByName("id"))
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid territory ID", err)
+		respondWithError(w, http.StatusBadRequest, "Invalid territory ID", err)
 		return
 	}
 
 	var req types.UpdateTerritoryRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request payload", err)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload", err)
 		return
 	}
 
-	territory, err := h.service.UpdateTerritory(c.Request.Context(), id, &req)
+	territory, err := h.service.UpdateTerritory(r.Context(), id, &req)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to update territory", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to update territory", err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Territory updated successfully", territory)
+	respondWithJSON(w, http.StatusOK, "Territory updated successfully", territory)
 }
 
 // DeleteTerritory handles DELETE /territories/:id
-func (h *AssignmentRuleHandler) DeleteTerritory(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+func (h *AssignmentRuleHandler) DeleteTerritory(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id, err := uuid.Parse(ps.ByName("id"))
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid territory ID", err)
+		respondWithError(w, http.StatusBadRequest, "Invalid territory ID", err)
 		return
 	}
 
-	err := h.service.DeleteTerritory(c.Request.Context(), id)
+	err = h.service.DeleteTerritory(r.Context(), id)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to delete territory", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to delete territory", err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Territory deleted successfully", nil)
+	respondWithJSON(w, http.StatusOK, "Territory deleted successfully", nil)
 }
 
 // ListTerritories handles GET /territories
-func (h *AssignmentRuleHandler) ListTerritories(c *gin.Context) {
+func (h *AssignmentRuleHandler) ListTerritories(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Get organization ID from context
-	orgID, err := h.authService.GetOrganizationID(c.Request.Context())
+	orgID, err := h.authService.GetOrganizationID(r.Context())
 	if err != nil {
-		response.Error(c, http.StatusUnauthorized, "Unauthorized", err)
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
 		return
 	}
 
-	activeOnly := c.Query("active_only") == "true"
+	activeOnly := r.URL.Query().Get("active_only") == "true"
 
-	territories, err := h.service.ListTerritories(c.Request.Context(), orgID, activeOnly)
+	territories, err := h.service.ListTerritories(r.Context(), orgID, activeOnly)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to list territories", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to list territories", err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Territories retrieved successfully", territories)
+	respondWithJSON(w, http.StatusOK, "Territories retrieved successfully", territories)
 }
 
 // AssignLead handles POST /assignment-rules/:id/assign
-func (h *AssignmentRuleHandler) AssignLead(c *gin.Context) {
-	leadID, err := uuid.Parse(c.Param("id"))
+func (h *AssignmentRuleHandler) AssignLead(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	leadID, err := uuid.Parse(ps.ByName("id"))
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid lead ID", err)
+		respondWithError(w, http.StatusBadRequest, "Invalid lead ID", err)
 		return
 	}
 
 	var conditions map[string]interface{}
-	if err := c.ShouldBindJSON(&conditions); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid conditions payload", err)
+	if err := json.NewDecoder(r.Body).Decode(&conditions); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid conditions payload", err)
 		return
 	}
 
-	result, err := h.service.AssignLead(c.Request.Context(), leadID, conditions)
+	result, err := h.service.AssignLead(r.Context(), leadID, conditions)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to assign lead", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to assign lead", err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Lead assigned successfully", result)
+	respondWithJSON(w, http.StatusOK, "Lead assigned successfully", result)
 }
 
 // GetAssignmentStatsByUser handles GET /assignment-rules/stats/users
-func (h *AssignmentRuleHandler) GetAssignmentStatsByUser(c *gin.Context) {
+func (h *AssignmentRuleHandler) GetAssignmentStatsByUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Get organization ID from context
-	orgID, err := h.authService.GetOrganizationID(c.Request.Context())
+	orgID, err := h.authService.GetOrganizationID(r.Context())
 	if err != nil {
-		response.Error(c, http.StatusUnauthorized, "Unauthorized", err)
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
 		return
 	}
 
-	targetModel := c.Query("target_model")
+	targetModel := r.URL.Query().Get("target_model")
 
-	stats, err := h.service.GetAssignmentStatsByUser(c.Request.Context(), orgID, targetModel)
+	stats, err := h.service.GetAssignmentStatsByUser(r.Context(), orgID, targetModel)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to get assignment stats", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to get assignment stats", err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Assignment stats retrieved successfully", stats)
+	respondWithJSON(w, http.StatusOK, "Assignment stats retrieved successfully", stats)
 }
 
 // GetAssignmentRuleEffectiveness handles GET /assignment-rules/stats/rules
-func (h *AssignmentRuleHandler) GetAssignmentRuleEffectiveness(c *gin.Context) {
+func (h *AssignmentRuleHandler) GetAssignmentRuleEffectiveness(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Get organization ID from context
-	orgID, err := h.authService.GetOrganizationID(c.Request.Context())
+	orgID, err := h.authService.GetOrganizationID(r.Context())
 	if err != nil {
-		response.Error(c, http.StatusUnauthorized, "Unauthorized", err)
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
 		return
 	}
 
-	effectiveness, err := h.service.GetAssignmentRuleEffectiveness(c.Request.Context(), orgID)
+	effectiveness, err := h.service.GetAssignmentRuleEffectiveness(r.Context(), orgID)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to get assignment rule effectiveness", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to get assignment rule effectiveness", err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Assignment rule effectiveness retrieved successfully", effectiveness)
+	respondWithJSON(w, http.StatusOK, "Assignment rule effectiveness retrieved successfully", effectiveness)
 }

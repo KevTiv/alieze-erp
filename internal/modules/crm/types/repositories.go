@@ -72,8 +72,8 @@ type SalesTeamRepository interface {
 
 type ActivityRepository interface {
 	CRUDRepository[Activity, ActivityFilter]
-	FindByContact(ctx context.Context, contactID uuid.UUID) ([]Activity, error)
-	FindByLead(ctx context.Context, leadID uuid.UUID) ([]Activity, error)
+	FindByContact(ctx context.Context, contactID uuid.UUID) ([]*Activity, error)
+	FindByLead(ctx context.Context, leadID uuid.UUID) ([]*Activity, error)
 }
 
 type AssignmentRuleRepository interface {
