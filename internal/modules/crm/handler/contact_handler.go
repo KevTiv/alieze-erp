@@ -31,6 +31,16 @@ func (h *ContactHandler) RegisterRoutes(router *httprouter.Router) {
 	router.GET("/api/crm/customers/:customer_id/contacts", h.GetContactsByCustomer)
 	router.GET("/api/crm/vendors/:vendor_id/contacts", h.GetContactsByVendor)
 
+	// Bulk operations
+	router.POST("/api/crm/contacts/bulk", h.BulkCreateContacts)
+
+	// Advanced search
+	router.POST("/api/crm/contacts/search/advanced", h.AdvancedSearchContacts)
+
+	// Dashboard endpoints
+	router.GET("/api/crm/dashboard", h.GetCRMDashboard)
+	router.GET("/api/crm/dashboard/activity", h.GetActivityDashboard)
+
 	// ContactRelationship routes
 	router.POST("/api/crm/contacts/:contactId/relationships", h.CreateContactRelationship)
 	router.GET("/api/crm/contacts/:contactId/relationships", h.ListContactRelationships)
@@ -278,6 +288,100 @@ func (h *ContactHandler) GetContactScore(w http.ResponseWriter, r *http.Request,
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(score)
+}
+
+func (h *ContactHandler) BulkCreateContacts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	var req []service.ContactRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	results, errors := h.service.BulkCreateContacts(r.Context(), req)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": results,
+		"errors":  errors,
+	})
+}
+
+func (h *ContactHandler) AdvancedSearchContacts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	var filter types.AdvancedContactFilter
+	if err := json.NewDecoder(r.Body).Decode(&filter); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	contacts, total, err := h.service.AdvancedSearchContacts(r.Context(), filter)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"data":     contacts,
+		"total":    total,
+		"page":     filter.Page,
+		"pageSize": filter.PageSize,
+	})
+}
+
+func (h *ContactHandler) GetCRMDashboard(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// Get organization ID from context
+	orgID, ok := r.Context().Value("organizationID").(uuid.UUID)
+	if !ok {
+		http.Error(w, "Organization ID not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse time range parameters
+	timeRange := r.URL.Query().Get("time_range")
+	if timeRange == "" {
+		timeRange = "30d" // default to 30 days
+	}
+
+	dashboard, err := h.service.GetCRMDashboard(r.Context(), orgID, timeRange)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(dashboard)
+}
+
+func (h *ContactHandler) GetActivityDashboard(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	orgID, ok := r.Context().Value("organizationID").(uuid.UUID)
+	if !ok {
+		http.Error(w, "Organization ID not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse filter parameters
+	contactType := r.URL.Query().Get("contact_type") // all, customers, vendors, leads
+	if contactType == "" {
+		contactType = "all"
+	}
+
+	timeRange := r.URL.Query().Get("time_range")
+	if timeRange == "" {
+		timeRange = "30d"
+	}
+
+	dashboard, err := h.service.GetActivityDashboard(r.Context(), orgID, contactType, timeRange)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(dashboard)
 }
 
 func (h *ContactHandler) UpdateContact(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
