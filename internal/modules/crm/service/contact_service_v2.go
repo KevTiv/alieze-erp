@@ -536,7 +536,7 @@ func (s *ContactServiceV2) CalculateContactScore(ctx context.Context, orgID uuid
 // BulkCreateContacts creates multiple contacts in a single operation
 func (s *ContactServiceV2) BulkCreateContacts(ctx context.Context, requests []ContactRequest) ([]*types.Contact, []error) {
 	var results []*types.Contact
-	var errors []error
+	var errs []error
 
 	// Validate organization access for all requests
 	if len(requests) > 0 {
@@ -544,16 +544,16 @@ func (s *ContactServiceV2) BulkCreateContacts(ctx context.Context, requests []Co
 		if err := s.GetAuthService().CheckOrganizationAccess(ctx, orgID); err != nil {
 			// All requests will fail with the same error
 			for range requests {
-				errors = append(errors, errors.ErrOrganizationAccess)
+				errs = append(errs, err)
 			}
-			return nil, errors
+			return nil, errs
 		}
 	}
 
 	for _, req := range requests {
 		// Validate individual request
 		if err := s.validateContactRequest(req); err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 			continue
 		}
 
@@ -563,7 +563,8 @@ func (s *ContactServiceV2) BulkCreateContacts(ctx context.Context, requests []Co
 		// Create contact
 		result, err := s.GetRepository().Create(ctx, contact)
 		if err != nil {
-			errors = append(errors, errors.Wrap(err, "CREATE_FAILED", "failed to create contact"))
+			wrappedErr := errors.Wrap(err, "CREATE_FAILED", "failed to create contact")
+			errs = append(errs, wrappedErr)
 			continue
 		}
 
@@ -581,7 +582,7 @@ func (s *ContactServiceV2) BulkCreateContacts(ctx context.Context, requests []Co
 		results = append(results, result)
 	}
 
-	return results, errors
+	return results, errs
 }
 
 // AdvancedSearchContacts performs advanced search with multiple criteria

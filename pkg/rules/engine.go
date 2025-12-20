@@ -158,6 +158,34 @@ func (re *RuleEngine) getFieldValue(entity interface{}, fieldName string) (inter
 	return nil, fmt.Errorf("entity is not a struct: %T", entity)
 }
 
+// Evaluate evaluates a rule and returns a boolean result
+func (re *RuleEngine) Evaluate(ctx context.Context, ruleName string, entity interface{}) (bool, error) {
+	re.mu.RLock()
+	defer re.mu.RUnlock()
+
+	// Check if there's a validator for this rule
+	if validator, exists := re.validators[ruleName]; exists {
+		err := validator(ctx, entity)
+		// If validation passes, return true; if it fails, return false
+		return err == nil, nil
+	}
+
+	// If no validator found, check config for business rules
+	if re.config != nil && re.config.Modules != nil {
+		for _, moduleRules := range re.config.Modules {
+			if moduleRules.Validation != nil {
+				if validationRules, exists := moduleRules.Validation[ruleName]; exists {
+					err := re.validateWithRules(ctx, entity, validationRules)
+					return err == nil, nil
+				}
+			}
+		}
+	}
+
+	// If no rule found, return false (rule doesn't exist or doesn't apply)
+	return false, fmt.Errorf("rule %s not found", ruleName)
+}
+
 // GetConfig returns the rule configuration
 func (re *RuleEngine) GetConfig() *RuleConfig {
 	return re.config

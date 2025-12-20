@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/KevTiv/alieze-erp/internal/modules/crm/handler"
 	"github.com/KevTiv/alieze-erp/internal/modules/crm/repository"
 	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
-	"github.com/KevTiv/alieze-erp/pkg/events"
+	"github.com/KevTiv/alieze-erp/pkg/auth"
+	"github.com/KevTiv/alieze-erp/pkg/crm/base"
 	"github.com/KevTiv/alieze-erp/pkg/registry"
-	"github.com/KevTiv/alieze-erp/pkg/rules"
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -58,32 +57,24 @@ func (m *CRMModule) Init(ctx context.Context, deps registry.Dependencies) error 
 	leadRepo := repository.NewLeadRepository(deps.DB)
 	assignmentRuleRepo := repository.NewAssignmentRuleRepository(deps.DB)
 
-	// Create services - using nil for auth service for now
-	// TODO: Integrate with new auth/permission system
-	// Create auth service adapter that uses the new policy engine
-	authService := NewPolicyAuthServiceAdapter(deps.PolicyEngine)
+	// Create services - using shared auth adapter with rule engine integration
+	// The adapter implements both legacy and base auth service interfaces
+	authAdapter := auth.NewPolicyAuthAdapterWithRules(deps.PolicyEngine, deps.RuleEngine)
 
-	// Create services using the new auth service, rule engine, and event bus
-	contactService := service.NewContactServiceWithDependencies(contactRepo, authService, deps.RuleEngine, deps.EventBus)
-
-	// Cast event bus to concrete type for ContactTagService
-	eventBus, ok := deps.EventBus.(*events.Bus)
-	if !ok {
-		m.logger.Error("Failed to cast event bus to *events.Bus")
-		return fmt.Errorf("invalid event bus type")
-	}
-	contactTagService := service.NewContactTagService(contactTagRepo, authService, eventBus)
-	salesTeamService := service.NewSalesTeamService(salesTeamRepo, authService, eventBus)
-	activityService := service.NewActivityService(activityRepo, authService, eventBus)
-	leadStageService := service.NewLeadStageService(leadStageRepo, authService, eventBus)
-	leadSourceService := service.NewLeadSourceService(leadSourceRepo, authService, eventBus)
-	lostReasonService := service.NewLostReasonService(lostReasonRepo, authService, eventBus)
-	leadService := service.NewLeadService(service.NewLeadServiceOptions{
-		LeadRepository: leadRepo,
-		RuleEngine:     deps.RuleEngine.(*rules.RuleEngine),
-		Logger:         m.logger,
+	// Create services using the auth adapter, rule engine, and event bus
+	contactService := service.NewContactServiceV2(contactRepo, authAdapter, base.ServiceOptions{
+		Logger:     m.logger,
+		RuleEngine: deps.RuleEngine,
+		EventBus:   deps.EventBus,
 	})
-	assignmentRuleService := service.NewAssignmentRuleService(assignmentRuleRepo, authService)
+	contactTagService := service.NewContactTagService(contactTagRepo, authAdapter, deps.EventBus)
+	salesTeamService := service.NewSalesTeamService(salesTeamRepo, authAdapter, deps.EventBus)
+	activityService := service.NewActivityService(activityRepo, authAdapter, deps.EventBus)
+	leadStageService := service.NewLeadStageService(leadStageRepo, authAdapter, deps.EventBus)
+	leadSourceService := service.NewLeadSourceService(leadSourceRepo, authAdapter, deps.EventBus)
+	lostReasonService := service.NewLostReasonService(lostReasonRepo, authAdapter, deps.EventBus)
+	assignmentRuleService := service.NewAssignmentRuleService(assignmentRuleRepo, authAdapter, deps.EventBus)
+	leadService := service.NewLeadService(leadRepo, authAdapter, deps.EventBus, assignmentRuleService)
 
 	// Create handlers
 	m.contactHandler = handler.NewContactHandler(contactService)
@@ -94,7 +85,7 @@ func (m *CRMModule) Init(ctx context.Context, deps registry.Dependencies) error 
 	m.leadSourceHandler = handler.NewLeadSourceHandler(leadSourceService)
 	m.lostReasonHandler = handler.NewLostReasonHandler(lostReasonService)
 	m.leadHandler = handler.NewLeadHandler(leadService)
-	m.assignmentRuleHandler = handler.NewAssignmentRuleHandler(assignmentRuleService, authService)
+	m.assignmentRuleHandler = handler.NewAssignmentRuleHandler(assignmentRuleService, authAdapter)
 
 	m.logger.Info("CRM module initialized successfully")
 	return nil
@@ -346,89 +337,4 @@ func (m *CRMModule) handleInvoiceCreated(ctx context.Context, event interface{})
 // Health checks the health of the CRM module
 func (m *CRMModule) Health() error {
 	return nil
-}
-
-// PolicyAuthServiceAdapter adapts the new policy engine to the existing auth service interface
-type PolicyAuthServiceAdapter struct {
-	policyEngine interface{}
-	logger       *slog.Logger
-}
-
-func NewPolicyAuthServiceAdapter(policyEngine interface{}) *PolicyAuthServiceAdapter {
-	return &PolicyAuthServiceAdapter{
-		policyEngine: policyEngine,
-		logger:       slog.Default().With("component", "policy-auth-adapter"),
-	}
-}
-
-func (a *PolicyAuthServiceAdapter) GetOrganizationID(ctx context.Context) (uuid.UUID, error) {
-	// Extract organization ID from context (set by auth middleware)
-	orgID, ok := ctx.Value("organizationID").(uuid.UUID)
-	if !ok {
-		a.logger.Error("Organization ID not found in context")
-		return uuid.Nil, fmt.Errorf("organization ID not found in context")
-	}
-	return orgID, nil
-}
-
-func (a *PolicyAuthServiceAdapter) GetUserID(ctx context.Context) (uuid.UUID, error) {
-	// Extract user ID from context (set by auth middleware)
-	userID, ok := ctx.Value("userID").(uuid.UUID)
-	if !ok {
-		a.logger.Error("User ID not found in context")
-		return uuid.Nil, fmt.Errorf("user ID not found in context")
-	}
-	return userID, nil
-}
-
-func (a *PolicyAuthServiceAdapter) CheckPermission(ctx context.Context, permission string) error {
-	// Get role from context (set by auth middleware)
-	role, ok := ctx.Value("role").(string)
-	if !ok {
-		a.logger.Error("Role not found in context")
-		return fmt.Errorf("role not found in context")
-	}
-
-	// Use the policy engine for RBAC check
-	if a.policyEngine != nil {
-		if engine, ok := a.policyEngine.(interface {
-			CheckPermission(ctx context.Context, subject, object, action string) (bool, error)
-		}); ok {
-			// Parse permission in format "action" (e.g., "contacts:create" or just "create")
-			// Extract resource and action
-			resource := "contacts"
-			action := permission
-
-			// If permission contains ':', split it
-			if strings.Contains(permission, ":") {
-				parts := strings.SplitN(permission, ":", 2)
-				resource = parts[0]
-				action = parts[1]
-			}
-
-			// Check permission using role:roleName format for Casbin
-			subject := fmt.Sprintf("role:%s", role)
-			allowed, err := engine.CheckPermission(ctx, subject, resource, action)
-			if err != nil {
-				a.logger.Error("Permission check failed",
-					"role", role,
-					"resource", resource,
-					"action", action,
-					"error", err)
-				return fmt.Errorf("permission check failed: %w", err)
-			}
-			if !allowed {
-				a.logger.Warn("Permission denied",
-					"role", role,
-					"resource", resource,
-					"action", action)
-				return fmt.Errorf("permission denied: user with role '%s' cannot '%s' on '%s'", role, action, resource)
-			}
-			return nil
-		}
-	}
-
-	// No policy engine available - this should not happen in production
-	a.logger.Error("No policy engine available - denying all permissions")
-	return fmt.Errorf("policy engine not configured")
 }

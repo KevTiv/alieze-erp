@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	auth "github.com/KevTiv/alieze-erp/internal/modules/auth/service"
 	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
 	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/pkg/auth"
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -15,14 +15,14 @@ import (
 // AssignmentRuleHandler handles HTTP requests for assignment rules
 type AssignmentRuleHandler struct {
 	service     *service.AssignmentRuleService
-	authService *auth.AuthService
+	authAdapter *auth.PolicyAuthAdapter
 }
 
 // NewAssignmentRuleHandler creates a new assignment rule handler
-func NewAssignmentRuleHandler(service *service.AssignmentRuleService, authService *auth.AuthService) *AssignmentRuleHandler {
+func NewAssignmentRuleHandler(service *service.AssignmentRuleService, authAdapter *auth.PolicyAuthAdapter) *AssignmentRuleHandler {
 	return &AssignmentRuleHandler{
 		service:     service,
-		authService: authService,
+		authAdapter: authAdapter,
 	}
 }
 

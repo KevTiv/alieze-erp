@@ -19,6 +19,10 @@ type User struct {
 	UpdatedAt         time.Time  `json:"updated_at" db:"updated_at"`
 	IsSuperAdmin      bool       `json:"is_super_admin" db:"is_super_admin"`
 	RawUserMetaData   string     `json:"raw_user_meta_data" db:"raw_user_meta_data"`
+
+	// Context fields (populated from token claims or session context)
+	OrganizationID uuid.UUID `json:"organization_id,omitempty" db:"-"`
+	Role           string    `json:"role,omitempty" db:"-"`
 }
 
 // UserProfile represents user profile information

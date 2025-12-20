@@ -21,19 +21,13 @@ type AssignmentRuleService struct {
 }
 
 // NewAssignmentRuleService creates a new assignment rule service
-func NewAssignmentRuleService(repo types.AssignmentRuleRepository, authService AuthService) *AssignmentRuleService {
+func NewAssignmentRuleService(repo types.AssignmentRuleRepository, authService AuthService, eventBus *events.Bus) *AssignmentRuleService {
 	return &AssignmentRuleService{
 		repo:        repo,
 		authService: authService,
+		eventBus:    eventBus,
 		logger:      log.New(log.Writer(), "assignment-rule-service: ", log.LstdFlags),
 	}
-}
-
-// NewAssignmentRuleServiceWithEventBus creates an assignment rule service with event bus support
-func NewAssignmentRuleServiceWithEventBus(repo types.AssignmentRuleRepository, authService AuthService, eventBus *events.Bus) *AssignmentRuleService {
-	service := NewAssignmentRuleService(repo, authService)
-	service.eventBus = eventBus
-	return service
 }
 
 // CreateAssignmentRule creates a new assignment rule
