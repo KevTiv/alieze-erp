@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/pkg/auth"
 	"github.com/KevTiv/alieze-erp/pkg/events"
 
 	"github.com/google/uuid"
@@ -16,12 +17,12 @@ import (
 // LeadSourceService handles lead source business logic
 type LeadSourceService struct {
 	repo        types.LeadSourceRepository
-	authService AuthService
+	authService auth.LegacyAuthService
 	eventBus    *events.Bus
 	logger      *slog.Logger
 }
 
-func NewLeadSourceService(repo types.LeadSourceRepository, authService AuthService, eventBus *events.Bus) *LeadSourceService {
+func NewLeadSourceService(repo types.LeadSourceRepository, authService auth.LegacyAuthService, eventBus *events.Bus) *LeadSourceService {
 	return &LeadSourceService{
 		repo:        repo,
 		authService: authService,

@@ -1,6 +1,7 @@
 package handler
 
-import ("json"
+import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/KevTiv/alieze-erp/internal/modules/common/service"

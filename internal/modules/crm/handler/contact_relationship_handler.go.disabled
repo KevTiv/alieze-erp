@@ -1,0 +1,253 @@
+package handler
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/google/uuid"
+	"github.com/julienschmidt/httprouter"
+
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+)
+
+// ContactRelationshipHandler handles HTTP requests for relationship management
+type ContactRelationshipHandler struct {
+	service *service.ContactRelationshipService
+}
+
+func NewContactRelationshipHandler(service *service.ContactRelationshipService) *ContactRelationshipHandler {
+	return &ContactRelationshipHandler{
+		service: service,
+	}
+}
+
+// CreateRelationshipType handles POST /api/crm/relationships/types
+func (h *ContactRelationshipHandler) CreateRelationshipType(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	var req types.CreateRelationshipTypeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	relType, err := h.service.CreateRelationshipType(ctx, orgID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(relType)
+}
+
+// UpdateRelationshipType handles PUT /api/crm/relationships/types/:id
+func (h *ContactRelationshipHandler) UpdateRelationshipType(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	typeID, err := uuid.Parse(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "Invalid relationship type ID", http.StatusBadRequest)
+		return
+	}
+
+	var req types.UpdateRelationshipTypeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	relType, err := h.service.UpdateRelationshipType(ctx, orgID, typeID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(relType)
+}
+
+// ListRelationshipTypes handles GET /api/crm/relationships/types
+func (h *ContactRelationshipHandler) ListRelationshipTypes(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	// Parse query parameter for including system types
+	includeSystem := r.URL.Query().Get("include_system") == "true"
+
+	relTypes, err := h.service.ListRelationshipTypes(ctx, orgID, includeSystem)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"relationship_types": relTypes,
+	})
+}
+
+// CreateRelationship handles POST /api/crm/relationships
+func (h *ContactRelationshipHandler) CreateRelationship(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	var req types.CreateRelationshipRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	relationship, err := h.service.CreateRelationship(ctx, orgID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(relationship)
+}
+
+// ListRelationships handles GET /api/crm/contacts/:id/relationships
+func (h *ContactRelationshipHandler) ListRelationships(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	contactID, err := uuid.Parse(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "Invalid contact ID", http.StatusBadRequest)
+		return
+	}
+
+	relationships, err := h.service.ListRelationships(ctx, orgID, contactID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"relationships": relationships,
+	})
+}
+
+// DeleteRelationship handles DELETE /api/crm/relationships/:id
+func (h *ContactRelationshipHandler) DeleteRelationship(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	relationshipID, err := uuid.Parse(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "Invalid relationship ID", http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.DeleteRelationship(ctx, orgID, relationshipID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Relationship deleted successfully",
+	})
+}
+
+// UpdateRelationshipStrength handles POST /api/crm/relationships/:id/strength
+func (h *ContactRelationshipHandler) UpdateRelationshipStrength(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	relationshipID, err := uuid.Parse(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "Invalid relationship ID", http.StatusBadRequest)
+		return
+	}
+
+	var req types.UpdateRelationshipStrengthRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.UpdateRelationshipStrength(ctx, orgID, relationshipID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Relationship strength updated successfully",
+	})
+}
+
+// RecordInteraction handles POST /api/crm/relationships/:id/interaction
+func (h *ContactRelationshipHandler) RecordInteraction(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	relationshipID, err := uuid.Parse(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "Invalid relationship ID", http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.RecordInteraction(ctx, orgID, relationshipID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Interaction recorded successfully",
+	})
+}
+
+// GetRelationshipNetwork handles GET /api/crm/contacts/:id/relationships/network
+func (h *ContactRelationshipHandler) GetRelationshipNetwork(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	contactID, err := uuid.Parse(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "Invalid contact ID", http.StatusBadRequest)
+		return
+	}
+
+	// Parse depth parameter (default to 1)
+	depth := 1
+	if depthParam := r.URL.Query().Get("depth"); depthParam != "" {
+		if _, err := fmt.Sscanf(depthParam, "%d", &depth); err != nil {
+			http.Error(w, "Invalid depth parameter", http.StatusBadRequest)
+			return
+		}
+	}
+
+	network, err := h.service.GetRelationshipNetwork(ctx, orgID, contactID, depth)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(network)
+}

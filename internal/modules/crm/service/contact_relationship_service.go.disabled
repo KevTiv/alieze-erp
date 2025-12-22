@@ -1,0 +1,388 @@
+package service
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/google/uuid"
+
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/repository"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/pkg/auth"
+	"github.com/KevTiv/alieze-erp/pkg/events"
+)
+
+// ContactRelationshipService handles relationship management and network analysis
+type ContactRelationshipService struct {
+	repo           repository.ContactRelationshipRepository
+	contactRepo    repository.ContactRepository
+	authService    auth.AuthorizationService
+	eventPublisher events.EventPublisher
+}
+
+func NewContactRelationshipService(
+	repo repository.ContactRelationshipRepository,
+	contactRepo repository.ContactRepository,
+	authService auth.AuthorizationService,
+	eventPublisher events.EventPublisher,
+) *ContactRelationshipService {
+	return &ContactRelationshipService{
+		repo:           repo,
+		contactRepo:    contactRepo,
+		authService:    authService,
+		eventPublisher: eventPublisher,
+	}
+}
+
+// CreateRelationshipType creates a custom relationship type
+func (s *ContactRelationshipService) CreateRelationshipType(ctx context.Context, orgID uuid.UUID, req types.CreateRelationshipTypeRequest) (*types.RelationshipType, error) {
+	// Authorization check
+	userID := ctx.Value("user_id").(uuid.UUID)
+	if !s.authService.CanWrite(ctx, userID, orgID, "contact") {
+		return nil, fmt.Errorf("unauthorized: user does not have write permission for contacts")
+	}
+
+	// Create relationship type
+	relType := &types.ContactRelationshipType{
+		ID:              uuid.New(),
+		OrganizationID:  orgID,
+		Name:            req.Name,
+		Description:     req.Description,
+		IsBidirectional: req.IsBidirectional,
+		IsSystem:        false, // Custom types are never system types
+	}
+
+	err := s.repo.CreateRelationshipType(ctx, relType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create relationship type: %w", err)
+	}
+
+	// Publish event
+	s.eventPublisher.Publish(ctx, events.Event{
+		Type: "relationship_type.created",
+		Data: map[string]interface{}{
+			"organization_id":      orgID.String(),
+			"relationship_type_id": relType.ID.String(),
+			"name":                 relType.Name,
+			"is_bidirectional":     relType.IsBidirectional,
+		},
+	})
+
+	return relType, nil
+}
+
+// UpdateRelationshipType updates a relationship type
+func (s *ContactRelationshipService) UpdateRelationshipType(ctx context.Context, orgID uuid.UUID, typeID uuid.UUID, req types.UpdateRelationshipTypeRequest) (*types.RelationshipType, error) {
+	// Authorization check
+	userID := ctx.Value("user_id").(uuid.UUID)
+	if !s.authService.CanWrite(ctx, userID, orgID, "contact") {
+		return nil, fmt.Errorf("unauthorized: user does not have write permission for contacts")
+	}
+
+	// Get existing relationship type
+	relType, err := s.repo.GetRelationshipType(ctx, typeID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get relationship type: %w", err)
+	}
+
+	// Verify ownership
+	if relType.OrganizationID != orgID {
+		return nil, fmt.Errorf("relationship type does not belong to the specified organization")
+	}
+
+	// Cannot modify system types
+	if relType.IsSystem {
+		return nil, fmt.Errorf("cannot modify system relationship types")
+	}
+
+	// Update fields
+	if req.Name != nil {
+		relType.Name = *req.Name
+	}
+	if req.Description != nil {
+		relType.Description = req.Description
+	}
+	if req.IsBidirectional != nil {
+		relType.IsBidirectional = *req.IsBidirectional
+	}
+
+	err = s.repo.UpdateRelationshipType(ctx, relType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update relationship type: %w", err)
+	}
+
+	// Publish event
+	s.eventPublisher.Publish(ctx, events.Event{
+		Type: "relationship_type.updated",
+		Data: map[string]interface{}{
+			"organization_id":      orgID.String(),
+			"relationship_type_id": typeID.String(),
+			"name":                 relType.Name,
+		},
+	})
+
+	return relType, nil
+}
+
+// ListRelationshipTypes lists all relationship types for an organization
+func (s *ContactRelationshipService) ListRelationshipTypes(ctx context.Context, orgID uuid.UUID, includeSystem bool) ([]*types.RelationshipType, error) {
+	// Authorization check
+	userID := ctx.Value("user_id").(uuid.UUID)
+	if !s.authService.CanRead(ctx, userID, orgID, "contact") {
+		return nil, fmt.Errorf("unauthorized: user does not have read permission for contacts")
+	}
+
+	filter := types.RelationshipTypeFilter{
+		OrganizationID: orgID,
+	}
+
+	if !includeSystem {
+		isSystem := false
+		filter.IsSystem = &isSystem
+	}
+
+	relTypes, err := s.repo.ListRelationshipTypes(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list relationship types: %w", err)
+	}
+
+	return relTypes, nil
+}
+
+// CreateRelationship creates a relationship between two contacts
+func (s *ContactRelationshipService) CreateRelationship(ctx context.Context, orgID uuid.UUID, req types.CreateRelationshipRequest) (*types.ContactRelationship, error) {
+	// Authorization check
+	userID := ctx.Value("user_id").(uuid.UUID)
+	if !s.authService.CanWrite(ctx, userID, orgID, "contact") {
+		return nil, fmt.Errorf("unauthorized: user does not have write permission for contacts")
+	}
+
+	// Verify both contacts exist and belong to organization
+	fromContact, err := s.contactRepo.GetContact(ctx, req.FromContactID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get from contact: %w", err)
+	}
+
+	toContact, err := s.contactRepo.GetContact(ctx, req.ToContactID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get to contact: %w", err)
+	}
+
+	if fromContact.OrganizationID != orgID || toContact.OrganizationID != orgID {
+		return nil, fmt.Errorf("contacts do not belong to the specified organization")
+	}
+
+	// Verify relationship type exists
+	relType, err := s.repo.GetRelationshipType(ctx, req.RelationshipTypeID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get relationship type: %w", err)
+	}
+
+	if relType.OrganizationID != orgID {
+		return nil, fmt.Errorf("relationship type does not belong to the specified organization")
+	}
+
+	// Create relationship
+	relationship := &types.ContactRelationship{
+		ID:                 uuid.New(),
+		OrganizationID:     orgID,
+		FromContactID:      req.FromContactID,
+		ToContactID:        req.ToContactID,
+		RelationshipTypeID: req.RelationshipTypeID,
+		StrengthScore:      50, // Default strength
+		InteractionCount:   0,
+		Metadata:           types.JSONBMap{},
+	}
+
+	err = s.repo.CreateRelationship(ctx, relationship)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create relationship: %w", err)
+	}
+
+	// Publish event
+	s.eventPublisher.Publish(ctx, events.Event{
+		Type: "relationship.created",
+		Data: map[string]interface{}{
+			"organization_id":      orgID.String(),
+			"relationship_id":      relationship.ID.String(),
+			"from_contact_id":      req.FromContactID.String(),
+			"to_contact_id":        req.ToContactID.String(),
+			"relationship_type_id": req.RelationshipTypeID.String(),
+		},
+	})
+
+	return relationship, nil
+}
+
+// UpdateRelationshipStrength updates the strength score of a relationship
+func (s *ContactRelationshipService) UpdateRelationshipStrength(ctx context.Context, orgID uuid.UUID, relationshipID uuid.UUID, req types.UpdateRelationshipStrengthRequest) error {
+	// Authorization check
+	userID := ctx.Value("user_id").(uuid.UUID)
+	if !s.authService.CanWrite(ctx, userID, orgID, "contact") {
+		return fmt.Errorf("unauthorized: user does not have write permission for contacts")
+	}
+
+	// Verify relationship exists and belongs to organization
+	relationship, err := s.repo.GetRelationship(ctx, relationshipID)
+	if err != nil {
+		return fmt.Errorf("failed to get relationship: %w", err)
+	}
+
+	if relationship.OrganizationID != orgID {
+		return fmt.Errorf("relationship does not belong to the specified organization")
+	}
+
+	// Validate strength score (0-100)
+	if req.StrengthScore < 0 || req.StrengthScore > 100 {
+		return fmt.Errorf("strength score must be between 0 and 100")
+	}
+
+	// Update strength
+	err = s.repo.UpdateRelationshipStrength(ctx, relationshipID, req.StrengthScore)
+	if err != nil {
+		return fmt.Errorf("failed to update relationship strength: %w", err)
+	}
+
+	// Publish event
+	s.eventPublisher.Publish(ctx, events.Event{
+		Type: "relationship.strength.updated",
+		Data: map[string]interface{}{
+			"organization_id": orgID.String(),
+			"relationship_id": relationshipID.String(),
+			"strength_score":  req.StrengthScore,
+		},
+	})
+
+	return nil
+}
+
+// RecordInteraction records an interaction on a relationship
+func (s *ContactRelationshipService) RecordInteraction(ctx context.Context, orgID uuid.UUID, relationshipID uuid.UUID) error {
+	// Authorization check
+	userID := ctx.Value("user_id").(uuid.UUID)
+	if !s.authService.CanWrite(ctx, userID, orgID, "contact") {
+		return fmt.Errorf("unauthorized: user does not have write permission for contacts")
+	}
+
+	// Verify relationship exists and belongs to organization
+	relationship, err := s.repo.GetRelationship(ctx, relationshipID)
+	if err != nil {
+		return fmt.Errorf("failed to get relationship: %w", err)
+	}
+
+	if relationship.OrganizationID != orgID {
+		return fmt.Errorf("relationship does not belong to the specified organization")
+	}
+
+	// Record interaction
+	err = s.repo.RecordInteraction(ctx, relationshipID)
+	if err != nil {
+		return fmt.Errorf("failed to record interaction: %w", err)
+	}
+
+	// Publish event
+	s.eventPublisher.Publish(ctx, events.Event{
+		Type: "relationship.interaction.recorded",
+		Data: map[string]interface{}{
+			"organization_id": orgID.String(),
+			"relationship_id": relationshipID.String(),
+		},
+	})
+
+	return nil
+}
+
+// GetRelationshipNetwork retrieves the relationship network for a contact
+func (s *ContactRelationshipService) GetRelationshipNetwork(ctx context.Context, orgID uuid.UUID, contactID uuid.UUID, depth int) (*types.RelationshipNetwork, error) {
+	// Authorization check
+	userID := ctx.Value("user_id").(uuid.UUID)
+	if !s.authService.CanRead(ctx, userID, orgID, "contact") {
+		return nil, fmt.Errorf("unauthorized: user does not have read permission for contacts")
+	}
+
+	// Verify contact exists and belongs to organization
+	contact, err := s.contactRepo.GetContact(ctx, contactID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get contact: %w", err)
+	}
+
+	if contact.OrganizationID != orgID {
+		return nil, fmt.Errorf("contact does not belong to the specified organization")
+	}
+
+	// Validate depth
+	if depth < 1 || depth > 3 {
+		return nil, fmt.Errorf("depth must be between 1 and 3")
+	}
+
+	// Get network
+	network, err := s.repo.GetRelationshipNetwork(ctx, contactID, depth)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get relationship network: %w", err)
+	}
+
+	return network, nil
+}
+
+// ListRelationships lists all relationships for a contact
+func (s *ContactRelationshipService) ListRelationships(ctx context.Context, orgID uuid.UUID, contactID uuid.UUID) ([]*types.ContactRelationship, error) {
+	// Authorization check
+	userID := ctx.Value("user_id").(uuid.UUID)
+	if !s.authService.CanRead(ctx, userID, orgID, "contact") {
+		return nil, fmt.Errorf("unauthorized: user does not have read permission for contacts")
+	}
+
+	// Verify contact exists and belongs to organization
+	contact, err := s.contactRepo.GetContact(ctx, contactID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get contact: %w", err)
+	}
+
+	if contact.OrganizationID != orgID {
+		return nil, fmt.Errorf("contact does not belong to the specified organization")
+	}
+
+	// Get relationships
+	relationships, err := s.repo.ListRelationships(ctx, contactID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list relationships: %w", err)
+	}
+
+	return relationships, nil
+}
+
+// DeleteRelationship deletes a relationship
+func (s *ContactRelationshipService) DeleteRelationship(ctx context.Context, orgID uuid.UUID, relationshipID uuid.UUID) error {
+	// Authorization check
+	userID := ctx.Value("user_id").(uuid.UUID)
+	if !s.authService.CanWrite(ctx, userID, orgID, "contact") {
+		return fmt.Errorf("unauthorized: user does not have write permission for contacts")
+	}
+
+	// Verify relationship exists and belongs to organization
+	relationship, err := s.repo.GetRelationship(ctx, relationshipID)
+	if err != nil {
+		return fmt.Errorf("failed to get relationship: %w", err)
+	}
+
+	if relationship.OrganizationID != orgID {
+		return fmt.Errorf("relationship does not belong to the specified organization")
+	}
+
+	// Delete relationship
+	err = s.repo.DeleteRelationship(ctx, relationshipID)
+	if err != nil {
+		return fmt.Errorf("failed to delete relationship: %w", err)
+	}
+
+	// Publish event
+	s.eventPublisher.Publish(ctx, events.Event{
+		Type: "relationship.deleted",
+		Data: map[string]interface{}{
+			"organization_id": orgID.String(),
+			"relationship_id": relationshipID.String(),
+		},
+	})
+
+	return nil
+}

@@ -1,0 +1,201 @@
+package handler
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/google/uuid"
+	"github.com/julienschmidt/httprouter"
+
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+)
+
+// ContactMergeHandler handles HTTP requests for contact merging and duplicate detection
+type ContactMergeHandler struct {
+	service *service.ContactMergeService
+}
+
+func NewContactMergeHandler(service *service.ContactMergeService) *ContactMergeHandler {
+	return &ContactMergeHandler{
+		service: service,
+	}
+}
+
+// DetectDuplicates handles POST /api/crm/contacts/detect-duplicates
+func (h *ContactMergeHandler) DetectDuplicates(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	var req types.DetectDuplicatesRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	response, err := h.service.DetectDuplicates(ctx, orgID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// CalculateSimilarity handles POST /api/crm/contacts/similarity
+func (h *ContactMergeHandler) CalculateSimilarity(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	var req types.CalculateSimilarityRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	response, err := h.service.CalculateSimilarity(ctx, orgID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// MergeContacts handles POST /api/crm/contacts/merge
+func (h *ContactMergeHandler) MergeContacts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	var req types.MergeContactsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err := h.service.MergeContacts(ctx, orgID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Contacts merged successfully",
+	})
+}
+
+// ListDuplicates handles GET /api/crm/contacts/duplicates
+func (h *ContactMergeHandler) ListDuplicates(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	// Parse query parameters
+	filter := types.DuplicateFilter{
+		OrganizationID: orgID,
+		Limit:          50,
+		Offset:         0,
+	}
+
+	// Parse status filter
+	if status := r.URL.Query().Get("status"); status != "" {
+		filter.Status = &status
+	}
+
+	// Parse minimum similarity
+	if minSim := r.URL.Query().Get("min_similarity"); minSim != "" {
+		var sim int
+		if _, err := fmt.Sscanf(minSim, "%d", &sim); err == nil {
+			filter.MinSimilarity = &sim
+		}
+	}
+
+	// Parse pagination
+	if limit := r.URL.Query().Get("limit"); limit != "" {
+		var l int
+		if _, err := fmt.Sscanf(limit, "%d", &l); err == nil && l > 0 {
+			filter.Limit = l
+		}
+	}
+
+	if offset := r.URL.Query().Get("offset"); offset != "" {
+		var o int
+		if _, err := fmt.Sscanf(offset, "%d", &o); err == nil && o >= 0 {
+			filter.Offset = o
+		}
+	}
+
+	response, err := h.service.ListDuplicates(ctx, orgID, filter)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// ResolveDuplicate handles POST /api/crm/contacts/duplicates/:id/resolve
+func (h *ContactMergeHandler) ResolveDuplicate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	// Parse duplicate ID
+	duplicateID, err := uuid.Parse(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "Invalid duplicate ID", http.StatusBadRequest)
+		return
+	}
+
+	var req types.ResolveDuplicateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.ResolveDuplicate(ctx, orgID, duplicateID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Duplicate resolved successfully",
+	})
+}
+
+// GetMergeHistory handles GET /api/crm/contacts/:id/merge-history
+func (h *ContactMergeHandler) GetMergeHistory(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	// Parse contact ID
+	contactID, err := uuid.Parse(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "Invalid contact ID", http.StatusBadRequest)
+		return
+	}
+
+	history, err := h.service.GetMergeHistory(ctx, orgID, contactID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"history": history,
+	})
+}

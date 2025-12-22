@@ -1,0 +1,304 @@
+package handler
+
+import (
+	"encoding/json"
+	"net/http"
+	"strconv"
+
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/google/uuid"
+	"github.com/julienschmidt/httprouter"
+)
+
+// ContactSegmentHandler handles contact segment HTTP requests
+type ContactSegmentHandler struct {
+	segmentService *service.ContactSegmentService
+}
+
+// NewContactSegmentHandler creates a new segment handler
+func NewContactSegmentHandler(segmentService *service.ContactSegmentService) *ContactSegmentHandler {
+	return &ContactSegmentHandler{
+		segmentService: segmentService,
+	}
+}
+
+// CreateSegment handles POST /api/crm/contacts/segments
+func (h *ContactSegmentHandler) CreateSegment(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+
+	// Get organization ID from context
+	orgID, err := getOrganizationIDFromContext(ctx)
+	if err != nil {
+		http.Error(w, "organization not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse request
+	var req types.SegmentCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Create segment
+	segment, err := h.segmentService.CreateSegment(ctx, orgID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Return segment
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(segment)
+}
+
+// UpdateSegment handles PUT /api/crm/contacts/segments/:id
+func (h *ContactSegmentHandler) UpdateSegment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+
+	// Get organization ID from context
+	orgID, err := getOrganizationIDFromContext(ctx)
+	if err != nil {
+		http.Error(w, "organization not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse segment ID
+	segmentID, err := uuid.Parse(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "invalid segment ID", http.StatusBadRequest)
+		return
+	}
+
+	// Parse request
+	var req types.SegmentUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Update segment
+	segment, err := h.segmentService.UpdateSegment(ctx, orgID, segmentID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Return segment
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(segment)
+}
+
+// DeleteSegment handles DELETE /api/crm/contacts/segments/:id
+func (h *ContactSegmentHandler) DeleteSegment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+
+	// Get organization ID from context
+	orgID, err := getOrganizationIDFromContext(ctx)
+	if err != nil {
+		http.Error(w, "organization not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse segment ID
+	segmentID, err := uuid.Parse(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "invalid segment ID", http.StatusBadRequest)
+		return
+	}
+
+	// Delete segment
+	err = h.segmentService.DeleteSegment(ctx, orgID, segmentID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Return success
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// ListSegments handles GET /api/crm/contacts/segments
+func (h *ContactSegmentHandler) ListSegments(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+
+	// Get organization ID from context
+	orgID, err := getOrganizationIDFromContext(ctx)
+	if err != nil {
+		http.Error(w, "organization not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse query parameters
+	filter := types.SegmentFilter{
+		OrganizationID: orgID,
+		Limit:          50,
+		Offset:         0,
+	}
+
+	if segmentType := r.URL.Query().Get("type"); segmentType != "" {
+		filter.SegmentType = &segmentType
+	}
+
+	if name := r.URL.Query().Get("name"); name != "" {
+		filter.Name = &name
+	}
+
+	if limit := r.URL.Query().Get("limit"); limit != "" {
+		if l, err := strconv.Atoi(limit); err == nil {
+			filter.Limit = l
+		}
+	}
+
+	if offset := r.URL.Query().Get("offset"); offset != "" {
+		if o, err := strconv.Atoi(offset); err == nil {
+			filter.Offset = o
+		}
+	}
+
+	// List segments
+	segments, count, err := h.segmentService.ListSegments(ctx, orgID, filter)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Return segments
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"segments": segments,
+		"total":    count,
+		"limit":    filter.Limit,
+		"offset":   filter.Offset,
+	})
+}
+
+// AddContactToSegments handles POST /api/crm/contacts/:id/segments
+func (h *ContactSegmentHandler) AddContactToSegments(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+
+	// Get organization ID from context
+	orgID, err := getOrganizationIDFromContext(ctx)
+	if err != nil {
+		http.Error(w, "organization not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse contact ID
+	contactID, err := uuid.Parse(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "invalid contact ID", http.StatusBadRequest)
+		return
+	}
+
+	// Parse request
+	var reqBody struct {
+		SegmentIDs []uuid.UUID `json:"segment_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Add contact to each segment
+	for _, segmentID := range reqBody.SegmentIDs {
+		req := types.SegmentMemberRequest{
+			ContactIDs: []uuid.UUID{contactID},
+		}
+		err = h.segmentService.AddContactsToSegment(ctx, orgID, segmentID, req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// Return success
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// GetSegmentMembers handles GET /api/crm/contacts/segments/:id/members
+func (h *ContactSegmentHandler) GetSegmentMembers(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+
+	// Get organization ID from context
+	orgID, err := getOrganizationIDFromContext(ctx)
+	if err != nil {
+		http.Error(w, "organization not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse segment ID
+	segmentID, err := uuid.Parse(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "invalid segment ID", http.StatusBadRequest)
+		return
+	}
+
+	// Parse pagination
+	limit := 50
+	offset := 0
+
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil {
+			limit = parsed
+		}
+	}
+
+	if o := r.URL.Query().Get("offset"); o != "" {
+		if parsed, err := strconv.Atoi(o); err == nil {
+			offset = parsed
+		}
+	}
+
+	// Get segment members
+	contacts, total, err := h.segmentService.GetSegmentMembers(ctx, orgID, segmentID, limit, offset)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Return members
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"contacts": contacts,
+		"total":    total,
+		"limit":    limit,
+		"offset":   offset,
+	})
+}
+
+// RecalculateSegment handles POST /api/crm/contacts/segments/:id/recalculate
+func (h *ContactSegmentHandler) RecalculateSegment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+
+	// Get organization ID from context
+	orgID, err := getOrganizationIDFromContext(ctx)
+	if err != nil {
+		http.Error(w, "organization not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse segment ID
+	segmentID, err := uuid.Parse(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "invalid segment ID", http.StatusBadRequest)
+		return
+	}
+
+	// Recalculate segment
+	memberCount, err := h.segmentService.RecalculateSegment(ctx, orgID, segmentID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Return result
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"segment_id":   segmentID,
+		"member_count": memberCount,
+		"recalculated": true,
+	})
+}

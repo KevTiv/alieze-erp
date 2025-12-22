@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/pkg/auth"
 	"github.com/KevTiv/alieze-erp/pkg/events"
 
 	"github.com/google/uuid"
@@ -15,13 +16,13 @@ import (
 // AssignmentRuleService handles business logic for assignment rules
 type AssignmentRuleService struct {
 	repo        types.AssignmentRuleRepository
-	authService AuthService
+	authService auth.LegacyAuthService
 	eventBus    *events.Bus
 	logger      *log.Logger
 }
 
 // NewAssignmentRuleService creates a new assignment rule service
-func NewAssignmentRuleService(repo types.AssignmentRuleRepository, authService AuthService, eventBus *events.Bus) *AssignmentRuleService {
+func NewAssignmentRuleService(repo types.AssignmentRuleRepository, authService auth.LegacyAuthService, eventBus *events.Bus) *AssignmentRuleService {
 	return &AssignmentRuleService{
 		repo:        repo,
 		authService: authService,

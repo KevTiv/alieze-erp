@@ -19,7 +19,6 @@ import (
 // CRMModule represents the CRM module
 type CRMModule struct {
 	contactHandler        *handler.ContactHandler
-	contactTagHandler     *handler.ContactTagHandler
 	salesTeamHandler      *handler.SalesTeamHandler
 	activityHandler       *handler.ActivityHandler
 	leadStageHandler      *handler.LeadStageHandler
@@ -48,7 +47,6 @@ func (m *CRMModule) Init(ctx context.Context, deps registry.Dependencies) error 
 
 	// Create repositories
 	contactRepo := repository.NewContactRepository(deps.DB)
-	contactTagRepo := repository.NewContactTagRepository(deps.DB)
 	salesTeamRepo := repository.NewSalesTeamRepository(deps.DB)
 	activityRepo := repository.NewActivityRepository(deps.DB)
 	leadStageRepo := repository.NewLeadStageRepository(deps.DB)
@@ -67,7 +65,6 @@ func (m *CRMModule) Init(ctx context.Context, deps registry.Dependencies) error 
 		RuleEngine: deps.RuleEngine,
 		EventBus:   deps.EventBus,
 	})
-	contactTagService := service.NewContactTagService(contactTagRepo, authAdapter, deps.EventBus)
 	salesTeamService := service.NewSalesTeamService(salesTeamRepo, authAdapter, deps.EventBus)
 	activityService := service.NewActivityService(activityRepo, authAdapter, deps.EventBus)
 	leadStageService := service.NewLeadStageService(leadStageRepo, authAdapter, deps.EventBus)
@@ -78,7 +75,6 @@ func (m *CRMModule) Init(ctx context.Context, deps registry.Dependencies) error 
 
 	// Create handlers
 	m.contactHandler = handler.NewContactHandler(contactService)
-	m.contactTagHandler = handler.NewContactTagHandler(contactTagService)
 	m.salesTeamHandler = handler.NewSalesTeamHandler(salesTeamService)
 	m.activityHandler = handler.NewActivityHandler(activityService)
 	m.leadStageHandler = handler.NewLeadStageHandler(leadStageService)
@@ -100,9 +96,6 @@ func (m *CRMModule) RegisterRoutes(router interface{}) {
 	if r, ok := router.(*httprouter.Router); ok {
 		if m.contactHandler != nil {
 			m.contactHandler.RegisterRoutes(r)
-		}
-		if m.contactTagHandler != nil {
-			m.contactTagHandler.RegisterRoutes(r)
 		}
 		if m.salesTeamHandler != nil {
 			m.salesTeamHandler.RegisterRoutes(r)

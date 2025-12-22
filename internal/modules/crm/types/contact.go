@@ -61,14 +61,21 @@ func IsValidRelationshipType(relType ContactRelationshipType) bool {
 
 // ContactRelationship represents a relationship between two contacts
 type ContactRelationship struct {
-	ID               uuid.UUID               `json:"id" db:"id"`
-	OrganizationID   uuid.UUID               `json:"organization_id" db:"organization_id"`
-	ContactID        uuid.UUID               `json:"contact_id" db:"contact_id"`
-	RelatedContactID uuid.UUID               `json:"related_contact_id" db:"related_contact_id"`
-	Type             ContactRelationshipType `json:"type" db:"type"`
-	Notes            *string                 `json:"notes,omitempty" db:"notes"`
-	CreatedAt        time.Time               `json:"created_at" db:"created_at"`
-	UpdatedAt        time.Time               `json:"updated_at" db:"updated_at"`
+	ID                  uuid.UUID               `json:"id" db:"id"`
+	OrganizationID      uuid.UUID               `json:"organization_id" db:"organization_id"`
+	FromContactID       uuid.UUID               `json:"from_contact_id" db:"from_contact_id"`
+	ToContactID         uuid.UUID               `json:"to_contact_id" db:"to_contact_id"`
+	ContactID           uuid.UUID               `json:"contact_id" db:"contact_id"`
+	RelatedContactID    uuid.UUID               `json:"related_contact_id" db:"related_contact_id"`
+	Type                ContactRelationshipType `json:"type" db:"type"`
+	RelationshipTypeID  *uuid.UUID              `json:"relationship_type_id,omitempty" db:"relationship_type_id"`
+	Notes               *string                 `json:"notes,omitempty" db:"notes"`
+	StrengthScore       *int                    `json:"strength_score,omitempty" db:"strength_score"`
+	LastInteractionDate *time.Time              `json:"last_interaction_date,omitempty" db:"last_interaction_date"`
+	InteractionCount    *int                    `json:"interaction_count,omitempty" db:"interaction_count"`
+	Metadata            map[string]interface{}  `json:"metadata,omitempty" db:"metadata"`
+	CreatedAt           time.Time               `json:"created_at" db:"created_at"`
+	UpdatedAt           time.Time               `json:"updated_at" db:"updated_at"`
 }
 
 // ContactScore represents engagement and lead scores for a contact
@@ -210,4 +217,56 @@ type DashboardCache struct {
 	Data           interface{} `json:"data"` // Can be CRMDashboard or ActivityDashboard
 	CachedAt       time.Time   `json:"cached_at"`
 	ExpiresAt      time.Time   `json:"expires_at"`
+}
+
+// RelationshipType represents a type of relationship between contacts
+type RelationshipType struct {
+	ID              uuid.UUID `json:"id" db:"id"`
+	OrganizationID  uuid.UUID `json:"organization_id" db:"organization_id"`
+	Name            string    `json:"name" db:"name"`
+	Description     *string   `json:"description,omitempty" db:"description"`
+	IsBidirectional bool      `json:"is_bidirectional" db:"is_bidirectional"`
+	IsSystem        bool      `json:"is_system" db:"is_system"`
+	CreatedAt       time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// RelationshipNetwork represents a network of contact relationships
+type RelationshipNetwork struct {
+	ContactID       uuid.UUID             `json:"contact_id"`
+	CenterContactID uuid.UUID             `json:"center_contact_id"`
+	Nodes           []NetworkNode         `json:"nodes"`
+	Edges           []ContactRelationship `json:"edges"`
+	TotalNodes      int                   `json:"total_nodes"`
+	TotalEdges      int                   `json:"total_edges"`
+	Depth           int                   `json:"depth"`
+}
+
+// NetworkNode represents a node in the relationship network
+type NetworkNode struct {
+	ContactID       uuid.UUID `json:"contact_id"`
+	Name            string    `json:"name"`
+	Email           *string   `json:"email,omitempty"`
+	Distance        int       `json:"distance"`
+	Depth           int       `json:"depth"`
+	CenterContactID uuid.UUID `json:"center_contact_id,omitempty"`
+}
+
+// NetworkEdge represents an edge in relationship network
+type NetworkEdge struct {
+	FromContactID      uuid.UUID  `json:"from_contact_id"`
+	ToContactID        uuid.UUID  `json:"to_contact_id"`
+	RelationshipType   string     `json:"relationship_type"`
+	StrengthScore      int        `json:"strength_score"`
+	RelationshipTypeID *uuid.UUID `json:"relationship_type_id,omitempty"`
+}
+
+// RelationshipTypeFilter represents filtering criteria for relationship types
+type RelationshipTypeFilter struct {
+	OrganizationID  uuid.UUID
+	Name            *string
+	IsBidirectional *bool
+	IsSystem        *bool
+	Limit           int
+	Offset          int
 }

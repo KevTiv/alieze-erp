@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/pkg/auth"
 	"github.com/KevTiv/alieze-erp/pkg/events"
 
 	"github.com/google/uuid"
@@ -16,12 +17,12 @@ import (
 // LostReasonService handles lost reason business logic
 type LostReasonService struct {
 	repo        types.LostReasonRepository
-	authService AuthService
+	authService auth.LegacyAuthService
 	eventBus    *events.Bus
 	logger      *slog.Logger
 }
 
-func NewLostReasonService(repo types.LostReasonRepository, authService AuthService, eventBus *events.Bus) *LostReasonService {
+func NewLostReasonService(repo types.LostReasonRepository, authService auth.LegacyAuthService, eventBus *events.Bus) *LostReasonService {
 	return &LostReasonService{
 		repo:        repo,
 		authService: authService,

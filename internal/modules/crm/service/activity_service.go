@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/pkg/auth"
 	"github.com/KevTiv/alieze-erp/pkg/events"
 
 	"github.com/google/uuid"
@@ -16,12 +17,12 @@ import (
 // ActivityService handles activity business logic
 type ActivityService struct {
 	repo        types.ActivityRepository
-	authService AuthService
+	authService auth.LegacyAuthService
 	eventBus    *events.Bus
 	logger      *slog.Logger
 }
 
-func NewActivityService(repo types.ActivityRepository, authService AuthService, eventBus *events.Bus) *ActivityService {
+func NewActivityService(repo types.ActivityRepository, authService auth.LegacyAuthService, eventBus *events.Bus) *ActivityService {
 	return &ActivityService{
 		repo:        repo,
 		authService: authService,

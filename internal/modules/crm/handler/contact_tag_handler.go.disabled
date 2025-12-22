@@ -1,0 +1,129 @@
+package handler
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/google/uuid"
+	"github.com/julienschmidt/httprouter"
+)
+
+// ContactTagHandler handles contact tag HTTP requests
+type ContactTagHandler struct {
+	tagService *service.ContactTagService
+}
+
+// NewContactTagHandler creates a new tag handler
+func NewContactTagHandler(tagService *service.ContactTagService) *ContactTagHandler {
+	return &ContactTagHandler{
+		tagService: tagService,
+	}
+}
+
+// AddTags handles POST /api/crm/contacts/:id/tags
+func (h *ContactTagHandler) AddTags(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+
+	// Get organization ID from context
+	orgID, err := getOrganizationIDFromContext(ctx)
+	if err != nil {
+		http.Error(w, "organization not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse contact ID
+	contactID, err := uuid.Parse(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "invalid contact ID", http.StatusBadRequest)
+		return
+	}
+
+	// Parse request
+	var req types.ContactTagRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Validate request
+	if len(req.Tags) == 0 {
+		http.Error(w, "at least one tag is required", http.StatusBadRequest)
+		return
+	}
+
+	// Add tags
+	result, err := h.tagService.AddTags(ctx, orgID, contactID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Return result
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(result)
+}
+
+// RemoveTag handles DELETE /api/crm/contacts/:id/tags/:tag
+func (h *ContactTagHandler) RemoveTag(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+
+	// Get organization ID from context
+	orgID, err := getOrganizationIDFromContext(ctx)
+	if err != nil {
+		http.Error(w, "organization not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse contact ID
+	contactID, err := uuid.Parse(ps.ByName("id"))
+	if err != nil {
+		http.Error(w, "invalid contact ID", http.StatusBadRequest)
+		return
+	}
+
+	// Get tag from URL
+	tag := ps.ByName("tag")
+	if tag == "" {
+		http.Error(w, "tag is required", http.StatusBadRequest)
+		return
+	}
+
+	// Remove tag
+	err = h.tagService.RemoveTag(ctx, orgID, contactID, tag)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Return success
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// ListTags handles GET /api/crm/contacts/tags
+func (h *ContactTagHandler) ListTags(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+
+	// Get organization ID from context
+	orgID, err := getOrganizationIDFromContext(ctx)
+	if err != nil {
+		http.Error(w, "organization not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// List tags
+	tags, err := h.tagService.ListTags(ctx, orgID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Return tags
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"tags":  tags,
+		"count": len(tags),
+	})
+}

@@ -1,0 +1,505 @@
+package service
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"strings"
+	"time"
+
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/pkg/auth"
+	"github.com/KevTiv/alieze-erp/pkg/crm/errors"
+	"github.com/KevTiv/alieze-erp/pkg/events"
+	"github.com/google/uuid"
+)
+
+// ContactSegmentService handles contact segmentation operations
+type ContactSegmentService struct {
+	segmentRepo types.CRUDRepository[types.ContactSegment, types.SegmentFilter]
+	contactRepo types.ContactRepository
+	authService auth.BaseAuthService
+	eventBus    *events.Bus
+	logger      *slog.Logger
+}
+
+// NewContactSegmentService creates a new segment service
+func NewContactSegmentService(
+	segmentRepo types.CRUDRepository[types.ContactSegment, types.SegmentFilter],
+	contactRepo types.ContactRepository,
+	authService auth.BaseAuthService,
+	eventBus *events.Bus,
+	logger *slog.Logger,
+) *ContactSegmentService {
+	return &ContactSegmentService{
+		segmentRepo: segmentRepo,
+		contactRepo: contactRepo,
+		authService: authService,
+		eventBus:    eventBus,
+		logger:      logger,
+	}
+}
+
+// CreateSegment creates a new contact segment
+func (s *ContactSegmentService) CreateSegment(ctx context.Context, orgID uuid.UUID, req types.SegmentCreateRequest) (*types.ContactSegment, error) {
+	// Check authorization
+	if err := s.authService.CheckOrganizationAccess(ctx, orgID); err != nil {
+		return nil, errors.ErrOrganizationAccess
+	}
+
+	// Validate request
+	if req.Name == "" {
+		return nil, fmt.Errorf("segment name is required")
+	}
+
+	if req.SegmentType != "static" && req.SegmentType != "dynamic" {
+		return nil, fmt.Errorf("invalid segment type: must be 'static' or 'dynamic'")
+	}
+
+	// Get current user
+	user, err := s.authService.GetCurrentUser(ctx)
+	if err != nil {
+		s.logger.Warn("failed to get current user", "error", err)
+	}
+
+	// Create segment
+	segment := &types.ContactSegment{
+		OrganizationID: orgID,
+		Name:           req.Name,
+		Description:    req.Description,
+		SegmentType:    req.SegmentType,
+		Criteria:       req.Criteria,
+		Color:          req.Color,
+		Icon:           req.Icon,
+		MemberCount:    0,
+	}
+
+	if user != nil {
+		segment.CreatedBy = &user.ID
+	}
+
+	err = s.segmentRepo.CreateSegment(ctx, segment)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create segment: %w", err)
+	}
+
+	// Publish event
+	if s.eventBus != nil {
+		s.eventBus.Publish("segment.created", map[string]interface{}{
+			"segment_id":      segment.ID,
+			"organization_id": orgID,
+			"segment_type":    segment.SegmentType,
+			"name":            segment.Name,
+		})
+	}
+
+	s.logger.Info("segment created",
+		"segment_id", segment.ID,
+		"org_id", orgID,
+		"type", segment.SegmentType,
+	)
+
+	return segment, nil
+}
+
+// UpdateSegment updates an existing segment
+func (s *ContactSegmentService) UpdateSegment(ctx context.Context, orgID uuid.UUID, segmentID uuid.UUID, req types.SegmentUpdateRequest) (*types.ContactSegment, error) {
+	// Check authorization
+	if err := s.authService.CheckOrganizationAccess(ctx, orgID); err != nil {
+		return nil, errors.ErrOrganizationAccess
+	}
+
+	// Get existing segment
+	segment, err := s.segmentRepo.GetSegment(ctx, segmentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get segment: %w", err)
+	}
+	if segment == nil {
+		return nil, errors.ErrNotFound
+	}
+
+	// Verify organization
+	if segment.OrganizationID != orgID {
+		return nil, errors.ErrOrganizationAccess
+	}
+
+	// Update fields
+	if req.Name != nil {
+		segment.Name = *req.Name
+	}
+	if req.Description != nil {
+		segment.Description = req.Description
+	}
+	if req.Criteria != nil {
+		segment.Criteria = req.Criteria
+	}
+	if req.Color != nil {
+		segment.Color = req.Color
+	}
+	if req.Icon != nil {
+		segment.Icon = req.Icon
+	}
+
+	err = s.segmentRepo.UpdateSegment(ctx, segment)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update segment: %w", err)
+	}
+
+	// Publish event
+	if s.eventBus != nil {
+		s.eventBus.Publish("segment.updated", map[string]interface{}{
+			"segment_id":      segment.ID,
+			"organization_id": orgID,
+		})
+	}
+
+	s.logger.Info("segment updated", "segment_id", segment.ID, "org_id", orgID)
+
+	return segment, nil
+}
+
+// DeleteSegment deletes a segment
+func (s *ContactSegmentService) DeleteSegment(ctx context.Context, orgID uuid.UUID, segmentID uuid.UUID) error {
+	// Check authorization
+	if err := s.authService.CheckOrganizationAccess(ctx, orgID); err != nil {
+		return errors.ErrOrganizationAccess
+	}
+
+	// Get existing segment
+	segment, err := s.segmentRepo.GetSegment(ctx, segmentID)
+	if err != nil {
+		return fmt.Errorf("failed to get segment: %w", err)
+	}
+	if segment == nil {
+		return errors.ErrNotFound
+	}
+
+	// Verify organization
+	if segment.OrganizationID != orgID {
+		return errors.ErrOrganizationAccess
+	}
+
+	// Delete segment
+	err = s.segmentRepo.DeleteSegment(ctx, segmentID)
+	if err != nil {
+		return fmt.Errorf("failed to delete segment: %w", err)
+	}
+
+	// Publish event
+	if s.eventBus != nil {
+		s.eventBus.Publish("segment.deleted", map[string]interface{}{
+			"segment_id":      segmentID,
+			"organization_id": orgID,
+		})
+	}
+
+	s.logger.Info("segment deleted", "segment_id", segmentID, "org_id", orgID)
+
+	return nil
+}
+
+// ListSegments lists segments with filtering
+func (s *ContactSegmentService) ListSegments(ctx context.Context, orgID uuid.UUID, filter types.SegmentFilter) ([]*types.ContactSegment, int, error) {
+	// Check authorization
+	if err := s.authService.CheckOrganizationAccess(ctx, orgID); err != nil {
+		return nil, 0, errors.ErrOrganizationAccess
+	}
+
+	filter.OrganizationID = orgID
+
+	segments, err := s.segmentRepo.ListSegments(ctx, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to list segments: %w", err)
+	}
+
+	count, err := s.segmentRepo.CountSegments(ctx, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count segments: %w", err)
+	}
+
+	return segments, count, nil
+}
+
+// AddContactsToSegment adds contacts to a segment
+func (s *ContactSegmentService) AddContactsToSegment(ctx context.Context, orgID uuid.UUID, segmentID uuid.UUID, req types.SegmentMemberRequest) error {
+	// Check authorization
+	if err := s.authService.CheckOrganizationAccess(ctx, orgID); err != nil {
+		return errors.ErrOrganizationAccess
+	}
+
+	// Get segment
+	segment, err := s.segmentRepo.GetSegment(ctx, segmentID)
+	if err != nil {
+		return fmt.Errorf("failed to get segment: %w", err)
+	}
+	if segment == nil {
+		return errors.ErrNotFound
+	}
+
+	// Verify organization
+	if segment.OrganizationID != orgID {
+		return errors.ErrOrganizationAccess
+	}
+
+	// Check segment type
+	if segment.SegmentType == "dynamic" {
+		return fmt.Errorf("cannot manually add contacts to dynamic segments")
+	}
+
+	// Get current user
+	user, err := s.authService.GetCurrentUser(ctx)
+	userID := uuid.Nil
+	if err == nil && user != nil {
+		userID = user.ID
+	}
+
+	// Add contacts
+	err = s.segmentRepo.AddContactsToSegment(ctx, segmentID, req.ContactIDs, userID, orgID)
+	if err != nil {
+		return fmt.Errorf("failed to add contacts to segment: %w", err)
+	}
+
+	// Publish event
+	if s.eventBus != nil {
+		s.eventBus.Publish("contact.segment.added", map[string]interface{}{
+			"segment_id":      segmentID,
+			"organization_id": orgID,
+			"contact_count":   len(req.ContactIDs),
+		})
+	}
+
+	s.logger.Info("contacts added to segment",
+		"segment_id", segmentID,
+		"org_id", orgID,
+		"count", len(req.ContactIDs),
+	)
+
+	return nil
+}
+
+// RemoveContactsFromSegment removes contacts from a segment
+func (s *ContactSegmentService) RemoveContactsFromSegment(ctx context.Context, orgID uuid.UUID, segmentID uuid.UUID, req types.SegmentMemberRequest) error {
+	// Check authorization
+	if err := s.authService.CheckOrganizationAccess(ctx, orgID); err != nil {
+		return errors.ErrOrganizationAccess
+	}
+
+	// Get segment
+	segment, err := s.segmentRepo.GetSegment(ctx, segmentID)
+	if err != nil {
+		return fmt.Errorf("failed to get segment: %w", err)
+	}
+	if segment == nil {
+		return errors.ErrNotFound
+	}
+
+	// Verify organization
+	if segment.OrganizationID != orgID {
+		return errors.ErrOrganizationAccess
+	}
+
+	// Remove contacts
+	err = s.segmentRepo.RemoveContactsFromSegment(ctx, segmentID, req.ContactIDs)
+	if err != nil {
+		return fmt.Errorf("failed to remove contacts from segment: %w", err)
+	}
+
+	// Publish event
+	if s.eventBus != nil {
+		s.eventBus.Publish("contact.segment.removed", map[string]interface{}{
+			"segment_id":      segmentID,
+			"organization_id": orgID,
+			"contact_count":   len(req.ContactIDs),
+		})
+	}
+
+	s.logger.Info("contacts removed from segment",
+		"segment_id", segmentID,
+		"org_id", orgID,
+		"count", len(req.ContactIDs),
+	)
+
+	return nil
+}
+
+// GetSegmentMembers retrieves contacts in a segment
+func (s *ContactSegmentService) GetSegmentMembers(ctx context.Context, orgID uuid.UUID, segmentID uuid.UUID, limit, offset int) ([]*types.Contact, int, error) {
+	// Check authorization
+	if err := s.authService.CheckOrganizationAccess(ctx, orgID); err != nil {
+		return nil, 0, errors.ErrOrganizationAccess
+	}
+
+	// Get segment
+	segment, err := s.segmentRepo.GetSegment(ctx, segmentID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get segment: %w", err)
+	}
+	if segment == nil {
+		return nil, 0, errors.ErrNotFound
+	}
+
+	// Verify organization
+	if segment.OrganizationID != orgID {
+		return nil, 0, errors.ErrOrganizationAccess
+	}
+
+	// Get members
+	contacts, err := s.segmentRepo.GetSegmentMembers(ctx, segmentID, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get segment members: %w", err)
+	}
+
+	return contacts, segment.MemberCount, nil
+}
+
+// RecalculateSegment recalculates a dynamic segment's membership
+func (s *ContactSegmentService) RecalculateSegment(ctx context.Context, orgID uuid.UUID, segmentID uuid.UUID) (int, error) {
+	// Check authorization
+	if err := s.authService.CheckOrganizationAccess(ctx, orgID); err != nil {
+		return 0, errors.ErrOrganizationAccess
+	}
+
+	// Get segment
+	segment, err := s.segmentRepo.GetSegment(ctx, segmentID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get segment: %w", err)
+	}
+	if segment == nil {
+		return 0, errors.ErrNotFound
+	}
+
+	// Verify organization
+	if segment.OrganizationID != orgID {
+		return 0, errors.ErrOrganizationAccess
+	}
+
+	// Check segment type
+	if segment.SegmentType != "dynamic" {
+		return 0, fmt.Errorf("only dynamic segments can be recalculated")
+	}
+
+	// Clear existing members
+	err = s.segmentRepo.ClearSegmentMembers(ctx, segmentID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to clear segment members: %w", err)
+	}
+
+	// Get all contacts for organization
+	filter := types.ContactFilter{
+		OrganizationID: orgID,
+		Limit:          10000, // Large limit
+	}
+
+	contacts, err := s.contactRepo.FindAll(ctx, filter)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get contacts: %w", err)
+	}
+
+	// Evaluate criteria for each contact
+	matchingContactIDs := []uuid.UUID{}
+	for _, contact := range contacts {
+		if s.evaluateCriteria(contact, segment.Criteria) {
+			matchingContactIDs = append(matchingContactIDs, contact.ID)
+		}
+	}
+
+	// Add matching contacts to segment
+	if len(matchingContactIDs) > 0 {
+		err = s.segmentRepo.AddContactsToSegment(ctx, segmentID, matchingContactIDs, uuid.Nil, orgID)
+		if err != nil {
+			return 0, fmt.Errorf("failed to add contacts to segment: %w", err)
+		}
+	}
+
+	// Update member count and last calculated time
+	err = s.segmentRepo.UpdateSegmentMemberCount(ctx, segmentID, len(matchingContactIDs))
+	if err != nil {
+		return 0, fmt.Errorf("failed to update member count: %w", err)
+	}
+
+	// Publish event
+	if s.eventBus != nil {
+		s.eventBus.Publish("segment.recalculated", map[string]interface{}{
+			"segment_id":       segmentID,
+			"organization_id":  orgID,
+			"new_member_count": len(matchingContactIDs),
+		})
+	}
+
+	s.logger.Info("segment recalculated",
+		"segment_id", segmentID,
+		"org_id", orgID,
+		"member_count", len(matchingContactIDs),
+	)
+
+	return len(matchingContactIDs), nil
+}
+
+// evaluateCriteria evaluates if a contact matches segment criteria
+func (s *ContactSegmentService) evaluateCriteria(contact *types.Contact, criteria map[string]interface{}) bool {
+	if len(criteria) == 0 {
+		return false
+	}
+
+	// Example criteria structure:
+	// {
+	//   "is_customer": true,
+	//   "email_contains": "@example.com",
+	//   "city": "New York",
+	//   "created_after": "2024-01-01"
+	// }
+
+	// Check is_customer
+	if val, ok := criteria["is_customer"].(bool); ok {
+		if contact.IsCustomer != val {
+			return false
+		}
+	}
+
+	// Check is_vendor
+	if val, ok := criteria["is_vendor"].(bool); ok {
+		if contact.IsVendor != val {
+			return false
+		}
+	}
+
+	// Check email_contains
+	if val, ok := criteria["email_contains"].(string); ok && val != "" {
+		if contact.Email == nil || !strings.Contains(strings.ToLower(*contact.Email), strings.ToLower(val)) {
+			return false
+		}
+	}
+
+	// Check city
+	if val, ok := criteria["city"].(string); ok && val != "" {
+		if contact.City == nil || strings.ToLower(*contact.City) != strings.ToLower(val) {
+			return false
+		}
+	}
+
+	// Check name_contains
+	if val, ok := criteria["name_contains"].(string); ok && val != "" {
+		if !strings.Contains(strings.ToLower(contact.Name), strings.ToLower(val)) {
+			return false
+		}
+	}
+
+	// Check created_after
+	if val, ok := criteria["created_after"].(string); ok && val != "" {
+		afterTime, err := time.Parse("2006-01-02", val)
+		if err == nil && contact.CreatedAt.Before(afterTime) {
+			return false
+		}
+	}
+
+	// Check created_before
+	if val, ok := criteria["created_before"].(string); ok && val != "" {
+		beforeTime, err := time.Parse("2006-01-02", val)
+		if err == nil && contact.CreatedAt.After(beforeTime) {
+			return false
+		}
+	}
+
+	// All criteria matched
+	return true
+}

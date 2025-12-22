@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/pkg/auth"
 	"github.com/KevTiv/alieze-erp/pkg/events"
 
 	"github.com/google/uuid"
@@ -16,12 +17,12 @@ import (
 // SalesTeamService handles sales team business logic
 type SalesTeamService struct {
 	repo        types.SalesTeamRepository
-	authService AuthService
+	authService auth.LegacyAuthService
 	eventBus    *events.Bus
 	logger      *slog.Logger
 }
 
-func NewSalesTeamService(repo types.SalesTeamRepository, authService AuthService, eventBus *events.Bus) *SalesTeamService {
+func NewSalesTeamService(repo types.SalesTeamRepository, authService auth.LegacyAuthService, eventBus *events.Bus) *SalesTeamService {
 	return &SalesTeamService{
 		repo:        repo,
 		authService: authService,

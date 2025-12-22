@@ -13,7 +13,7 @@ import (
 // PolicyConfig defines the structure for policy configuration
 type PolicyConfig struct {
 	Permissions map[string]map[string]string `yaml:"permissions"`
-	Roles      map[string]struct {
+	Roles       map[string]struct {
 		Permissions []string `yaml:"permissions"`
 	} `yaml:"roles"`
 }
@@ -141,6 +141,14 @@ func (e *Engine) GetRolesForUser(user string) ([]string, error) {
 		return enforcer.GetRolesForUser(user)
 	}
 	return nil, fmt.Errorf("enforcer does not support role retrieval")
+}
+
+// GetPermissionsForUser gets all permissions for a user
+func (e *Engine) GetPermissionsForUser(user string) ([][]string, error) {
+	if enforcer, ok := e.enforcer.(*CasbinEnforcer); ok {
+		return enforcer.GetPermissionsForUser(user)
+	}
+	return nil, fmt.Errorf("enforcer does not support permission retrieval")
 }
 
 // RegisterValidator adds a custom permission validator

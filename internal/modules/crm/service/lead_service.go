@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+	"github.com/KevTiv/alieze-erp/pkg/auth"
 	"github.com/KevTiv/alieze-erp/pkg/events"
 
 	"github.com/google/uuid"
@@ -19,13 +20,13 @@ type AssignmentRuleAssigner interface {
 // LeadService provides lead management functionality
 type LeadService struct {
 	repo                   types.LeadRepository
-	authService            AuthService
+	authService            auth.LegacyAuthService
 	eventBus               *events.Bus
 	assignmentRuleAssigner AssignmentRuleAssigner
 }
 
 // NewLeadService creates a new LeadService instance
-func NewLeadService(repo types.LeadRepository, authService AuthService, eventBus *events.Bus, assignmentRuleAssigner AssignmentRuleAssigner) *LeadService {
+func NewLeadService(repo types.LeadRepository, authService auth.LegacyAuthService, eventBus *events.Bus, assignmentRuleAssigner AssignmentRuleAssigner) *LeadService {
 	return &LeadService{
 		repo:                   repo,
 		authService:            authService,

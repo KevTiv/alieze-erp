@@ -1,0 +1,221 @@
+package handler
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/google/uuid"
+	"github.com/julienschmidt/httprouter"
+
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/service"
+	"github.com/KevTiv/alieze-erp/internal/modules/crm/types"
+)
+
+// ContactImportExportHandler handles HTTP requests for import and export operations
+type ContactImportExportHandler struct {
+	importService *service.ContactImportService
+	exportService *service.ContactExportService
+}
+
+func NewContactImportExportHandler(
+	importService *service.ContactImportService,
+	exportService *service.ContactExportService,
+) *ContactImportExportHandler {
+	return &ContactImportExportHandler{
+		importService: importService,
+		exportService: exportService,
+	}
+}
+
+// ImportContacts handles POST /api/crm/contacts/import
+func (h *ContactImportExportHandler) ImportContacts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	var req types.ImportContactsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	job, err := h.importService.ImportContacts(ctx, orgID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	json.NewEncoder(w).Encode(job)
+}
+
+// GetImportMapping handles POST /api/crm/contacts/import/mapping
+func (h *ContactImportExportHandler) GetImportMapping(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	var req types.GetImportMappingRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	response, err := h.importService.GetImportMapping(ctx, orgID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// GetImportJob handles GET /api/crm/contacts/import/:jobId
+func (h *ContactImportExportHandler) GetImportJob(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	jobID, err := uuid.Parse(ps.ByName("jobId"))
+	if err != nil {
+		http.Error(w, "Invalid job ID", http.StatusBadRequest)
+		return
+	}
+
+	job, err := h.importService.GetImportJob(ctx, orgID, jobID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(job)
+}
+
+// ListImportJobs handles GET /api/crm/contacts/import
+func (h *ContactImportExportHandler) ListImportJobs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	filter := types.ImportJobFilter{
+		OrganizationID: orgID,
+		Limit:          50,
+		Offset:         0,
+	}
+
+	// Parse query parameters
+	if status := r.URL.Query().Get("status"); status != "" {
+		filter.Status = &status
+	}
+
+	if limit := r.URL.Query().Get("limit"); limit != "" {
+		var l int
+		if _, err := fmt.Sscanf(limit, "%d", &l); err == nil && l > 0 {
+			filter.Limit = l
+		}
+	}
+
+	if offset := r.URL.Query().Get("offset"); offset != "" {
+		var o int
+		if _, err := fmt.Sscanf(offset, "%d", &o); err == nil && o >= 0 {
+			filter.Offset = o
+		}
+	}
+
+	response, err := h.importService.ListImportJobs(ctx, orgID, filter)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// ExportContacts handles POST /api/crm/contacts/export
+func (h *ContactImportExportHandler) ExportContacts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	var req types.ExportContactsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	job, err := h.exportService.ExportContacts(ctx, orgID, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	json.NewEncoder(w).Encode(job)
+}
+
+// GetExportJob handles GET /api/crm/contacts/export/:jobId
+func (h *ContactImportExportHandler) GetExportJob(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	jobID, err := uuid.Parse(ps.ByName("jobId"))
+	if err != nil {
+		http.Error(w, "Invalid job ID", http.StatusBadRequest)
+		return
+	}
+
+	job, err := h.exportService.GetExportJob(ctx, orgID, jobID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(job)
+}
+
+// ListExportJobs handles GET /api/crm/contacts/export
+func (h *ContactImportExportHandler) ListExportJobs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+	orgID := getOrganizationID(ctx)
+
+	filter := types.ExportJobFilter{
+		OrganizationID: orgID,
+		Limit:          50,
+		Offset:         0,
+	}
+
+	// Parse query parameters
+	if status := r.URL.Query().Get("status"); status != "" {
+		filter.Status = &status
+	}
+
+	if limit := r.URL.Query().Get("limit"); limit != "" {
+		var l int
+		if _, err := fmt.Sscanf(limit, "%d", &l); err == nil && l > 0 {
+			filter.Limit = l
+		}
+	}
+
+	if offset := r.URL.Query().Get("offset"); offset != "" {
+		var o int
+		if _, err := fmt.Sscanf(offset, "%d", &o); err == nil && o >= 0 {
+			filter.Offset = o
+		}
+	}
+
+	response, err := h.exportService.ListExportJobs(ctx, orgID, filter)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
